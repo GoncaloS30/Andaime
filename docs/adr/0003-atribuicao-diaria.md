@@ -9,7 +9,7 @@ No Lyrical Design a unidade era a "linha de equipa" (equipa + obra + dias + trab
 `Assignment = { workerId, siteId, date, hours, start, end, teamId?, vehicleId?, isForeman, batchId? }`.
 - Várias atribuições por trabalhador/dia são permitidas; conflito quando a soma excede a capacidade diária ou os horários se sobrepõem.
 - A "escala" (equipa × obra × semana) é uma **vista derivada** agrupando por `batchId`/`teamId`/`siteId`.
-- Viaturas têm reservas próprias (`VehicleBooking` por dia), para detetar dupla reserva e lotação.
+- A viatura de um dia é `Assignment.vehicleId` (em que viatura o trabalhador se desloca). Reserva, dupla reserva e lotação **derivam** das atribuições — sem entidade de reserva separada, para haver uma só fonte de verdade. (Revisto durante o bloco 1: a entidade `VehicleBooking` prevista no spec foi abandonada.)
 - Horas realizadas (`TimeEntry`) são entidade separada: o planeado nunca se converte silenciosamente em realizado.
 
 ## Consequências
