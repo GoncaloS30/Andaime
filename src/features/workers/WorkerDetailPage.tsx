@@ -5,6 +5,7 @@ import { useDerived } from '@/app/hooks'
 import { workerCompliance } from '@/domain/documents'
 import { useDemo } from '@/store/store'
 import { Avatar } from '@/ui/Avatar'
+import { PhotoUpload } from '@/ui/PhotoUpload'
 import { Badge, Plate } from '@/ui/Badge'
 import { Button } from '@/ui/Button'
 import { TabPanel, Tabs } from '@/ui/Tabs'
@@ -63,8 +64,8 @@ export function WorkerDetailPage() {
         <ArrowLeft className="size-4" aria-hidden /> Trabalhadores
       </Link>
       <header className="mb-2 flex flex-wrap items-start gap-4">
-        <Avatar name={w.name} photo={w.photo} size="lg" color={team?.color ?? '#7d847f'} />
-        <div className="min-w-0 flex-1">
+        <Avatar name={w.name} photo={w.photo} size="lg" color={team?.color ?? '#7d847f'} className="size-20 text-2xl" />
+        <div className="min-w-[min(100%,18rem)] flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="font-expanded text-2xl font-semibold tracking-tight">{w.name}</h1>
             <Badge tone={w.status === 'ativo' ? 'ok' : 'neutral'} dot>
@@ -95,6 +96,7 @@ export function WorkerDetailPage() {
               <Mail className="size-3.5" aria-hidden /> {w.email || '—'}
             </span>
           </p>
+          <PhotoUpload target={{ type: 'trabalhador', id: w.id }} current={w.photo} alt={`Retrato de ${w.name}`} className="mt-2" />
         </div>
         <div className="flex flex-wrap gap-2">
           <Button icon={<Pencil className="size-4" />} onClick={() => setDialog('edit')}>

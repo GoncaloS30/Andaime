@@ -13,6 +13,7 @@ import { useNow } from '@/lib/useNow'
 import { selectNotifications, selectWorkerView } from '@/store/selectors'
 import { useDemo } from '@/store/store'
 import { Avatar } from '@/ui/Avatar'
+import { PhotoUpload } from '@/ui/PhotoUpload'
 import { Badge, Plate } from '@/ui/Badge'
 import { Button } from '@/ui/Button'
 import { Field, Input, Select, Textarea } from '@/ui/Field'
@@ -331,6 +332,7 @@ export function ProfileScreen() {
           <span className="block font-expanded text-lg font-semibold">{worker.name}</span>
           <span className="block text-sm text-ink-3">{worker.category} · N.º {worker.number}</span>
           <span className="block text-sm text-ink-3">{team?.name ?? 'Sem equipa'}</span>
+          <PhotoUpload target={{ type: 'trabalhador', id: worker.id }} current={worker.photo} alt={`Retrato de ${worker.name}`} label="Mudar a minha foto" className="mt-2" />
         </span>
       </Card>
       {lead && <Card><p className="text-xs text-ink-3">Responsável de equipa</p><p className="font-semibold">{lead.name}</p><p className="text-sm text-ink-2">{lead.phone}</p></Card>}
