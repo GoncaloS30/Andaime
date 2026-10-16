@@ -24,7 +24,7 @@ export function Topbar({ onSearch }: { onSearch: () => void }) {
           className="hidden h-9 w-full max-w-sm items-center gap-2 rounded-md border border-line bg-surface px-3 text-sm text-ink-3 hover:border-ink-4 md:flex"
         >
           <Search className="size-4" aria-hidden />
-          <span className="flex-1 text-left">Pesquisar trabalhadores, obras…</span>
+          <span className="min-w-0 flex-1 truncate text-left whitespace-nowrap">Pesquisar trabalhadores, obras…</span>
           <Kbd>Ctrl</Kbd>
           <Kbd>K</Kbd>
         </button>

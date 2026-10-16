@@ -151,7 +151,7 @@ export function SheetList({ mode, status, workerIds, teamId, siteId }: Props) {
                   checked={checked.has(s.key)}
                   onChange={() => setChecked((c) => { const n = new Set(c); if (n.has(s.key)) n.delete(s.key); else n.add(s.key); return n })}
                 />
-                <button type="button" aria-expanded={isOpen} onClick={() => setOpen((o) => { const n = new Set(o); if (n.has(s.key)) n.delete(s.key); else n.add(s.key); return n })} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                <button type="button" aria-expanded={isOpen} onClick={() => setOpen((o) => { const n = new Set(o); if (n.has(s.key)) n.delete(s.key); else n.add(s.key); return n })} className="flex min-w-[220px] flex-1 items-center gap-3 text-left">
                   <ChevronDown aria-hidden className={cn('size-4 shrink-0 text-ink-3 transition-transform', !isOpen && '-rotate-90')} />
                   <Avatar name={w?.name ?? '?'} size="sm" color={db.teams[w?.teamId ?? '']?.color} />
                   <span className="min-w-0">

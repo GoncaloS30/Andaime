@@ -32,11 +32,11 @@ export function DemoMenu() {
         trigger={
           <button
             type="button"
-            className="flex h-9 items-center gap-1.5 rounded-md border border-dashed border-ambar/70 bg-ambar-soft px-2.5 text-xs font-semibold text-ambar-ink hover:bg-[#f7e7c4]"
+            className="flex h-9 items-center gap-1.5 rounded-md border border-dashed border-ambar/70 bg-ambar-soft px-2.5 text-xs font-semibold whitespace-nowrap text-ambar-ink hover:bg-[#f7e7c4]"
           >
             <FlaskConical className="size-3.5" aria-hidden />
-            <span className="hidden xl:inline">{DEMO_LABEL}</span>
-            <span className="xl:hidden">Demonstração</span>
+            <span className="hidden 2xl:inline">{DEMO_LABEL}</span>
+            <span className="2xl:hidden">Demonstração</span>
           </button>
         }
       >

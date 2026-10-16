@@ -30,7 +30,7 @@ export function AppShell() {
         Saltar para o conteúdo
       </a>
       <Sidebar />
-      <div className={cn('flex min-w-0 flex-1 flex-col', tourOpen && 'xl:pr-[360px]', stage && '2xl:pr-[760px]')}>
+      <div className={cn('flex min-w-0 flex-1 flex-col', tourOpen && 'xl:pr-[360px]', stage && 'lg:pr-[360px] xl:pr-[724px]')}>
         <Topbar onSearch={() => palette.setOpen(true)} />
         <main id="conteudo" tabIndex={-1} className="flex-1 px-4 pt-5 pb-28 focus:outline-none sm:px-5 md:pb-10 lg:px-7">
           <Suspense fallback={<SkeletonRows rows={8} />}>
