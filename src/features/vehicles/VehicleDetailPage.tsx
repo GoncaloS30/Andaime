@@ -11,6 +11,8 @@ import { cn } from '@/lib/cn'
 import { selectConflicts } from '@/store/selectors'
 import { useDemo } from '@/store/store'
 import { Badge, Plate } from '@/ui/Badge'
+import { Photo } from '@/ui/Photo'
+import { PhotoUpload } from '@/ui/PhotoUpload'
 import { Button } from '@/ui/Button'
 import { Field, Input, Select } from '@/ui/Field'
 import { Detail, Panel } from '@/ui/Layout'
@@ -45,10 +47,21 @@ export function VehicleDetailPage() {
       <Link to="/viaturas" className="mb-3 inline-flex items-center gap-1 text-sm text-ink-3 hover:text-ink">
         <ArrowLeft className="size-4" aria-hidden /> Viaturas
       </Link>
-      <header className="mb-4 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <Plate plate={v.plate} className="h-7 px-2 text-sm" />
-          <h1 className="mt-1 font-expanded text-2xl font-semibold tracking-tight">{v.make} {v.model}</h1>
+      <header className="mb-4 flex flex-wrap items-end gap-4">
+        <div className="w-full space-y-2 sm:w-64">
+          <div className="relative">
+            <Photo photo={v.photo} format="viatura" eager sizes="256px" fallback={<Truck className="size-8 text-ink-4" aria-hidden />} />
+            <Plate plate={v.plate} className="absolute right-2 bottom-2 shadow-e1" />
+            {v.status !== 'operacional' && (
+              <Badge tone="danger" dot className="absolute top-2 left-2" icon={v.status === 'oficina' ? <Wrench className="size-3" aria-hidden /> : undefined}>
+                {VEHICLE_STATUS[v.status]}
+              </Badge>
+            )}
+          </div>
+          <PhotoUpload target={{ type: 'viatura', id: v.id }} current={v.photo} alt={`${v.make} ${v.model}`} />
+        </div>
+        <div className="min-w-[min(100%,16rem)] flex-1">
+          <h1 className="font-expanded text-2xl font-semibold tracking-tight">{v.make} {v.model}</h1>
           <p className="text-sm text-ink-3">
             {v.seats} lugares · {v.km.toLocaleString('pt-PT')} km · {team ? <Link to={`/equipas/${team.id}`} className="text-pinho underline decoration-pinho/40 underline-offset-2 hover:decoration-pinho">{team.name}</Link> : 'Reserva'}
           </p>

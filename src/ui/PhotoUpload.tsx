@@ -16,11 +16,13 @@ interface PhotoUploadProps {
   /** Texto alternativo da foto nova (p. ex. "Retrato de Rui Fontes"). */
   alt: string
   label?: string
+  /** Em tabelas: só o botão de carregar (remover fica na ficha). */
+  compact?: boolean
   className?: string
 }
 
 /** Carregar (telemóvel ou PC) e remover a foto de um registo. A foto é reduzida no navegador e fica no IndexedDB. */
-export function PhotoUpload({ target, current, alt, label = 'Alterar foto', className }: PhotoUploadProps) {
+export function PhotoUpload({ target, current, alt, label = 'Alterar foto', compact, className }: PhotoUploadProps) {
   const setPhoto = useDemo((s) => s.setPhoto)
   const undo = useDemo((s) => s.undo)
   const [busy, setBusy] = useState(false)
@@ -55,6 +57,7 @@ export function PhotoUpload({ target, current, alt, label = 'Alterar foto', clas
           type="file"
           accept="image/jpeg,image/png,image/webp"
           className="sr-only"
+          aria-label={compact ? `${label} de ${alt}` : undefined}
           disabled={busy}
           onChange={(e) => {
             void pick(e.target.files?.[0])
@@ -62,7 +65,7 @@ export function PhotoUpload({ target, current, alt, label = 'Alterar foto', clas
           }}
         />
       </label>
-      {current && (
+      {current && !compact && (
         <Button
           size="sm"
           variant="ghost"

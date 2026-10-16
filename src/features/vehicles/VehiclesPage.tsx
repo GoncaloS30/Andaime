@@ -11,6 +11,7 @@ import { cn } from '@/lib/cn'
 import { selectConflicts } from '@/store/selectors'
 import { useDemo } from '@/store/store'
 import { Badge, Plate } from '@/ui/Badge'
+import { Photo } from '@/ui/Photo'
 import { Button } from '@/ui/Button'
 import { Field, Input, Select } from '@/ui/Field'
 import { PageHeader } from '@/ui/Layout'
@@ -85,6 +86,7 @@ export function VehiclesPage() {
                   <tr key={v.id}>
                     <td>
                       <Link to={`/viaturas/${v.id}`} className="flex items-center gap-2.5 hover:underline">
+                        <Photo photo={v.photo} format="viatura" alt="" sizes="64px" rounded="sm" className="w-16" fallback={<Truck className="size-4 text-ink-4" aria-hidden />} />
                         <Plate plate={v.plate} />
                         <span>
                           {v.make} {v.model}

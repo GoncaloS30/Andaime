@@ -8,6 +8,8 @@ import type { DeliveryStatus, Sizes } from '@/domain/types'
 import { dateNumeric } from '@/domain/weeks'
 import { useDemo } from '@/store/store'
 import { Badge } from '@/ui/Badge'
+import { Photo } from '@/ui/Photo'
+import { PhotoUpload } from '@/ui/PhotoUpload'
 import { Button } from '@/ui/Button'
 import { Select } from '@/ui/Field'
 import { PageHeader, Panel } from '@/ui/Layout'
@@ -53,14 +55,24 @@ export function EquipmentPage() {
                     const out = Object.values(db.deliveries).filter((d) => d.itemId === e.id && d.status === 'entregue').reduce((s, d) => s + d.qty, 0)
                     return (
                       <tr key={e.id}>
-                        <td className="font-medium">{e.name}{e.sizeKind && <span className="ml-1.5 text-xs font-normal text-ink-3">por tamanho</span>}</td>
+                        <td className="font-medium">
+                          <span className="flex items-center gap-2.5">
+                            <Photo photo={e.photo} format="artigo" alt="" sizes="40px" rounded="sm" className="w-10" fallback={<Shirt className="size-4 text-ink-4" aria-hidden />} />
+                            <span>{e.name}{e.sizeKind && <span className="ml-1.5 text-xs font-normal text-ink-3">por tamanho</span>}</span>
+                          </span>
+                        </td>
                         <td><Badge>{KIND[e.kind]}</Badge></td>
                         <td className="num">
                           <span className="font-mono tabular">{e.stock}</span>
                           {e.stock < 5 && <Badge tone="warn" dot className="ml-2">Stock baixo</Badge>}
                         </td>
                         <td className="num font-mono tabular">{out}</td>
-                        <td className="text-right"><Button size="sm" variant="ghost" onClick={() => setDeliver({ itemId: e.id })}>Entregar</Button></td>
+                        <td>
+                          <span className="flex items-center justify-end gap-1">
+                            <PhotoUpload target={{ type: 'artigo', id: e.id }} current={e.photo} alt={e.name} label="Foto" compact />
+                            <Button size="sm" variant="ghost" onClick={() => setDeliver({ itemId: e.id })}>Entregar</Button>
+                          </span>
+                        </td>
                       </tr>
                     )
                   })}
