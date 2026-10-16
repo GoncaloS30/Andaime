@@ -56,6 +56,13 @@ export function selectSiteMetrics(s: Pick<DemoState, 'db' | 'session'>, siteId: 
 
 const COUNTED = new Set(['submetido', 'revisto', 'aprovado'])
 
+/** Número de folhas semanais (trabalhador × semana) com registos num estado. */
+export function sheets(entries: { workerId: ID; date: ISODate; status: string }[], status: string): number {
+  const set = new Set<string>()
+  for (const e of entries) if (e.status === status) set.add(`${e.workerId}|${weekStart(e.date)}`)
+  return set.size
+}
+
 export const selectDashboard = memoByDb((db, session) => {
   const today = session.today
   const ws = weekStart(today)
@@ -105,8 +112,10 @@ export const selectDashboard = memoByDb((db, session) => {
     teamsAbroad: teamsAbroad.size,
     plannedWeek: Math.round(plannedWeek),
     realizedWeek: Math.round(realizedWeek * 10) / 10,
-    pendingReviews: entries.filter((e) => e.status === 'submetido').length,
-    pendingApprovals: entries.filter((e) => e.status === 'revisto').length,
+    /** Folhas semanais (trabalhador × semana) com registos por rever / por aprovar. */
+    pendingReviews: sheets(entries, 'submetido'),
+    pendingApprovals: sheets(entries, 'revisto'),
+    pendingApprovalEntries: entries.filter((e) => e.status === 'revisto').length,
     rejectedEntries: entries.filter((e) => e.status === 'rejeitado').length,
     vehiclesUnavailable,
     docsAttention: docs.filter((d) => d === 'a_expirar' || d === 'expirado' || d === 'rejeitado').length,

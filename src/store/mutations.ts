@@ -8,6 +8,7 @@ import { workdaysBetween, type AssignmentDraft } from '@/domain/planning'
 import type { FixAction } from '@/domain/conflicts'
 import type { Assignment, DB, ID, ISODate, Settings, Site } from '@/domain/types'
 import { addDays, isWeekend } from '@/domain/weeks'
+import { seriesColor } from '@/domain/palette'
 import type { AssignInput, ScheduleInput, SiteInput, TransferInput } from './types'
 
 export interface MCtx {
@@ -234,8 +235,6 @@ export function nextSiteCode(db: DB, today: ISODate): string {
   return `OB-${yy}-${String(max + 1).padStart(3, '0')}`
 }
 
-const SITE_COLORS = ['#4a5a8c', '#6b5b2e', '#2e6b7d', '#7d2e5b', '#5b2e7d', '#2e7d4f', '#8c4a3b']
-
 export function mCreateSite(db: DB, input: SiteInput, ctx: MCtx): ID {
   const id = ctx.uid('s')
   let clientId = input.clientId
@@ -264,7 +263,7 @@ export function mCreateSite(db: DB, input: SiteInput, ctx: MCtx): ID {
     baselineApproved: 0,
     directorId: input.directorId,
     foremanId: team?.foremanId ?? null,
-    color: SITE_COLORS[Object.keys(db.sites).length % SITE_COLORS.length]!,
+    color: seriesColor(Object.keys(db.sites).length),
     description: input.description,
     erpOrder: String(41000900 + Object.keys(db.sites).length),
   }

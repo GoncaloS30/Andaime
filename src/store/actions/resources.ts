@@ -5,12 +5,12 @@ import { SITE_STATUS, VEHICLE_STATUS } from '@/domain/labels'
 import { newConflicts } from '@/domain/planning'
 import type { Team, Worker } from '@/domain/types'
 import { addDays, weekStart } from '@/domain/weeks'
+import { seriesColor } from '@/domain/palette'
 import { pushUndo, type StoreApi } from '../api'
 import { log, notify } from '../helpers'
 import { mCreateSite, mTeamVehicle } from '../mutations'
 import type { DemoActions } from '../types'
 
-const TEAM_COLORS = ['#2f6b4f', '#3b6a8c', '#8a5a2b', '#b5651d', '#7a4e8c', '#2e7d7a', '#9c3d54', '#5b6b2e', '#4a5a8c', '#6b4a2e']
 
 export function resourceActions(api: StoreApi): Pick<
   DemoActions,
@@ -95,7 +95,7 @@ export function resourceActions(api: StoreApi): Pick<
         s.db.teams[id] = {
           id,
           name: input.name.trim(),
-          color: input.color || TEAM_COLORS[Object.keys(s.db.teams).length % TEAM_COLORS.length]!,
+          color: input.color || (input.siteId ? s.db.sites[input.siteId]?.color : undefined) || seriesColor(Object.keys(s.db.teams).length + 1),
           foremanId: null,
           memberIds: [],
           vehicleId: null,
@@ -165,7 +165,7 @@ export function resourceActions(api: StoreApi): Pick<
         s.db.teams[nid] = {
           id: nid,
           name: `${src.name} (cópia)`,
-          color: TEAM_COLORS[n % TEAM_COLORS.length]!,
+          color: seriesColor(n + 1),
           foremanId: null,
           memberIds: [],
           vehicleId: null,
