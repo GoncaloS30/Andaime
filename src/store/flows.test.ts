@@ -254,3 +254,26 @@ describe('Fluxo 9 — documentos', () => {
     expect(selectDashboard(after).docsAttention).toBe(expiringBefore - 1)
   })
 })
+
+describe('Fluxo 15 — fotos', () => {
+  it('alterar a foto de um trabalhador regista histórico e pode anular-se', () => {
+    const store = make()
+    const st = () => store.getState()
+    const w = Object.values(st().db.workers)[0]!
+    const before = w.photo
+    st().setPhoto({ type: 'trabalhador', id: w.id }, { kind: 'carregada', id: 'ph-1', alt: `Retrato de ${w.name}`, w: 800, h: 800 })
+    expect(st().db.workers[w.id]!.photo).toMatchObject({ kind: 'carregada', id: 'ph-1' })
+    expect(st().db.activity[0]).toMatchObject({ kind: 'foto', refs: { workerId: w.id } })
+    st().undo()
+    expect(st().db.workers[w.id]!.photo).toEqual(before)
+  })
+  it('remover a foto de uma obra deixa a obra sem foto', () => {
+    const store = make()
+    store.getState().setPhoto({ type: 'obra', id: 's1' }, null)
+    expect(store.getState().db.sites.s1!.photo).toBeUndefined()
+  })
+  it('recusa um registo que não existe', () => {
+    const store = make()
+    expect(() => store.getState().setPhoto({ type: 'viatura', id: 'nao-existe' }, null)).toThrow('Registo não encontrado')
+  })
+})

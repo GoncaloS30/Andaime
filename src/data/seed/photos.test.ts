@@ -31,3 +31,11 @@ describe('fotos do seed', () => {
     expect(db.equipment['eq-laser']!.photo).toMatchObject({ src: 'epi/eq-laser' })
   })
 })
+
+describe('isolamento do seed', () => {
+  it('dois seeds não partilham objetos (a store congela o estado)', () => {
+    const a = createSeed({ today: '2026-10-15' }).db
+    const b = createSeed({ today: '2026-10-15' }).db
+    expect(b.managers.m1).not.toBe(a.managers.m1)
+  })
+})

@@ -22,6 +22,8 @@ import type {
   Worker,
 } from '@/domain/types'
 import type { Personas } from '@/data/seed'
+import type { PhotoRef } from '@/domain/photos'
+import type { PhotoTarget } from './actions/photos'
 
 export type { Personas }
 
@@ -160,6 +162,8 @@ export interface DemoActions {
   setFlag(flag: keyof Session['flags'], value: boolean): void
   setSettings(patch: Partial<Settings>): void
   resetDemo(): void
+  // fotos
+  setPhoto(target: PhotoTarget, photo: PhotoRef | null): void
   // planeamento
   previewSchedule(input: ScheduleInput): Conflict[]
   createSchedule(input: ScheduleInput): { batchId: ID; created: number }

@@ -94,7 +94,7 @@ export function createSeed({ today, seed = 20261015 }: { today: ISODate; seed?: 
   const at = (d: ISODate, t = '09:00') => `${d}T${t}:00`
 
   // ── Gestores e clientes ──
-  const managers = Object.fromEntries(MANAGERS.map((m) => [m.id, m]))
+  const managers = Object.fromEntries(MANAGERS.map((m) => [m.id, { ...m }]))
   const clients: DB['clients'] = {}
   SITES.forEach((s, i) => {
     const cid = `c${i + 1}`

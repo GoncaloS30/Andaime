@@ -464,6 +464,8 @@ export function operationActions(api: StoreApi): Pick<
     },
 
     resetDemo() {
+      // As fotos carregadas vivem no IndexedDB: repor a demonstração também as apaga.
+      void import('@/lib/photos/photoStore').then((m) => m.photoStore.clear()).catch(() => {})
       const fresh = api.freshState()
       set((s) => {
         const role = s.session.role
