@@ -40,6 +40,7 @@ import {
   TEAMS,
   VEHICLES,
 } from './catalog'
+import { assignSeedPhotos } from './photos'
 
 export interface Personas {
   gestor: ID
@@ -585,5 +586,6 @@ export function createSeed({ today, seed = 20261015 }: { today: ISODate; seed?: 
     activity,
     notifications,
   }
+  assignSeedPhotos(db)
   return { db, personas }
 }
