@@ -8,12 +8,21 @@ import { Link } from 'react-router'
 import { buttonStyles } from '@/ui/Button'
 
 /** Carrega cada módulo à parte (code splitting por página). */
-function page<T extends Record<string, ComponentType>>(loader: () => Promise<T>, name: keyof T) {
-  return lazy(async () => ({ default: (await loader())[name] as ComponentType }))
+function page<T>(loader: () => Promise<T>, name: keyof T) {
+  return lazy(async () => ({ default: (await loader())[name] as unknown as ComponentType }))
 }
 
 const DashboardPage = page(() => import('@/features/dashboard/DashboardPage'), 'DashboardPage')
 const PlanningPage = page(() => import('@/features/planning/PlanningPage'), 'PlanningPage')
+const WorkersPage = page(() => import('@/features/workers/WorkersPage'), 'WorkersPage')
+const WorkerDetailPage = page(() => import('@/features/workers/WorkerDetailPage'), 'WorkerDetailPage')
+const TeamsPage = page(() => import('@/features/teams/TeamsPage'), 'TeamsPage')
+const TeamDetailPage = page(() => import('@/features/teams/TeamDetailPage'), 'TeamDetailPage')
+const SitesPage = page(() => import('@/features/sites/SitesPage'), 'SitesPage')
+const SiteDetailPage = page(() => import('@/features/sites/SiteDetailPage'), 'SiteDetailPage')
+const NewSitePage = page(() => import('@/features/sites/NewSitePage'), 'NewSitePage')
+const VehiclesPage = page(() => import('@/features/vehicles/VehiclesPage'), 'VehiclesPage')
+const VehicleDetailPage = page(() => import('@/features/vehicles/VehicleDetailPage'), 'VehicleDetailPage')
 
 function RouteError() {
   const err = useRouteError()
@@ -45,6 +54,15 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: gestor(<DashboardPage />) },
       { path: 'planeamento', element: gestor(<PlanningPage />) },
+      { path: 'trabalhadores', element: gestor(<WorkersPage />) },
+      { path: 'trabalhadores/:id', element: gestor(<WorkerDetailPage />) },
+      { path: 'equipas', element: gestor(<TeamsPage />) },
+      { path: 'equipas/:id', element: gestor(<TeamDetailPage />) },
+      { path: 'obras', element: gestor(<SitesPage />) },
+      { path: 'obras/nova', element: gestor(<NewSitePage />) },
+      { path: 'obras/:id', element: gestor(<SiteDetailPage />) },
+      { path: 'viaturas', element: gestor(<VehiclesPage />) },
+      { path: 'viaturas/:id', element: gestor(<VehicleDetailPage />) },
       { path: 'inicio', element: <Navigate to="/" replace /> },
       { path: '*', element: <NotFound /> },
     ],
