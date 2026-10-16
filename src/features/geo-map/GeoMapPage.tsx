@@ -1,4 +1,4 @@
-import { ArrowUpRight, Map as MapIcon } from 'lucide-react'
+import { ArrowUpRight, Building2, Map as MapIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { useDerived } from '@/app/hooks'
@@ -11,6 +11,7 @@ import { cn } from '@/lib/cn'
 import { selectAllSiteMetrics } from '@/store/selectors'
 import { useDemo } from '@/store/store'
 import { Badge, Plate, SiteCode } from '@/ui/Badge'
+import { Photo } from '@/ui/Photo'
 import { buttonStyles } from '@/ui/Button'
 import { ChipToggle, Select } from '@/ui/Field'
 import { HoursGauge, HoursStatus } from '@/ui/HoursGauge'
@@ -70,6 +71,7 @@ export function GeoMapPage() {
             {sel ? (
               <div className="flex flex-col gap-3 overflow-y-auto p-4">
                 <button type="button" onClick={() => setSelected(null)} className="self-start text-xs text-ink-3 hover:text-ink">← Todas as obras</button>
+                <Photo photo={sel.photo} format="capa" sizes="360px" fallback={<Building2 className="size-8 text-ink-4" aria-hidden />} />
                 <SiteCode code={sel.code} color={sel.color} />
                 <h2 className="font-expanded text-lg leading-tight font-semibold">{sel.name}</h2>
                 <p className="text-sm text-ink-3">{db.clients[sel.clientId]?.name} · {sel.city}, {COUNTRY_NAME[sel.country]}</p>
@@ -93,13 +95,16 @@ export function GeoMapPage() {
               <ul className="divide-y divide-line-2 overflow-y-auto">
                 {sites.map((s) => (
                   <li key={s.id}>
-                    <button type="button" onClick={() => setSelected(s.id)} className="flex w-full flex-col gap-1 px-4 py-2.5 text-left hover:bg-cal">
-                      <span className="flex items-center justify-between gap-2">
-                        <SiteCode code={s.code} color={s.color} />
-                        <HoursStatus m={metrics[s.id]!} />
+                    <button type="button" onClick={() => setSelected(s.id)} className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-cal">
+                      <Photo photo={s.photo} format="viatura" alt="" sizes="56px" rounded="sm" className="w-14" fallback={<Building2 className="size-4 text-ink-4" aria-hidden />} />
+                      <span className="flex min-w-0 flex-1 flex-col gap-1">
+                        <span className="flex items-center justify-between gap-2">
+                          <SiteCode code={s.code} color={s.color} />
+                          <HoursStatus m={metrics[s.id]!} />
+                        </span>
+                        <span className="text-sm font-medium">{s.name}</span>
+                        <span className={cn('text-xs text-ink-3')}>{s.city}, {COUNTRY_NAME[s.country]}</span>
                       </span>
-                      <span className="text-sm font-medium">{s.name}</span>
-                      <span className={cn('text-xs text-ink-3')}>{s.city}, {COUNTRY_NAME[s.country]}</span>
                     </button>
                   </li>
                 ))}

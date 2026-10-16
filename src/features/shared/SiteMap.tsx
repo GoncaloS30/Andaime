@@ -13,11 +13,15 @@ export interface MapPin {
 
 function pinIcon(site: Site, selected: boolean, risk?: MapPin['risk']) {
   const ring = risk === 'excede' ? '#b03a2e' : risk === 'atencao' ? '#c98a12' : '#ffffff'
+  // Miniatura só com fotos de banco: o HTML do pino não passa pelo React, e as carregadas vivem no IndexedDB.
+  const thumb = site.photo?.kind === 'banco'
+    ? `<img src="/fotos/${site.photo.src}-s.webp" width="20" height="20" alt="" style="width:20px;height:20px;object-fit:cover;border-radius:3px;margin-right:5px;filter:saturate(.88) contrast(1.04)">`
+    : ''
   return L.divIcon({
     className: '',
     iconSize: [0, 0],
     html: `<div style="transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center">
-      <div style="background:${selected ? '#13342a' : '#fff'};color:${selected ? '#fff' : '#1f2421'};border:2px solid ${ring === '#ffffff' ? site.color : ring};border-radius:6px;padding:2px 6px;font:600 11px 'JetBrains Mono Variable',monospace;white-space:nowrap;box-shadow:0 2px 8px rgb(19 52 42/.25)">${site.code.slice(3)}</div>
+      <div style="background:${selected ? '#13342a' : '#fff'};color:${selected ? '#fff' : '#1f2421'};border:2px solid ${ring === '#ffffff' ? site.color : ring};border-radius:6px;padding:2px 6px 2px ${thumb ? 2 : 6}px;font:600 11px 'JetBrains Mono Variable',monospace;white-space:nowrap;box-shadow:0 2px 8px rgb(19 52 42/.25);display:flex;align-items:center">${thumb}${site.code.slice(3)}</div>
       <div style="width:2px;height:8px;background:${site.color}"></div>
       <div style="width:8px;height:8px;border-radius:50%;background:${site.color};border:2px solid #fff;margin-top:-2px"></div>
     </div>`,
