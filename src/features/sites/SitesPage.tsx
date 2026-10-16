@@ -1,4 +1,4 @@
-import { Building2, Plus, Search } from 'lucide-react'
+import { Building2, LayoutGrid, Plus, Rows3, Search } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router'
 import { useDerived } from '@/app/hooks'
 import { ModuleGuard } from '@/app/ModuleGuard'
@@ -7,11 +7,12 @@ import { COUNTRY_NAME, SITE_STATUS } from '@/domain/labels'
 import { selectAllSiteMetrics } from '@/store/selectors'
 import { Badge, SiteCode } from '@/ui/Badge'
 import { buttonStyles } from '@/ui/Button'
-import { Input, Select } from '@/ui/Field'
+import { Input, Segmented, Select } from '@/ui/Field'
 import { GaugeLegend, HoursGauge, HoursStatus } from '@/ui/HoursGauge'
 import { PageHeader } from '@/ui/Layout'
 import { EmptyState } from '@/ui/States'
 import { CountryTag } from '../shared/Country'
+import { SiteCard } from './SiteCard'
 
 export function SitesPage() {
   const [sp, setSp] = useSearchParams()
@@ -19,6 +20,7 @@ export function SitesPage() {
   const status = sp.get('estado') ?? ''
   const country = sp.get('pais') ?? ''
   const risk = sp.get('risco') ?? ''
+  const view = sp.get('vista') === 'tabela' ? 'tabela' : 'cartoes'
   const set = (k: string, v: string) => setSp((p) => { const n = new URLSearchParams(p); if (v) n.set(k, v); else n.delete(k); return n }, { replace: true })
   const metrics = useDerived(selectAllSiteMetrics)
   const data = useDerived(({ db }) => Object.values(db.sites).map((s) => ({ s, client: db.clients[s.clientId], foreman: s.foremanId ? db.workers[s.foremanId] : undefined, teams: Object.values(db.teams).filter((t) => t.siteId === s.id) })))
@@ -60,7 +62,30 @@ export function SitesPage() {
             <option value="excede">A exceder o limite</option>
             <option value="normal">Dentro do limite</option>
           </Select>
+          <Segmented
+            className="ml-auto"
+            label="Vista"
+            value={view}
+            onChange={(v) => set('vista', v === 'tabela' ? 'tabela' : '')}
+            options={[
+              { value: 'cartoes', label: 'Cartões', icon: <LayoutGrid className="size-3.5" aria-hidden /> },
+              { value: 'tabela', label: 'Tabela', icon: <Rows3 className="size-3.5" aria-hidden /> },
+            ]}
+          />
         </div>
+        {view === 'cartoes' ? (
+          list.length === 0 ? (
+            <div className="rounded-lg border border-line bg-surface">
+              <EmptyState icon={<Search />} title="Nenhuma obra encontrada">Ajuste a pesquisa ou os filtros.</EmptyState>
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {list.map(({ s, client, foreman, teams }) => (
+                <SiteCard key={s.id} s={s} client={client} foreman={foreman} teams={teams} m={metrics[s.id]!} />
+              ))}
+            </div>
+          )
+        ) : (
         <div className="overflow-x-auto rounded-lg border border-line bg-surface">
           {list.length === 0 ? (
             <EmptyState icon={<Search />} title="Nenhuma obra encontrada">Ajuste a pesquisa ou os filtros.</EmptyState>
@@ -109,6 +134,7 @@ export function SitesPage() {
             </table>
           )}
         </div>
+        )}
         <GaugeLegend className="mt-3" />
       </ModuleGuard>
     </div>

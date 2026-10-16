@@ -1,4 +1,4 @@
-import { ArrowLeft, CalendarRange, FileUp, Info, Pencil } from 'lucide-react'
+import { ArrowLeft, Building2, CalendarRange, FileUp, Info, Pencil } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
@@ -13,6 +13,8 @@ import { selectSiteMetrics } from '@/store/selectors'
 import { useDemo } from '@/store/store'
 import { Avatar } from '@/ui/Avatar'
 import { Badge, Plate, SiteCode } from '@/ui/Badge'
+import { Photo } from '@/ui/Photo'
+import { PhotoUpload } from '@/ui/PhotoUpload'
 import { Button, buttonStyles } from '@/ui/Button'
 import { Field, Input, Select } from '@/ui/Field'
 import { GaugeLegend, HoursGauge, HoursStatus } from '@/ui/HoursGauge'
@@ -110,7 +112,7 @@ export function SiteDetailPage() {
       <Link to="/obras" className="mb-3 inline-flex items-center gap-1 text-sm text-ink-3 hover:text-ink">
         <ArrowLeft className="size-4" aria-hidden /> Obras
       </Link>
-      <header className="mb-4 flex flex-wrap items-end justify-between gap-3">
+      <header className="mb-4 grid items-end gap-4 md:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0">
           <SiteCode code={s.code} color={s.color} />
           <h1 className="font-expanded text-2xl font-semibold tracking-tight">{s.name}</h1>
@@ -118,10 +120,14 @@ export function SiteDetailPage() {
             <CountryTag country={s.country} full /> · {s.city} · {client?.name}
             <Badge tone={s.status === 'em_curso' ? 'ok' : s.status === 'planeada' ? 'info' : 'neutral'} dot>{SITE_STATUS[s.status]}</Badge>
           </p>
+          <Link to={`/planeamento?vista=obras&obra=${id}`} className={buttonStyles('secondary', 'md', 'mt-3')}>
+            <CalendarRange className="size-4" aria-hidden /> Planeamento da obra
+          </Link>
         </div>
-        <Link to={`/planeamento?vista=obras&obra=${id}`} className={buttonStyles('secondary')}>
-          <CalendarRange className="size-4" aria-hidden /> Planeamento da obra
-        </Link>
+        <div className="order-first space-y-2 md:order-none">
+          <Photo photo={s.photo} format="capa" eager sizes="(min-width: 768px) 320px, 100vw" fallback={<Building2 className="size-8 text-ink-4" aria-hidden />} />
+          <PhotoUpload target={{ type: 'obra', id }} current={s.photo} alt={`Obra ${s.name}, em ${s.city}`} label="Alterar capa" />
+        </div>
       </header>
 
       <Panel className="mb-4" title="Horas" description="Realizadas, aprovadas e planeadas face ao limite">
