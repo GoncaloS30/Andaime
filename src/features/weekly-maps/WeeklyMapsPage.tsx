@@ -6,7 +6,7 @@ import { ModuleGuard } from '@/app/ModuleGuard'
 import { ENTRY_STATUS } from '@/domain/labels'
 import type { EntryStatus } from '@/domain/types'
 import { buildTimesheetRows, buildWeeklyMap, type MapFilters } from '@/domain/weeklyMap'
-import { addDays, dateNumeric, dayShort, isoWeek, weekStart } from '@/domain/weeks'
+import { addDays, dateNumeric, dayShort, daysRange, isoWeek, weekStart } from '@/domain/weeks'
 import { TEMPLATE_HINT, TEMPLATE_LABEL, buildWorkbook, downloadWorkbook, type MapTemplate } from '@/lib/excel/weeklyExcel'
 import { useDemo } from '@/store/store'
 import { Button, IconButton } from '@/ui/Button'
@@ -89,8 +89,8 @@ export function WeeklyMapsPage() {
           </aside>
 
           <section aria-label="Pré-visualização" className="min-w-0">
-            <div className="no-print mb-2 flex items-center justify-between">
-              <Segmented label="Template" size="sm" value={template} onChange={(v) => set('template', v === 'equipa' ? null : v)} options={(Object.keys(TEMPLATE_LABEL) as MapTemplate[]).map((t) => ({ value: t, label: TEMPLATE_LABEL[t] }))} />
+            <div className="no-print mb-2 flex flex-wrap items-center justify-between gap-2">
+              <Segmented className="max-sm:hidden" label="Template" size="sm" value={template} onChange={(v) => set('template', v === 'equipa' ? null : v)} options={(Object.keys(TEMPLATE_LABEL) as MapTemplate[]).map((t) => ({ value: t, label: TEMPLATE_LABEL[t] }))} />
               <span className="text-xs text-ink-3">{map.totals.workers} pessoas · {map.totals.sites} obras · {map.totals.hours} h planeadas</span>
             </div>
             <div className="print-sheet overflow-x-auto rounded-md border border-line bg-white p-6 shadow-e1">
@@ -112,17 +112,17 @@ export function WeeklyMapsPage() {
                     <tbody key={g.key} className="border-t border-line">
                       <tr className="bg-cal font-semibold">
                         <td className="border-l-4 py-1.5 pl-2" style={{ borderLeftColor: g.teamColor }}>{g.teamName}</td>
-                        <td>{g.dates.map((d) => dayShort(d)).join(', ')}</td>
+                        <td className="whitespace-nowrap">{daysRange(g.dates)}</td>
                         <td><span className="font-mono text-xs">{g.siteCode}</span> {g.siteName}</td>
                         <td className="text-xs font-normal">{g.notes.join(' · ')}</td>
-                        <td className="font-mono text-xs">{g.schedule}</td>
+                        <td className="font-mono text-xs whitespace-nowrap">{g.schedule === 'Horário variável' ? 'variável' : g.schedule}</td>
                         <td className="font-mono text-xs">{g.vehicles.join(', ')}</td>
                         <td className="text-right tabular">{g.totalHours}</td>
                       </tr>
                       {g.workers.map((w) => (
                         <tr key={w.workerId} className="text-ink-2">
                           <td className="py-0.5 pl-5">{w.name}{w.isForeman && <span className="ml-1 text-xs text-ambar-ink">(resp.)</span>}</td>
-                          <td className="text-xs">{Object.keys(w.hoursByDate).sort().map((d) => dayShort(d)).join(', ')}</td>
+                          <td className="text-xs whitespace-nowrap">{daysRange(Object.keys(w.hoursByDate)) === daysRange(g.dates) ? '' : daysRange(Object.keys(w.hoursByDate))}</td>
                           <td colSpan={4} />
                           <td className="text-right tabular">{w.total}</td>
                         </tr>

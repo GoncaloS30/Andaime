@@ -10,7 +10,7 @@ import { ABSENCE_TYPE, ISSUE_CATEGORY } from '@/domain/labels'
 import type { EntryStatus, ID, IssueCategory } from '@/domain/types'
 import { addDays, dateLong, dateNumeric, dateShort, dayShort, isWeekend, weekDays, weekStart } from '@/domain/weeks'
 import { cn } from '@/lib/cn'
-import { selectConflicts, selectForemanScope } from '@/store/selectors'
+import { selectConflicts, selectForemanScope, sheets } from '@/store/selectors'
 import { useDemo } from '@/store/store'
 import { Avatar } from '@/ui/Avatar'
 import { Badge, Plate, SiteCode } from '@/ui/Badge'
@@ -42,7 +42,7 @@ export function ForemanToday() {
   const sites = scope.siteIds.map((id) => db.sites[id]!).filter(Boolean)
   const people = sites.flatMap((s) => (idx.bySiteDate.get(key(s.id, today)) ?? []).map((a) => ({ a, s })))
   const teamAbsent = scope.workerIds.filter((w) => absenceOn(idx, w, today) && db.workers[w]?.teamId && scope.teamIds.includes(db.workers[w]!.teamId!))
-  const pending = Object.values(db.entries).filter((e) => e.status === 'submetido' && scope.workerIds.includes(e.workerId)).length
+  const pending = sheets(Object.values(db.entries).filter((e) => scope.workerIds.includes(e.workerId)), 'submetido')
   const present = people.filter(({ a }) => (idx.entriesByWorkerDate.get(key(a.workerId, today)) ?? []).length > 0).length
 
   return (
@@ -62,7 +62,7 @@ export function ForemanToday() {
         {[
           ['Escalados hoje', people.length],
           ['Já entraram', present],
-          ['Registos por rever', pending],
+          ['Folhas por rever', pending],
           ['Conflitos nas minhas obras', conflicts.length],
         ].map(([l, v]) => (
           <div key={l} className="bg-surface px-4 py-3">

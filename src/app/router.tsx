@@ -1,43 +1,28 @@
-import { lazy, Suspense, type ComponentType } from 'react'
-import { createBrowserRouter, Navigate, useRouteError } from 'react-router'
-import { ErrorState, EmptyState } from '@/ui/States'
+import { SearchX } from 'lucide-react'
+import type { ComponentType } from 'react'
+import { createBrowserRouter, Link, Navigate, useRouteError, type RouteObject } from 'react-router'
+import type { Role } from '@/domain/types'
+import { buttonStyles } from '@/ui/Button'
+import { EmptyState, ErrorState, SkeletonRows } from '@/ui/States'
 import { AppShell } from './AppShell'
 import { RoleGate } from './RoleGate'
-import { SearchX } from 'lucide-react'
-import { Link } from 'react-router'
-import { buttonStyles } from '@/ui/Button'
 
-/** Carrega cada módulo à parte (code splitting por página). */
-function page<T>(loader: () => Promise<T>, name: keyof T) {
-  return lazy(async () => ({ default: (await loader())[name] as unknown as ComponentType }))
+/**
+ * Cada módulo é carregado à parte com o `lazy` do router: enquanto carrega,
+ * a navegação fica em "loading" e o AppShell mostra a barra de progresso
+ * (em vez de a página antiga ficar parada sem indicação).
+ */
+function lazyPage<T>(loader: () => Promise<T>, name: keyof T, roles?: Role[]): Pick<RouteObject, 'lazy'> {
+  return {
+    lazy: async () => {
+      const C = (await loader())[name] as unknown as ComponentType
+      return { Component: roles ? () => <RoleGate roles={roles}><C /></RoleGate> : C }
+    },
+  }
 }
 
-const DashboardPage = page(() => import('@/features/dashboard/DashboardPage'), 'DashboardPage')
-const PlanningPage = page(() => import('@/features/planning/PlanningPage'), 'PlanningPage')
-const WorkersPage = page(() => import('@/features/workers/WorkersPage'), 'WorkersPage')
-const WorkerDetailPage = page(() => import('@/features/workers/WorkerDetailPage'), 'WorkerDetailPage')
-const TeamsPage = page(() => import('@/features/teams/TeamsPage'), 'TeamsPage')
-const TeamDetailPage = page(() => import('@/features/teams/TeamDetailPage'), 'TeamDetailPage')
-const SitesPage = page(() => import('@/features/sites/SitesPage'), 'SitesPage')
-const SiteDetailPage = page(() => import('@/features/sites/SiteDetailPage'), 'SiteDetailPage')
-const NewSitePage = page(() => import('@/features/sites/NewSitePage'), 'NewSitePage')
-const VehiclesPage = page(() => import('@/features/vehicles/VehiclesPage'), 'VehiclesPage')
-const VehicleDetailPage = page(() => import('@/features/vehicles/VehicleDetailPage'), 'VehicleDetailPage')
-const TimesheetsPage = page(() => import('@/features/timesheets/TimesheetsPage'), 'TimesheetsPage')
-const AbsencesPage = page(() => import('@/features/absences/AbsencesPage'), 'AbsencesPage')
-const WeeklyMapsPage = page(() => import('@/features/weekly-maps/WeeklyMapsPage'), 'WeeklyMapsPage')
-const DocumentsPage = page(() => import('@/features/documents/DocumentsPage'), 'DocumentsPage')
-const EquipmentPage = page(() => import('@/features/equipment/EquipmentPage'), 'EquipmentPage')
-const GeoMapPage = page(() => import('@/features/geo-map/GeoMapPage'), 'GeoMapPage')
-const ReportsPage = page(() => import('@/features/reports/ReportsPage'), 'ReportsPage')
-const SettingsPage = page(() => import('@/features/settings/SettingsPage'), 'SettingsPage')
-const ForemanToday = page(() => import('@/features/foreman/ForemanPages'), 'ForemanToday')
-const ForemanWeek = page(() => import('@/features/foreman/ForemanPages'), 'ForemanWeek')
-const ForemanHours = page(() => import('@/features/foreman/ForemanPages'), 'ForemanHours')
-const ForemanDocs = page(() => import('@/features/foreman/ForemanPages'), 'ForemanDocs')
-const ForemanIssues = page(() => import('@/features/foreman/ForemanPages'), 'ForemanIssues')
-const WorkerRoute = page(() => import('@/features/worker-app/WorkerRoute'), 'WorkerRoute')
-const DesignPage = page(() => import('@/features/design/DesignPage'), 'DesignPage')
+const G: Role[] = ['gestor']
+const E: Role[] = ['encarregado']
 
 function RouteError() {
   const err = useRouteError()
@@ -60,41 +45,39 @@ function NotFound() {
   )
 }
 
-const gestor = (el: React.ReactNode) => <RoleGate roles={['gestor']}>{el}</RoleGate>
-const encarregado = (el: React.ReactNode) => <RoleGate roles={['encarregado']}>{el}</RoleGate>
-
 export const router = createBrowserRouter([
-  { path: '/app', element: <Suspense fallback={null}><WorkerRoute /></Suspense>, errorElement: <RouteError /> },
-  { path: '/app/:tab', element: <Suspense fallback={null}><WorkerRoute /></Suspense>, errorElement: <RouteError /> },
+  { path: '/app', ...lazyPage(() => import('@/features/worker-app/WorkerRoute'), 'WorkerRoute'), errorElement: <RouteError />, hydrateFallbackElement: <SkeletonRows /> },
+  { path: '/app/:tab', ...lazyPage(() => import('@/features/worker-app/WorkerRoute'), 'WorkerRoute'), errorElement: <RouteError />, hydrateFallbackElement: <SkeletonRows /> },
   {
     element: <AppShell />,
     errorElement: <RouteError />,
+    hydrateFallbackElement: <SkeletonRows rows={8} />,
     children: [
-      { index: true, element: gestor(<DashboardPage />) },
-      { path: 'planeamento', element: gestor(<PlanningPage />) },
-      { path: 'trabalhadores', element: gestor(<WorkersPage />) },
-      { path: 'trabalhadores/:id', element: gestor(<WorkerDetailPage />) },
-      { path: 'equipas', element: gestor(<TeamsPage />) },
-      { path: 'equipas/:id', element: gestor(<TeamDetailPage />) },
-      { path: 'obras', element: gestor(<SitesPage />) },
-      { path: 'obras/nova', element: gestor(<NewSitePage />) },
-      { path: 'obras/:id', element: gestor(<SiteDetailPage />) },
-      { path: 'viaturas', element: gestor(<VehiclesPage />) },
-      { path: 'viaturas/:id', element: gestor(<VehicleDetailPage />) },
-      { path: 'horas', element: gestor(<TimesheetsPage />) },
-      { path: 'ausencias', element: gestor(<AbsencesPage />) },
-      { path: 'mapas', element: gestor(<WeeklyMapsPage />) },
-      { path: 'documentos', element: gestor(<DocumentsPage />) },
-      { path: 'equipamentos', element: gestor(<EquipmentPage />) },
-      { path: 'mapa', element: gestor(<GeoMapPage />) },
-      { path: 'relatorios', element: gestor(<ReportsPage />) },
-      { path: 'definicoes', element: <SettingsPage /> },
-      { path: 'design', element: <DesignPage /> },
-      { path: 'encarregado', element: encarregado(<ForemanToday />) },
-      { path: 'encarregado/semana', element: encarregado(<ForemanWeek />) },
-      { path: 'encarregado/horas', element: encarregado(<ForemanHours />) },
-      { path: 'encarregado/documentos', element: encarregado(<ForemanDocs />) },
-      { path: 'encarregado/problemas', element: encarregado(<ForemanIssues />) },
+      { index: true, ...lazyPage(() => import('@/features/dashboard/DashboardPage'), 'DashboardPage', G) },
+      { path: 'planeamento', ...lazyPage(() => import('@/features/planning/PlanningPage'), 'PlanningPage', G) },
+      { path: 'trabalhadores', ...lazyPage(() => import('@/features/workers/WorkersPage'), 'WorkersPage', G) },
+      { path: 'trabalhadores/:id', ...lazyPage(() => import('@/features/workers/WorkerDetailPage'), 'WorkerDetailPage', G) },
+      { path: 'equipas', ...lazyPage(() => import('@/features/teams/TeamsPage'), 'TeamsPage', G) },
+      { path: 'equipas/:id', ...lazyPage(() => import('@/features/teams/TeamDetailPage'), 'TeamDetailPage', G) },
+      { path: 'obras', ...lazyPage(() => import('@/features/sites/SitesPage'), 'SitesPage', G) },
+      { path: 'obras/nova', ...lazyPage(() => import('@/features/sites/NewSitePage'), 'NewSitePage', G) },
+      { path: 'obras/:id', ...lazyPage(() => import('@/features/sites/SiteDetailPage'), 'SiteDetailPage', G) },
+      { path: 'viaturas', ...lazyPage(() => import('@/features/vehicles/VehiclesPage'), 'VehiclesPage', G) },
+      { path: 'viaturas/:id', ...lazyPage(() => import('@/features/vehicles/VehicleDetailPage'), 'VehicleDetailPage', G) },
+      { path: 'horas', ...lazyPage(() => import('@/features/timesheets/TimesheetsPage'), 'TimesheetsPage', G) },
+      { path: 'ausencias', ...lazyPage(() => import('@/features/absences/AbsencesPage'), 'AbsencesPage', G) },
+      { path: 'mapas', ...lazyPage(() => import('@/features/weekly-maps/WeeklyMapsPage'), 'WeeklyMapsPage', G) },
+      { path: 'documentos', ...lazyPage(() => import('@/features/documents/DocumentsPage'), 'DocumentsPage', G) },
+      { path: 'equipamentos', ...lazyPage(() => import('@/features/equipment/EquipmentPage'), 'EquipmentPage', G) },
+      { path: 'mapa', ...lazyPage(() => import('@/features/geo-map/GeoMapPage'), 'GeoMapPage', G) },
+      { path: 'relatorios', ...lazyPage(() => import('@/features/reports/ReportsPage'), 'ReportsPage', G) },
+      { path: 'definicoes', ...lazyPage(() => import('@/features/settings/SettingsPage'), 'SettingsPage') },
+      { path: 'design', ...lazyPage(() => import('@/features/design/DesignPage'), 'DesignPage') },
+      { path: 'encarregado', ...lazyPage(() => import('@/features/foreman/ForemanPages'), 'ForemanToday', E) },
+      { path: 'encarregado/semana', ...lazyPage(() => import('@/features/foreman/ForemanPages'), 'ForemanWeek', E) },
+      { path: 'encarregado/horas', ...lazyPage(() => import('@/features/foreman/ForemanPages'), 'ForemanHours', E) },
+      { path: 'encarregado/documentos', ...lazyPage(() => import('@/features/foreman/ForemanPages'), 'ForemanDocs', E) },
+      { path: 'encarregado/problemas', ...lazyPage(() => import('@/features/foreman/ForemanPages'), 'ForemanIssues', E) },
       { path: 'inicio', element: <Navigate to="/" replace /> },
       { path: '*', element: <NotFound /> },
     ],

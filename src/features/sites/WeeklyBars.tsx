@@ -25,8 +25,8 @@ export function WeeklyBars({ data, label }: { data: WeekBar[]; label: string }) 
         </div>
         {data.map((d) => (
           <div key={d.week} className="group relative flex h-full flex-1 items-end justify-center gap-[2px]" title={`Semana ${isoWeek(d.week)}: ${formatHours(d.realized)} realizadas, ${formatHours(d.planned)} planeadas`}>
-            <span className="w-full max-w-5 rounded-t-[4px] bg-pinho" style={{ height: `${(d.realized / nice) * 100}%` }} />
-            <span className="hatch w-full max-w-5 rounded-t-[4px] border border-b-0 border-pinho/40" style={{ height: `${(d.planned / nice) * 100}%` }} />
+            {d.realized > 0 && <span className="w-full max-w-5 rounded-t-[4px] bg-pinho" style={{ height: `${(d.realized / nice) * 100}%` }} />}
+            {d.planned > 0 && <span className="hatch w-full max-w-5 rounded-t-[4px] border border-b-0 border-pinho/40" style={{ height: `${(d.planned / nice) * 100}%` }} />}
             {d.current && <span aria-hidden className="absolute -top-1 h-1 w-6 rounded-full bg-lima" />}
           </div>
         ))}

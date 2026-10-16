@@ -23,6 +23,8 @@ interface ChipProps {
   draggable?: boolean
   /** Contexto para leitores de ecrã (ex.: trabalhador e dia). */
   context?: string
+  /** Código discreto quando é a obra habitual da equipa (destaca as exceções). */
+  muteCode?: boolean
 }
 
 /**
@@ -30,19 +32,21 @@ interface ChipProps {
  * Conflito: contorno tijolo/âmbar + ícone (nunca só cor).
  */
 export function AssignmentChip({
-  a, site, label, sub, entry, realizedHours, conflicts, selected, dimmed, focused, today, onSelect, onOpen, draggable = true, context,
+  a, site, label, sub, entry, realizedHours, conflicts, selected, dimmed, focused, today, onSelect, onOpen, draggable = true, context, muteCode,
 }: ChipProps) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `a:${a.id}`,
     data: { type: 'assignment', id: a.id },
     disabled: !draggable,
   })
-  const realized = !!entry && entry.status !== 'rejeitado'
+  // Realizado só com saída registada; com entrada e sem saída está a decorrer.
+  const realized = !!entry && entry.status !== 'rejeitado' && !!entry.clockOut
+  const live = !!entry && entry.status === 'aberto' && !entry.clockOut
   const past = a.date < today
   const conflict = conflicts?.[0]
   const color = site?.color ?? '#7d847f'
   const shown = realized && realizedHours !== undefined ? Math.round(realizedHours * 10) / 10 : a.hours
-  const text = `${context ? `${context}: ` : ''}${label ?? site?.code.slice(3) ?? 'Obra'} ${shown.toLocaleString('pt-PT')}h, ${a.start}–${a.end}${realized ? ', com registo' : ', planeado'}${conflict ? `. Conflito: ${conflict.title}` : ''}`
+  const text = `${context ? `${context}: ` : ''}${label ?? site?.code.slice(3) ?? 'Obra'} ${shown.toLocaleString('pt-PT')}h, ${a.start}–${a.end}${realized ? ', com registo' : live ? ', a decorrer' : ', planeado'}${conflict ? `. Conflito: ${conflict.title}` : ''}`
 
   const handleClick = (e: MouseEvent) => {
     e.stopPropagation()
@@ -88,9 +92,10 @@ export function AssignmentChip({
       style={{ ['--chip' as string]: color, borderLeftColor: color }}
     >
       <span className="min-w-0 flex-1">
-        <span className="block truncate font-mono text-[11px] leading-tight font-semibold text-ink">{label ?? site?.code.slice(3)}</span>{' '}
+        <span className={cn('block truncate font-mono text-[11px] leading-tight', muteCode ? 'font-normal text-ink-2' : 'font-semibold text-ink')}>{label ?? site?.code.slice(3)}</span>{' '}
         <span className="flex items-center gap-1 font-mono text-[10px] leading-tight text-ink-2 tabular">
           {realized && <Check aria-hidden className="size-2.5 shrink-0 text-ok" />}
+          {live && <span aria-hidden className="size-1.5 shrink-0 animate-pulse rounded-full bg-ok motion-reduce:animate-none" />}
           {(realized && realizedHours !== undefined ? Math.round(realizedHours * 10) / 10 : a.hours).toLocaleString('pt-PT')}h
           {a.isForeman && <Crown aria-hidden className="size-2.5 shrink-0 text-ambar-ink" />}
           {sub && <span className="truncate font-sans text-ink-3">{sub}</span>}

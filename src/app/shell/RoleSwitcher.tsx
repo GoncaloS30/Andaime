@@ -53,12 +53,13 @@ export function RoleSwitcher({ compact }: { compact?: boolean }) {
             <Icon className="size-3.5" aria-hidden />
           </span>
           {!compact && (
-            <span className="hidden flex-col items-start leading-tight lg:flex">
+            <span className="hidden flex-col items-start leading-tight xl:flex">
               <span className="text-[11px] text-ink-3">{ROLE_LABEL[role]}</span>
               <span className="max-w-32 truncate text-xs font-semibold text-ink">{nameOf(role)}</span>
             </span>
           )}
-          {!compact && <span className="sr-only"><span className="lg:hidden">{ROLE_LABEL[role]} {nameOf(role)} </span>(mudar de experiência)</span>}
+          {!compact && <span className="sr-only xl:hidden">{ROLE_LABEL[role]} {nameOf(role)}</span>}
+          {!compact && <span className="sr-only">(mudar de experiência)</span>}
           <ChevronDown className="size-3.5 text-ink-3" aria-hidden />
         </button>
       }

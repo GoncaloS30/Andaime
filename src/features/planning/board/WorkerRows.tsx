@@ -160,6 +160,7 @@ function WorkerRow({ w, team }: { w: Worker; team: Team | null }) {
                   entry={entry}
                   realizedHours={entry && entry.clockOut ? entryHours(entry, settings).worked : undefined}
                   conflicts={ctx.conflictsByAssignment.get(a.id)}
+                  muteCode={!!team && a.siteId === team.siteId}
                   selected={ctx.selected.has(a.id)}
                   focused={ctx.focusIds.has(a.id) || ctx.recentIds.has(a.id)}
                   dimmed={!!ctx.filterSite && a.siteId !== ctx.filterSite}

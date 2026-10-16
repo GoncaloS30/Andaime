@@ -2,7 +2,7 @@ import type ExcelJS from 'exceljs'
 import { ENTRY_STATUS } from '@/domain/labels'
 import type { EntryStatus } from '@/domain/types'
 import type { TimesheetRow, WeeklyMap } from '@/domain/weeklyMap'
-import { dateNumeric, dayShort } from '@/domain/weeks'
+import { dateNumeric, dayShort, daysRange } from '@/domain/weeks'
 
 export type MapTemplate = 'equipa' | 'obra' | 'horas' | 'erp'
 
@@ -77,7 +77,7 @@ export async function buildWorkbook(input: Input): Promise<ExcelJS.Workbook> {
     for (const g of input.map.groups) {
       const first = ws.addRow([
         g.teamName,
-        g.dates.map((d) => dayShort(d)).join(', '),
+        daysRange(g.dates),
         `${g.siteCode} — ${g.siteName}`,
         g.notes.join(' · '),
         g.schedule,
@@ -88,7 +88,8 @@ export async function buildWorkbook(input: Input): Promise<ExcelJS.Workbook> {
       first.eachCell((c) => (c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: SOFT } }))
       first.getCell(1).border = { left: { style: 'thick', color: { argb: 'FF' + g.teamColor.slice(1).toUpperCase() } } }
       for (const w of g.workers) {
-        const r = ws.addRow([`   ${w.name}${w.isForeman ? ' (resp.)' : ''}`, Object.keys(w.hoursByDate).sort().map((d) => dayShort(d)).join(', '), '', '', '', '', w.total])
+        const own = daysRange(Object.keys(w.hoursByDate))
+        const r = ws.addRow([`   ${w.name}${w.isForeman ? ' (resp.)' : ''}`, own === daysRange(g.dates) ? '' : own, '', '', '', '', w.total])
         r.font = { name: 'Arial', size: 10 }
       }
       ws.addRow([])

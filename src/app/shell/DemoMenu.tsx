@@ -36,7 +36,7 @@ export function DemoMenu() {
           >
             <FlaskConical className="size-3.5" aria-hidden />
             <span className="hidden 2xl:inline">{DEMO_LABEL}</span>
-            <span className="2xl:hidden">Demonstração</span>
+            <span className="max-sm:sr-only 2xl:hidden">Demonstração</span>
           </button>
         }
       >

@@ -74,3 +74,14 @@ describe('weeks', () => {
     expect(dateLong('2026-10-15')).toBe('quinta-feira, 15 de outubro')
   })
 })
+
+describe('daysRange', () => {
+  it('comprime dias seguidos em intervalos', async () => {
+    const { daysRange } = await import('./weeks')
+    expect(daysRange(['2026-10-19', '2026-10-20', '2026-10-21', '2026-10-22', '2026-10-23'])).toBe('seg–sex')
+    expect(daysRange(['2026-10-19', '2026-10-20', '2026-10-21', '2026-10-23'])).toBe('seg–qua, sex')
+    expect(daysRange(['2026-10-22'])).toBe('qui')
+    expect(daysRange(['2026-10-19', '2026-10-20'])).toBe('seg, ter')
+    expect(daysRange([])).toBe('')
+  })
+})

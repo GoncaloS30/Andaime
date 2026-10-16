@@ -4,6 +4,7 @@ import { useDerived } from '@/app/hooks'
 import { ModuleGuard } from '@/app/ModuleGuard'
 import { formatHours } from '@/domain/hours'
 import { dateLong, isoWeek } from '@/domain/weeks'
+import { plural } from '@/store/helpers'
 import { selectConflicts, selectDashboard } from '@/store/selectors'
 import { useDemo } from '@/store/store'
 import { buttonStyles } from '@/ui/Button'
@@ -23,12 +24,12 @@ export function DashboardPage() {
 
   const items: KpiItem[] = [
     { label: 'Trabalhadores ativos', value: k.activeWorkers, sub: `${k.workingToday} escalados hoje · ${k.clockedNow} com entrada`, to: '/trabalhadores' },
-    { label: 'Disponíveis hoje', value: k.availableToday, sub: `${k.absentToday} ausentes`, to: '/trabalhadores?disponibilidade=livre', tour: 'kpi-available' },
+    { label: 'Disponíveis hoje', value: k.availableToday, sub: k.absentToday === 1 ? '1 ausente' : `${k.absentToday} ausentes`, to: '/trabalhadores?disponibilidade=livre', tour: 'kpi-available' },
     { label: 'Obras em curso', value: k.sitesInProgress, sub: `${k.sitesAbroad} no estrangeiro · ${k.sitesAtRisk} em risco`, to: '/obras', tone: k.sitesAtRisk ? 'warn' : undefined, tour: 'kpi-sites' },
     { label: 'Equipas destacadas', value: k.teamsAbroad, sub: `no estrangeiro · ${k.teamsActive} equipas ativas`, to: '/equipas' },
     { label: 'Planeadas na semana', value: k.plannedWeek, format: (n) => formatHours(Math.round(n)), sub: `Semana ${isoWeek(today)}`, to: '/planeamento' },
     { label: 'Realizadas na semana', value: k.realizedWeek, format: (n) => formatHours(Math.round(n)), sub: 'registadas e submetidas', to: '/horas' },
-    { label: 'Folhas por aprovar', value: k.pendingApprovals, sub: `${k.pendingApprovalEntries} registos · ${k.pendingReviews} folhas por rever`, to: '/horas?estado=revisto', tone: k.pendingApprovals ? 'warn' : undefined, tour: 'kpi-approvals' },
+    { label: 'Folhas por aprovar', value: k.pendingApprovals, sub: `${plural(k.pendingApprovalEntries, 'registo', 'registos')} · ${plural(k.pendingReviews, 'folha', 'folhas')} por rever`, to: '/horas?estado=revisto', tone: k.pendingApprovals ? 'warn' : undefined, tour: 'kpi-approvals' },
     { label: 'Viaturas indisponíveis', value: k.vehiclesUnavailable, sub: 'oficina ou papéis caducados', to: '/viaturas?estado=indisponivel', tone: k.vehiclesUnavailable ? 'danger' : undefined },
     { label: 'Documentos a tratar', value: k.docsAttention, sub: k.docsExpired === 1 ? '1 expirado' : `${k.docsExpired} expirados`, to: '/documentos?estado=atencao', tone: k.docsExpired ? 'danger' : k.docsAttention ? 'warn' : undefined, tour: 'kpi-documents' },
     { label: 'Conflitos de planeamento', value: k.conflicts, sub: `${k.conflictsCritical} críticos · 2 semanas`, to: '/planeamento?painel=conflitos', tone: k.conflictsCritical ? 'danger' : k.conflicts ? 'warn' : 'ok', tour: 'kpi-conflicts' },

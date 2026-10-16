@@ -14,14 +14,14 @@ export function Topbar({ onSearch }: { onSearch: () => void }) {
   const toggleTour = useTour((s) => s.toggle)
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-line bg-cal/90 px-3 backdrop-blur-sm sm:px-4 lg:px-6">
-      <span className="md:hidden">
+      <span className="min-w-0 md:hidden">
         <Wordmark />
       </span>
       {role === 'gestor' && (
         <button
           type="button"
           onClick={onSearch}
-          className="hidden h-9 w-full max-w-sm items-center gap-2 rounded-md border border-line bg-surface px-3 text-sm text-ink-3 hover:border-ink-4 md:flex"
+          className="hidden h-9 min-w-0 flex-1 max-w-sm items-center gap-2 rounded-md border border-line bg-surface px-3 text-sm text-ink-3 hover:border-ink-4 md:flex"
         >
           <Search className="size-4" aria-hidden />
           <span className="min-w-0 flex-1 truncate text-left whitespace-nowrap">Pesquisar trabalhadores, obras…</span>
@@ -29,7 +29,7 @@ export function Topbar({ onSearch }: { onSearch: () => void }) {
           <Kbd>K</Kbd>
         </button>
       )}
-      <div className="ml-auto flex items-center gap-1.5">
+      <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-1.5">
         {role === 'gestor' && (
           <IconButton label="Pesquisar" className="md:hidden" onClick={onSearch}>
             <Search className="size-[18px]" />
@@ -45,7 +45,7 @@ export function Topbar({ onSearch }: { onSearch: () => void }) {
           data-tour="present"
           aria-label="Apresentar"
         >
-          <span className="hidden lg:inline">Apresentar</span>
+          <span className="hidden xl:inline">Apresentar</span>
         </Button>
         <DemoMenu />
         <Notifications />

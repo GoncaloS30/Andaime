@@ -117,3 +117,18 @@ export function monthLabel(d: ISODate): string {
   const p = parts(d)
   return `${MONTHS_LONG[p.m - 1]} ${p.y}`
 }
+
+/** Dias da semana compactos: seguidos em intervalo ("seg–qua"), dois seguidos por vírgula ("seg, ter"). */
+export function daysRange(dates: ISODate[]): string {
+  const sorted = [...new Set(dates)].sort()
+  const out: string[] = []
+  let i = 0
+  while (i < sorted.length) {
+    let j = i
+    while (j + 1 < sorted.length && diffDays(sorted[j]!, sorted[j + 1]!) === 1) j++
+    if (j - i >= 2) out.push(`${dayShort(sorted[i]!)}–${dayShort(sorted[j]!)}`)
+    else for (let k = i; k <= j; k++) out.push(dayShort(sorted[k]!))
+    i = j + 1
+  }
+  return out.join(', ')
+}
