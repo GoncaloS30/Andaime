@@ -43,8 +43,9 @@ export function Topbar({ onSearch }: { onSearch: () => void }) {
           aria-pressed={tourOpen}
           className="hidden sm:inline-flex"
           data-tour="present"
+          aria-label="Apresentar"
         >
-          Apresentar
+          <span className="hidden lg:inline">Apresentar</span>
         </Button>
         <DemoMenu />
         <Notifications />

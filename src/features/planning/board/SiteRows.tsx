@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { buildIndex, key } from '@/domain/indexes'
 import type { Site } from '@/domain/types'
-import { isWeekend } from '@/domain/weeks'
+import { dayShort, isWeekend } from '@/domain/weeks'
 import { cn } from '@/lib/cn'
 import { useDerived } from '@/app/hooks'
 import { selectAllSiteMetrics } from '@/store/selectors'
@@ -43,8 +43,8 @@ function SiteRow({ s, statusEl }: { s: Site; statusEl: ReactNode }) {
     const idx = buildIndex(db)
     const foreman = s.foremanId ? db.workers[s.foremanId] : undefined
     return (
-      <div role="row" className={cn('grid', GRID_COLS)}>
-        <div role="rowheader" className="sticky left-0 z-10 flex min-w-0 flex-col justify-center gap-0.5 border-t border-line-2 bg-surface px-3 py-2">
+      <div className={cn('grid', GRID_COLS)}>
+        <div className="sticky left-0 z-10 flex min-w-0 flex-col justify-center gap-0.5 border-t border-line-2 bg-surface px-3 py-2">
           <SiteCode code={s.code} color={s.color} />
           <Link to={`/obras/${s.id}`} className="truncate text-sm font-semibold text-ink hover:underline">
             {s.name}
@@ -75,16 +75,19 @@ function SiteRow({ s, statusEl }: { s: Site; statusEl: ReactNode }) {
               {list.map((a) => {
                 const w = db.workers[a.workerId]
                 const parts = (w?.name ?? '?').split(' ')
+                const entry = (idx.entriesByWorkerDate.get(key(a.workerId, d)) ?? []).find((e) => e.siteId === a.siteId && e.status !== 'rejeitado')
                 return (
                   <AssignmentChip
                     key={a.id}
                     a={a}
                     site={s}
                     label={`${parts[0]?.[0]}. ${parts[parts.length - 1]}`}
+                    entry={entry}
                     conflicts={ctx.conflictsByAssignment.get(a.id)}
                     selected={ctx.selected.has(a.id)}
                     focused={ctx.focusIds.has(a.id) || ctx.recentIds.has(a.id)}
                     today={today}
+                    context={`${s.code}, ${dayShort(d)} ${d.slice(8)}`}
                     onSelect={ctx.select}
                     onOpen={ctx.open}
                   />

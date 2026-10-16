@@ -76,7 +76,7 @@ export function WorkerDetailPage() {
             {team && (
               <>
                 {' · '}
-                <Link to={`/equipas/${team.id}`} className="font-medium text-pinho hover:underline">
+                <Link to={`/equipas/${team.id}`} className="font-medium text-pinho underline decoration-pinho/40 underline-offset-2 hover:decoration-pinho">
                   {team.name}
                 </Link>
               </>

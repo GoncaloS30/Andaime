@@ -50,7 +50,7 @@ export function VehicleDetailPage() {
           <Plate plate={v.plate} className="h-7 px-2 text-sm" />
           <h1 className="mt-1 font-expanded text-2xl font-semibold tracking-tight">{v.make} {v.model}</h1>
           <p className="text-sm text-ink-3">
-            {v.seats} lugares · {v.km.toLocaleString('pt-PT')} km · {team ? <Link to={`/equipas/${team.id}`} className="text-pinho hover:underline">{team.name}</Link> : 'Reserva'}
+            {v.seats} lugares · {v.km.toLocaleString('pt-PT')} km · {team ? <Link to={`/equipas/${team.id}`} className="text-pinho underline decoration-pinho/40 underline-offset-2 hover:decoration-pinho">{team.name}</Link> : 'Reserva'}
           </p>
         </div>
         <div className="flex flex-wrap items-end gap-2">
@@ -88,9 +88,9 @@ export function VehicleDetailPage() {
                       return (
                         <td key={date} className={cn('h-14 rounded-sm border align-top', date === today ? 'border-pinho' : 'border-line-2', isWeekend(date) && !site && 'bg-line-2/50', blocked(date) && 'bg-tijolo-soft')}>
                           <div className="flex h-full flex-col p-1" style={site ? { background: `color-mix(in oklab, ${site.color} 18%, white)` } : undefined}>
-                            <span className="text-[10px] text-ink-3 tabular">{Number(date.slice(8))}</span>
+                            <span className="text-[10px] text-ink-2 tabular">{Number(date.slice(8))}</span>
                             {site && <span className="font-mono text-[10px] font-semibold">{site.code.slice(3)}</span>}
-                            {site && <span className={cn('text-[10px] tabular', riders > v.seats ? 'font-semibold text-tijolo-ink' : 'text-ink-3')}>{riders}/{v.seats}{sites > 1 ? ' · 2 obras' : ''}</span>}
+                            {site && <span className={cn('text-[10px] tabular', riders > v.seats ? 'font-semibold text-tijolo-ink' : 'text-ink-2')}>{riders}/{v.seats}{sites > 1 ? ' · 2 obras' : ''}</span>}
                             {!site && blocked(date) && <span className="text-[10px] text-tijolo-ink">Indisponível</span>}
                           </div>
                         </td>

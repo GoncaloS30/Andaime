@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router'
 import { entryHours } from '@/domain/hours'
 import { ABSENCE_TYPE } from '@/domain/labels'
 import type { ID, Team, Worker } from '@/domain/types'
-import { isWeekend } from '@/domain/weeks'
+import { dayShort, isWeekend } from '@/domain/weeks'
 import { cn } from '@/lib/cn'
 import { useDemo } from '@/store/store'
 import { Avatar } from '@/ui/Avatar'
@@ -65,7 +65,7 @@ function TeamGroup({ team, workers, onDuplicateTeam, onCopyTeam }: { team: Team 
   const vehicle = team?.vehicleId ? db.vehicles[team.vehicleId] : undefined
   const foreman = team?.foremanId ? db.workers[team.foremanId] : undefined
   return (
-    <div role="rowgroup" aria-label={team?.name ?? 'Sem equipa'}>
+    <div>
       <div className="sticky left-0 flex items-center gap-2 border-t border-line bg-cal/80 px-2 py-1.5">
         <button
           type="button"
@@ -114,8 +114,8 @@ function WorkerRow({ w, team }: { w: Worker; team: Team | null }) {
   const { db, days, today } = ctx
   const isLeader = team?.foremanId === w.id
   return (
-    <div role="row" className={cn('grid', GRID_COLS)} data-worker={w.id}>
-      <div role="rowheader" className="sticky left-0 z-10 flex min-w-0 items-center gap-2 border-t border-line-2 bg-surface px-3 py-1.5">
+    <div className={cn('grid', GRID_COLS)} data-worker={w.id}>
+      <div className="sticky left-0 z-10 flex min-w-0 items-center gap-2 border-t border-line-2 bg-surface px-3 py-1.5">
         <Avatar name={w.name} size="sm" color={team?.color ?? '#7d847f'} />
         <span className="min-w-0">
           <Link to={`/trabalhadores/${w.id}`} className="block truncate text-sm font-medium text-ink hover:underline">
@@ -164,6 +164,7 @@ function WorkerRow({ w, team }: { w: Worker; team: Team | null }) {
                   focused={ctx.focusIds.has(a.id) || ctx.recentIds.has(a.id)}
                   dimmed={!!ctx.filterSite && a.siteId !== ctx.filterSite}
                   today={today}
+                  context={`${w.name}, ${dayShort(d)} ${d.slice(8)}`}
                   onSelect={ctx.select}
                   onOpen={ctx.open}
                 />

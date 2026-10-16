@@ -189,7 +189,7 @@ export function WeekScreen() {
             <li key={d} className={cn('flex items-center gap-3 rounded-md border bg-surface px-3 py-2.5', d === today ? 'border-pinho' : 'border-line')}>
               <span className="w-12 text-xs font-semibold text-ink-3 uppercase">{dayShort(d)} {d.slice(8)}</span>
               <span className="min-w-0 flex-1 text-sm">
-                {ab ? <Badge tone="danger">{ABSENCE_TYPE[ab.type]}</Badge> : list.length ? list.map((a) => <span key={a.id} className="block truncate">{db.sites[a.siteId]?.name} <span className="text-xs text-ink-3">{a.start}–{a.end}</span></span>) : <span className="text-ink-4">Folga</span>}
+                {ab ? <Badge tone="danger">{ABSENCE_TYPE[ab.type]}</Badge> : list.length ? list.map((a) => <span key={a.id} className="block truncate">{db.sites[a.siteId]?.name} <span className="text-xs text-ink-3">{a.start}–{a.end}</span></span>) : <span className="text-ink-3">Folga</span>}
                 {e?.rejectionReason && <span className="block text-xs text-tijolo-ink">Devolvido: {e.rejectionReason}</span>}
               </span>
               {e && (

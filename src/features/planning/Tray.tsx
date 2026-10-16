@@ -59,7 +59,6 @@ function DraggableSite({ id }: { id: ID }) {
         type="button"
         {...attributes}
         {...listeners}
-        aria-label={`Obra ${s.code} ${s.name}. Arraste para o dia de um trabalhador para atribuir.`}
         className={cn(
           'flex w-full cursor-grab items-center gap-2 rounded-sm border border-line border-l-[3px] bg-surface px-2 py-1.5 text-left hover:border-ink-4 active:cursor-grabbing',
           isDragging && 'opacity-40',
@@ -88,7 +87,6 @@ function DraggableWorker({ id, state, hours }: { id: ID; state: AvailabilityStat
         type="button"
         {...attributes}
         {...listeners}
-        aria-label={`${w.name}, ${w.category}, ${STATE_LABEL[state]}. Arraste para uma obra para atribuir.`}
         className={cn(
           'flex w-full cursor-grab items-center gap-2 rounded-sm border border-line bg-surface px-2 py-1.5 text-left hover:border-ink-4 active:cursor-grabbing',
           isDragging && 'opacity-40',

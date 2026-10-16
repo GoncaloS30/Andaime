@@ -54,13 +54,13 @@ export function Sidebar() {
       </div>
       <div className={cn('px-4 pb-3', L)}>
         <p className="truncate text-xs font-medium text-white/80">{db.company.name}</p>
-        <p className="text-[11px] text-white/45">Empresa fictícia</p>
+        <p className="text-[11px] text-white/60">Empresa fictícia</p>
       </div>
       <nav className="min-h-0 flex-1 overflow-y-auto px-2 pb-4 [scrollbar-width:thin]">
         {groups.map((g, gi) => (
           <div key={gi} className="mt-3 first:mt-1">
             {g.pillar && (
-              <p className={cn('mb-1 px-2.5 text-[10px] font-semibold tracking-[0.14em] text-white/40 uppercase', L)}>
+              <p className={cn('mb-1 px-2.5 text-[10px] font-semibold tracking-[0.14em] text-white/60 uppercase', L)}>
                 {g.pillar}
               </p>
             )}
@@ -99,10 +99,10 @@ export function Sidebar() {
           {who && <Avatar name={who.name} color="#24543f" size="sm" className="ring-1 ring-white/20" />}
           <div className="min-w-0">
             <p className="truncate text-sm font-medium">{who?.name}</p>
-            <p className="truncate text-xs text-white/50">{title}</p>
+            <p className="truncate text-xs text-white/60">{title}</p>
           </div>
         </div>
-        <p className="mt-2.5 text-[11px] text-white/45">
+        <p className="mt-2.5 text-[11px] text-white/60">
           Dia da demonstração: {dayShort(today)}, {dateShort(today)}
         </p>
       </div>

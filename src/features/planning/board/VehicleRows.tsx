@@ -28,8 +28,8 @@ export function VehicleRows() {
       {vehicles.map((v) => {
         const team = v.teamId ? db.teams[v.teamId] : undefined
         return (
-          <div role="row" key={v.id} className={cn('grid', GRID_COLS)}>
-            <div role="rowheader" className="sticky left-0 z-10 flex min-w-0 flex-col justify-center gap-0.5 border-t border-line-2 bg-surface px-3 py-2">
+          <div key={v.id} className={cn('grid', GRID_COLS)}>
+            <div className="sticky left-0 z-10 flex min-w-0 flex-col justify-center gap-0.5 border-t border-line-2 bg-surface px-3 py-2">
               <Link to={`/viaturas/${v.id}`} className="flex items-center gap-2 hover:underline">
                 <Plate plate={v.plate} />
                 <span className="truncate text-xs text-ink-2">{v.make} {v.model}</span>

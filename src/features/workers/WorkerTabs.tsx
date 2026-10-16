@@ -58,7 +58,7 @@ export function OverviewTab({ id }: { id: ID }) {
                 return s ? <SiteCode key={a.id} code={s.code.slice(3)} color={s.color} /> : null
               })}
               {list.length > 0 && <span className="mt-auto font-mono text-[11px] text-ink-2 tabular">{worked !== null ? `✓ ${formatHours(worked)}` : `${list.reduce((s, x) => s + x.hours, 0)}h plan.`}</span>}
-              {!list.length && !absence && <span className="mt-auto text-[11px] text-ink-4">Livre</span>}
+              {!list.length && !absence && <span className="mt-auto text-[11px] text-ink-3">Livre</span>}
             </li>
           ))}
         </ol>

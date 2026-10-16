@@ -64,9 +64,10 @@ export function MonthBoard({ week, perspective, onOpenWeek }: { week: ISODate; p
                 scope="col"
                 className={cn('w-7 min-w-7 border-b border-line py-1 text-center font-condensed font-semibold', weekday(d) === 1 && 'border-l border-l-line', isWeekend(d) && 'bg-line-2/50', d === today ? 'text-pinho' : 'text-ink-3')}
               >
-                <button type="button" onClick={() => onOpenWeek(weekStart(d))} className="w-full" aria-label={`Abrir semana de ${d}`}>
-                  <span className="block text-[9px] uppercase">{['D', 'S', 'T', 'Q', 'Q', 'S', 'S'][weekday(d)]}</span>
+                <button type="button" onClick={() => onOpenWeek(weekStart(d))} className="w-full">
+                  <span className="block text-[9px] uppercase">{['D', 'S', 'T', 'Q', 'Q', 'S', 'S'][weekday(d)]}</span>{' '}
                   <span className={cn('tabular', d === today && 'rounded-xs bg-lima px-0.5')}>{Number(d.slice(8))}</span>
+                  <span className="sr-only">: abrir a semana de {d}</span>
                 </button>
               </th>
             ))}

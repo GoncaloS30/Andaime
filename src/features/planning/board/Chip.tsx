@@ -2,7 +2,6 @@ import { useDraggable } from '@dnd-kit/core'
 import { AlertOctagon, AlertTriangle, Check, Crown } from 'lucide-react'
 import type { KeyboardEvent, MouseEvent } from 'react'
 import type { Conflict } from '@/domain/conflicts'
-import { formatHours } from '@/domain/hours'
 import type { Assignment, Site, TimeEntry } from '@/domain/types'
 import { cn } from '@/lib/cn'
 
@@ -22,6 +21,8 @@ interface ChipProps {
   onSelect: (id: string, additive: boolean) => void
   onOpen: (id: string) => void
   draggable?: boolean
+  /** Contexto para leitores de ecrã (ex.: trabalhador e dia). */
+  context?: string
 }
 
 /**
@@ -29,7 +30,7 @@ interface ChipProps {
  * Conflito: contorno tijolo/âmbar + ícone (nunca só cor).
  */
 export function AssignmentChip({
-  a, site, label, sub, entry, realizedHours, conflicts, selected, dimmed, focused, today, onSelect, onOpen, draggable = true,
+  a, site, label, sub, entry, realizedHours, conflicts, selected, dimmed, focused, today, onSelect, onOpen, draggable = true, context,
 }: ChipProps) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `a:${a.id}`,
@@ -40,7 +41,8 @@ export function AssignmentChip({
   const past = a.date < today
   const conflict = conflicts?.[0]
   const color = site?.color ?? '#7d847f'
-  const text = `${label ?? site?.code ?? 'Obra'}, ${formatHours(a.hours)}, ${a.start}–${a.end}${realized ? ', com registo' : ', planeado'}${conflict ? `. Conflito: ${conflict.title}` : ''}`
+  const shown = realized && realizedHours !== undefined ? Math.round(realizedHours * 10) / 10 : a.hours
+  const text = `${context ? `${context}: ` : ''}${label ?? site?.code.slice(3) ?? 'Obra'} ${shown.toLocaleString('pt-PT')}h, ${a.start}–${a.end}${realized ? ', com registo' : ', planeado'}${conflict ? `. Conflito: ${conflict.title}` : ''}`
 
   const handleClick = (e: MouseEvent) => {
     e.stopPropagation()
@@ -73,21 +75,20 @@ export function AssignmentChip({
         'group relative flex w-full min-w-0 items-center gap-1 overflow-hidden rounded-xs border-l-[3px] px-1.5 py-1 text-left',
         'transition-[box-shadow,opacity,transform] duration-(--duration-fast) ease-(--ease-andaime)',
         'focus-visible:outline-2 focus-visible:outline-offset-1',
-        realized ? 'bg-[color-mix(in_oklab,var(--chip)_16%,white)]' : 'bg-surface',
+        realized ? 'bg-[color-mix(in_oklab,var(--chip)_16%,white)]' : past ? 'bg-line-2' : 'bg-surface',
         !realized && !past && 'hatch [--hatch:color-mix(in_oklab,var(--chip)_22%,transparent)]',
-        past && !realized && 'opacity-60',
         conflict?.severity === 'critico' && 'ring-1 ring-tijolo ring-inset',
         conflict?.severity === 'aviso' && 'ring-1 ring-ambar ring-inset',
         focused && 'animate-pulse-once ring-2 ring-tijolo',
         selected && 'outline-2 outline-pinho',
         isDragging && 'opacity-30',
-        dimmed && 'opacity-35',
+        dimmed && 'border-l-line bg-line-2 [--chip:var(--color-line)]',
         draggable && 'cursor-grab active:cursor-grabbing',
       )}
       style={{ ['--chip' as string]: color, borderLeftColor: color }}
     >
       <span className="min-w-0 flex-1">
-        <span className="block truncate font-mono text-[11px] leading-tight font-semibold text-ink">{label ?? site?.code.slice(3)}</span>
+        <span className="block truncate font-mono text-[11px] leading-tight font-semibold text-ink">{label ?? site?.code.slice(3)}</span>{' '}
         <span className="flex items-center gap-1 font-mono text-[10px] leading-tight text-ink-2 tabular">
           {realized && <Check aria-hidden className="size-2.5 shrink-0 text-ok" />}
           {(realized && realizedHours !== undefined ? Math.round(realizedHours * 10) / 10 : a.hours).toLocaleString('pt-PT')}h

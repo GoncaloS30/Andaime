@@ -57,7 +57,7 @@ export function Skeleton({ className }: { className?: string }) {
 
 export function SkeletonRows({ rows = 6 }: { rows?: number }) {
   return (
-    <div aria-busy="true" aria-label="A carregar" className="flex flex-col gap-3 p-4">
+    <div role="status" aria-busy="true" aria-label="A carregar" className="flex flex-col gap-3 p-4">
       {Array.from({ length: rows }, (_, i) => (
         <div key={i} className="flex items-center gap-3">
           <Skeleton className="size-7 rounded-full" />

@@ -30,7 +30,7 @@ export function DashboardPage() {
     { label: 'Realizadas na semana', value: k.realizedWeek, format: (n) => formatHours(Math.round(n)), sub: 'registadas e submetidas', to: '/horas' },
     { label: 'Folhas por aprovar', value: k.pendingApprovals, sub: `${k.pendingApprovalEntries} registos · ${k.pendingReviews} folhas por rever`, to: '/horas?estado=revisto', tone: k.pendingApprovals ? 'warn' : undefined, tour: 'kpi-approvals' },
     { label: 'Viaturas indisponíveis', value: k.vehiclesUnavailable, sub: 'oficina ou papéis caducados', to: '/viaturas?estado=indisponivel', tone: k.vehiclesUnavailable ? 'danger' : undefined },
-    { label: 'Documentos a tratar', value: k.docsAttention, sub: `${k.docsExpired} expirados`, to: '/documentos?estado=atencao', tone: k.docsExpired ? 'danger' : k.docsAttention ? 'warn' : undefined, tour: 'kpi-documents' },
+    { label: 'Documentos a tratar', value: k.docsAttention, sub: k.docsExpired === 1 ? '1 expirado' : `${k.docsExpired} expirados`, to: '/documentos?estado=atencao', tone: k.docsExpired ? 'danger' : k.docsAttention ? 'warn' : undefined, tour: 'kpi-documents' },
     { label: 'Conflitos de planeamento', value: k.conflicts, sub: `${k.conflictsCritical} críticos · 2 semanas`, to: '/planeamento?painel=conflitos', tone: k.conflictsCritical ? 'danger' : k.conflicts ? 'warn' : 'ok', tour: 'kpi-conflicts' },
   ]
 

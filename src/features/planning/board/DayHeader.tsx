@@ -8,13 +8,13 @@ export const GRID_COLS = 'grid-cols-[minmax(176px,220px)_repeat(5,minmax(104px,1
 export function DayHeader({ label, totals }: { label: string; totals?: Record<string, number> }) {
   const { days, today } = usePlanning()
   return (
-    <div role="row" className={cn('sticky top-0 z-20 grid border-b border-line bg-surface', GRID_COLS)}>
-      <div role="columnheader" className="sticky left-0 z-10 flex items-end bg-surface px-3 pb-1.5 text-xs font-semibold text-ink-3">
+    <div className={cn('sticky top-0 z-20 grid border-b border-line bg-surface', GRID_COLS)}>
+      <div className="sticky left-0 z-10 flex items-end bg-surface px-3 pb-1.5 text-xs font-semibold text-ink-3">
         {label}
       </div>
       {days.map((d) => (
         <div
-          role="columnheader"
+         
           key={d}
           aria-label={`${dayShort(d)} ${d.slice(8)}${d === today ? ', hoje' : ''}`}
           className={cn('flex flex-col items-start border-l border-line-2 px-2 py-1.5', isWeekend(d) && 'bg-line-2/45')}

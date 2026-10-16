@@ -18,7 +18,7 @@ import { Button, buttonStyles } from '@/ui/Button'
 import { Field, Select, Textarea } from '@/ui/Field'
 import { PageHeader, Panel } from '@/ui/Layout'
 import { EmptyState } from '@/ui/States'
-import { Tabs } from '@/ui/Tabs'
+import { TabPanel, Tabs } from '@/ui/Tabs'
 import { ConflictCard } from '../shared/ConflictCard'
 import { ManualEntryDialog } from '../timesheets/EntryDialogs'
 import { SheetList } from '../timesheets/SheetList'
@@ -206,7 +206,7 @@ export function ForemanHours() {
     <div className="mx-auto max-w-[1200px]">
       <PageHeader title="Horas da equipa" description="Reveja os registos de ponto. Os validados seguem para aprovação do gestor." actions={<Button variant="primary" icon={<ClipboardPen className="size-4" />} onClick={() => setManual(true)}>Registar horas</Button>} />
       <Tabs value={status} onValueChange={(v) => setSp(v === 'submetido' ? {} : { estado: v }, { replace: true })} label="Estado" tabs={[{ value: 'submetido', label: 'Por rever', count: counts.submetido, tone: 'warn' }, { value: 'revisto', label: 'Enviadas ao gestor' }, { value: 'rejeitado', label: 'Devolvidas', count: counts.rejeitado, tone: 'danger' }, { value: 'aprovado', label: 'Aprovadas' }]}>
-        <div className="mt-3"><SheetList mode="encarregado" status={status} workerIds={scope.workerIds} /></div>
+        <TabPanel value={status} className="mt-3 pt-0"><SheetList mode="encarregado" status={status} workerIds={scope.workerIds} /></TabPanel>
       </Tabs>
       {manual && <ManualEntryDialog onClose={() => setManual(false)} workerIds={scope.workerIds} />}
     </div>

@@ -68,7 +68,7 @@ export function GuidePanel() {
           if (e.key === 'ArrowLeft') { e.preventDefault(); prev() }
           if (e.key === 'Escape') setOpen(false)
         }}
-        className="fixed inset-x-0 bottom-0 z-40 flex max-h-[52dvh] flex-col border-t border-line bg-surface shadow-e2 animate-sheet-in xl:inset-x-auto xl:top-14 xl:right-0 xl:bottom-0 xl:max-h-none xl:w-[360px] xl:border-t-0 xl:border-l xl:animate-drawer-in"
+        className="pointer-events-auto fixed inset-x-0 bottom-0 z-[60] flex max-h-[52dvh] flex-col border-t border-line bg-surface shadow-e2 animate-sheet-in xl:inset-x-auto xl:top-14 xl:right-0 xl:bottom-0 xl:max-h-none xl:w-[360px] xl:border-t-0 xl:border-l xl:animate-drawer-in"
       >
         <header className="on-dark flex items-center gap-2 bg-pinho px-4 py-3 text-white">
           <Presentation className="size-4 text-lima" aria-hidden />

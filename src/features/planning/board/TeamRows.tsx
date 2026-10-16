@@ -31,8 +31,8 @@ export function TeamRows() {
       {teams.map((t) => {
         const foreman = t.foremanId ? db.workers[t.foremanId] : undefined
         return (
-          <div role="row" key={t.id} className={cn('grid', GRID_COLS)}>
-            <div role="rowheader" className="sticky left-0 z-10 flex min-w-0 flex-col justify-center border-t border-line-2 bg-surface px-3 py-2">
+          <div key={t.id} className={cn('grid', GRID_COLS)}>
+            <div className="sticky left-0 z-10 flex min-w-0 flex-col justify-center border-t border-line-2 bg-surface px-3 py-2">
               <Link to={`/equipas/${t.id}`} className="flex items-center gap-2 text-sm font-semibold text-ink hover:underline">
                 <span aria-hidden className="size-2.5 rounded-full" style={{ background: t.color }} />
                 <span className="truncate">{t.name}</span>

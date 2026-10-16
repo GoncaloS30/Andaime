@@ -9,7 +9,7 @@ import { useDemo } from '@/store/store'
 import { Button } from '@/ui/Button'
 import { Select } from '@/ui/Field'
 import { PageHeader } from '@/ui/Layout'
-import { Tabs } from '@/ui/Tabs'
+import { TabPanel, Tabs } from '@/ui/Tabs'
 import { ManualEntryDialog } from './EntryDialogs'
 import { SheetList } from './SheetList'
 
@@ -62,7 +62,9 @@ export function TimesheetsPage() {
               {Object.values(db.sites).map((s) => <option key={s.id} value={s.id}>{s.code} · {s.name}</option>)}
             </Select>
           </div>
-          <SheetList mode="gestor" status={status} teamId={team} siteId={site} />
+          <TabPanel value={status} className="pt-0">
+            <SheetList mode="gestor" status={status} teamId={team} siteId={site} />
+          </TabPanel>
         </Tabs>
       </ModuleGuard>
       {manual && <ManualEntryDialog onClose={() => setManual(false)} />}

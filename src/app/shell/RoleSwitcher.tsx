@@ -47,17 +47,18 @@ export function RoleSwitcher({ compact }: { compact?: boolean }) {
           type="button"
           data-tour="role-switcher"
           className="flex h-9 items-center gap-2 rounded-md border border-line bg-surface pr-2 pl-1.5 text-sm hover:border-ink-4"
-          aria-label={`Experiência: ${ROLE_LABEL[role]} — ${nameOf(role)}. Mudar.`}
+          aria-label={compact ? `Experiência: ${ROLE_LABEL[role]}, ${nameOf(role)}. Mudar.` : undefined}
         >
           <span className="flex size-6 items-center justify-center rounded-sm bg-pinho text-lima">
             <Icon className="size-3.5" aria-hidden />
           </span>
           {!compact && (
-            <span className="hidden flex-col items-start leading-tight sm:flex">
+            <span className="hidden flex-col items-start leading-tight lg:flex">
               <span className="text-[11px] text-ink-3">{ROLE_LABEL[role]}</span>
               <span className="max-w-32 truncate text-xs font-semibold text-ink">{nameOf(role)}</span>
             </span>
           )}
+          {!compact && <span className="sr-only"><span className="lg:hidden">{ROLE_LABEL[role]} {nameOf(role)} </span>(mudar de experiência)</span>}
           <ChevronDown className="size-3.5 text-ink-3" aria-hidden />
         </button>
       }

@@ -29,8 +29,9 @@ function FitBounds({ pins }: { pins: MapPin[] }) {
   const key = pins.map((p) => p.site.id).join(',')
   useEffect(() => {
     if (pins.length === 0) return
-    if (pins.length === 1) map.setView([pins[0]!.site.lat, pins[0]!.site.lng], 12)
-    else map.fitBounds(L.latLngBounds(pins.map((p) => [p.site.lat, p.site.lng])), { padding: [40, 40] })
+    // Sem animação: navegar a meio de uma animação do Leaflet desmontava o mapa e gerava erros.
+    if (pins.length === 1) map.setView([pins[0]!.site.lat, pins[0]!.site.lng], 12, { animate: false })
+    else map.fitBounds(L.latLngBounds(pins.map((p) => [p.site.lat, p.site.lng])), { padding: [40, 40], animate: false })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, map])
   return null
@@ -57,7 +58,7 @@ export function SiteMap({ pins, selected, onSelect, onPick, picked, className, l
   const center = useMemo<[number, number]>(() => (pins[0] ? [pins[0].site.lat, pins[0].site.lng] : [41.5, -1]), [pins])
   return (
     <div className={cn('relative overflow-hidden rounded-md border border-line', className)} role="region" aria-label={label}>
-      <MapContainer center={center} zoom={5} scrollWheelZoom={false} className="h-full w-full" attributionControl>
+      <MapContainer center={center} zoom={5} scrollWheelZoom={false} zoomAnimation={false} fadeAnimation={false} markerZoomAnimation={false} className="h-full w-full" attributionControl>
         <TileLayer
           className="andaime-tiles"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'

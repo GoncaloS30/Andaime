@@ -400,7 +400,7 @@ function DesktopPlanning() {
               <MonthBoard week={week} perspective={perspective} onOpenWeek={(d) => update({ semana: d, escala: null })} />
             ) : (
               <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setActive(null)} accessibility={{ announcements, screenReaderInstructions: { draggable: 'Para mover, carregue em Espaço. Use as setas para escolher o destino e Espaço para largar. Escape cancela.' } }}>
-                <div className="max-h-[calc(100dvh-15rem)] overflow-auto" role="grid" aria-label={`Planeamento da semana ${isoWeek(week)} por ${perspective}`} data-tour="board">
+                <div className="max-h-[calc(100dvh-15rem)] overflow-auto" role="region" aria-label={`Planeamento da semana ${isoWeek(week)} por ${perspective}`} data-tour="board">
                   <div className="min-w-[860px]">
                     <DayHeader label={{ trabalhadores: 'Trabalhador', equipas: 'Equipa', obras: 'Obra', viaturas: 'Viatura' }[perspective]} totals={totals} />
                     {perspective === 'trabalhadores' && <WorkerRows onDuplicateTeam={setDupTeam} onCopyTeam={(t) => setCopyOpen({ teamIds: [t] })} />}
