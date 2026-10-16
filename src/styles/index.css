@@ -220,6 +220,23 @@
   }
 }
 
+/* Fotos: tratamento comum para fotos de origens diferentes ficarem da mesma família (spec 3.2). */
+@layer components {
+  .photo-grade img {
+    filter: saturate(0.88) contrast(1.04);
+  }
+  .photo-grade::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: #13342a;
+    opacity: 0.06;
+    mix-blend-mode: multiply;
+    pointer-events: none;
+    border-radius: inherit;
+  }
+}
+
 /* Tabelas densas */
 @layer components {
   .table-a {
