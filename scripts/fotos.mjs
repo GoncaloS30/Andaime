@@ -18,9 +18,17 @@ for (const f of manifest) {
     const h = Math.round(w / ratio)
     const file = `public/fotos/${src}-${size}.webp`
     await mkdir(dirname(file), { recursive: true })
-    await sharp(f.original)
-      .rotate()
-      .resize(w, h, { fit: 'cover', position: f.foco ?? 'attention' })
+    // Retratos: recorte a partir de cima (a cabeça fica no terço superior). O resto: pela zona de mais interesse.
+    // "recorte" = [x, y, largura, altura] em frações da imagem original, para os casos em que o automático falha.
+    let img = sharp(f.original).rotate()
+    if (f.recorte) {
+      const meta = await sharp(f.original).rotate().metadata()
+      const [x, y, rw, rh] = f.recorte
+      img = sharp(await img.extract({ left: Math.round(x * meta.width), top: Math.round(y * meta.height), width: Math.round(rw * meta.width), height: Math.round(rh * meta.height) }).toBuffer())
+    }
+    const retrato = f.categoria === 'trabalhadores' || f.categoria === 'gestores'
+    await img
+      .resize(w, h, { fit: 'cover', position: f.foco ?? (retrato ? 'north' : 'attention') })
       .webp({ quality: size === 's' ? 70 : 74 })
       .toFile(file)
     if (size === 'm') mDims = { w, h }
