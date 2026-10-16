@@ -7,6 +7,7 @@ import {
   FileSpreadsheet,
   HardHat,
   LayoutDashboard,
+  MessageSquareWarning,
   Map,
   Palmtree,
   Shirt,
@@ -69,7 +70,7 @@ export const ENCARREGADO_NAV: NavGroup[] = [
       { to: '/encarregado/semana', label: 'Escala da semana', icon: CalendarRange },
       { to: '/encarregado/horas', label: 'Horas da equipa', icon: ClipboardCheck, badge: 'approvals' },
       { to: '/encarregado/documentos', label: 'Documentação', icon: FileCheck2 },
-      { to: '/encarregado/problemas', label: 'Problemas', icon: FileSpreadsheet },
+      { to: '/encarregado/problemas', label: 'Problemas', icon: MessageSquareWarning },
     ],
   },
 ]

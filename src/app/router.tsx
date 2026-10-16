@@ -1,4 +1,4 @@
-import { lazy, type ComponentType } from 'react'
+import { lazy, Suspense, type ComponentType } from 'react'
 import { createBrowserRouter, Navigate, useRouteError } from 'react-router'
 import { ErrorState, EmptyState } from '@/ui/States'
 import { AppShell } from './AppShell'
@@ -31,6 +31,12 @@ const EquipmentPage = page(() => import('@/features/equipment/EquipmentPage'), '
 const GeoMapPage = page(() => import('@/features/geo-map/GeoMapPage'), 'GeoMapPage')
 const ReportsPage = page(() => import('@/features/reports/ReportsPage'), 'ReportsPage')
 const SettingsPage = page(() => import('@/features/settings/SettingsPage'), 'SettingsPage')
+const ForemanToday = page(() => import('@/features/foreman/ForemanPages'), 'ForemanToday')
+const ForemanWeek = page(() => import('@/features/foreman/ForemanPages'), 'ForemanWeek')
+const ForemanHours = page(() => import('@/features/foreman/ForemanPages'), 'ForemanHours')
+const ForemanDocs = page(() => import('@/features/foreman/ForemanPages'), 'ForemanDocs')
+const ForemanIssues = page(() => import('@/features/foreman/ForemanPages'), 'ForemanIssues')
+const WorkerRoute = page(() => import('@/features/worker-app/WorkerRoute'), 'WorkerRoute')
 
 function RouteError() {
   const err = useRouteError()
@@ -54,8 +60,11 @@ function NotFound() {
 }
 
 const gestor = (el: React.ReactNode) => <RoleGate roles={['gestor']}>{el}</RoleGate>
+const encarregado = (el: React.ReactNode) => <RoleGate roles={['encarregado']}>{el}</RoleGate>
 
 export const router = createBrowserRouter([
+  { path: '/app', element: <Suspense fallback={null}><WorkerRoute /></Suspense>, errorElement: <RouteError /> },
+  { path: '/app/:tab', element: <Suspense fallback={null}><WorkerRoute /></Suspense>, errorElement: <RouteError /> },
   {
     element: <AppShell />,
     errorElement: <RouteError />,
@@ -79,6 +88,11 @@ export const router = createBrowserRouter([
       { path: 'mapa', element: gestor(<GeoMapPage />) },
       { path: 'relatorios', element: gestor(<ReportsPage />) },
       { path: 'definicoes', element: <SettingsPage /> },
+      { path: 'encarregado', element: encarregado(<ForemanToday />) },
+      { path: 'encarregado/semana', element: encarregado(<ForemanWeek />) },
+      { path: 'encarregado/horas', element: encarregado(<ForemanHours />) },
+      { path: 'encarregado/documentos', element: encarregado(<ForemanDocs />) },
+      { path: 'encarregado/problemas', element: encarregado(<ForemanIssues />) },
       { path: 'inicio', element: <Navigate to="/" replace /> },
       { path: '*', element: <NotFound /> },
     ],
