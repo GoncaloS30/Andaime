@@ -4,7 +4,8 @@ import { toast } from 'sonner'
 import { DEMO_LABEL } from '@/copy'
 import { persistEnabled, setPersistEnabled, saveSnapshot } from '@/store/persistence'
 import { demoStore, useDemo } from '@/store/store'
-import { Button } from '@/ui/Button'
+import { Button, buttonStyles } from '@/ui/Button'
+import { Link } from 'react-router'
 import { Field, Input, Switch } from '@/ui/Field'
 import { PageHeader, Panel } from '@/ui/Layout'
 import { Dialog } from '@/ui/Overlay'
@@ -62,7 +63,8 @@ export function SettingsPage() {
             <p className="text-xs text-ink-3">
               Dados gerados para {today} ({new Date(seededAt).toLocaleString('pt-PT')}). Sem servidor, sem autenticação e sem envio de dados.
             </p>
-            <div>
+            <div className="flex flex-wrap gap-2">
+              <Link to="/design" className={buttonStyles('secondary')}>Ver o design system</Link>
               <Button variant="danger" icon={<RotateCcw className="size-4" />} onClick={() => setConfirm(true)}>Repor demonstração</Button>
             </div>
           </div>

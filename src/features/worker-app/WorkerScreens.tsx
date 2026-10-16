@@ -1,5 +1,6 @@
 import { CalendarClock, Check, ChevronRight, Coffee, FileUp, LogIn, LogOut, MapPin, Phone, Send, Truck, Users } from 'lucide-react'
 import { useState } from 'react'
+import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { useDerived } from '@/app/hooks'
 import { DOC_STATE_LABEL, workerCompliance } from '@/domain/documents'
@@ -342,7 +343,23 @@ export function ProfileScreen() {
         <p className="mb-2 text-xs font-semibold text-ink-3 uppercase">Equipamento comigo ({items.length})</p>
         <ul className="flex flex-col gap-1 text-sm">{items.slice(0, 12).map((d) => <li key={d.id} className="flex justify-between"><span>{db.equipment[d.itemId]?.name}</span><span className="text-xs text-ink-3">{d.size || DELIVERY_STATUS[d.status]}</span></li>)}</ul>
       </Card>
+      <DemoSwitch />
       <p className="text-center text-xs text-ink-3">Andaime · demonstração com dados fictícios</p>
     </div>
+  )
+}
+
+/** Só na demonstração: mudar de experiência a partir do telemóvel. */
+function DemoSwitch() {
+  const setRole = useDemo((s) => s.setRole)
+  const navigate = useNavigate()
+  return (
+    <Card className="border-dashed border-ambar/60 bg-ambar-soft/40">
+      <p className="mb-2 text-xs font-semibold text-ambar-ink">Demonstração · ver o Andaime como</p>
+      <div className="grid grid-cols-2 gap-2">
+        <Button onClick={() => { setRole('gestor'); navigate('/') }}>Gestor</Button>
+        <Button onClick={() => { setRole('encarregado'); navigate('/encarregado') }}>Encarregado</Button>
+      </div>
+    </Card>
   )
 }

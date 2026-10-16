@@ -37,6 +37,7 @@ const ForemanHours = page(() => import('@/features/foreman/ForemanPages'), 'Fore
 const ForemanDocs = page(() => import('@/features/foreman/ForemanPages'), 'ForemanDocs')
 const ForemanIssues = page(() => import('@/features/foreman/ForemanPages'), 'ForemanIssues')
 const WorkerRoute = page(() => import('@/features/worker-app/WorkerRoute'), 'WorkerRoute')
+const DesignPage = page(() => import('@/features/design/DesignPage'), 'DesignPage')
 
 function RouteError() {
   const err = useRouteError()
@@ -88,6 +89,7 @@ export const router = createBrowserRouter([
       { path: 'mapa', element: gestor(<GeoMapPage />) },
       { path: 'relatorios', element: gestor(<ReportsPage />) },
       { path: 'definicoes', element: <SettingsPage /> },
+      { path: 'design', element: <DesignPage /> },
       { path: 'encarregado', element: encarregado(<ForemanToday />) },
       { path: 'encarregado/semana', element: encarregado(<ForemanWeek />) },
       { path: 'encarregado/horas', element: encarregado(<ForemanHours />) },
