@@ -1,7 +1,7 @@
 import { ABSENCE_TYPE } from '@/domain/labels'
 import type { ID, TimeEntry, WorkerCategory } from '@/domain/types'
 import { dateShort } from '@/domain/weeks'
-import type { StoreApi } from '../api'
+import { pushUndo, type StoreApi } from '../api'
 import { actorName, log, notify, plural } from '../helpers'
 import type { DemoActions, DemoState, WorkerOp, WorkerOpKind } from '../types'
 import { applyWorkerOp, todayAssignment } from '../workerOps'
@@ -79,13 +79,17 @@ export function operationActions(api: StoreApi): Pick<
     return op
   }
 
-  const setStatus = (ids: ID[], from: TimeEntry['status'][], fn: (e: TimeEntry, s: DemoState) => void) =>
+  /** Muda o estado de registos guardando um ponto de anulação (os ecrãs oferecem "Anular"). */
+  const setStatus = (ids: ID[], from: TimeEntry['status'][], fn: (e: TimeEntry, s: DemoState) => void, label = 'Alterar registos') => {
+    const snap = api.snapshot(label)
     set((s) => {
+      pushUndo(s, snap)
       for (const id of ids) {
         const e = s.db.entries[id]
         if (e && from.includes(e.status)) fn(e, s)
       }
     })
+  }
 
   const workerNames = (s: DemoState, ids: ID[]) => {
     const names = [...new Set(ids.map((id) => s.db.workers[s.db.entries[id]?.workerId ?? '']?.name).filter(Boolean))]
@@ -132,7 +136,7 @@ export function operationActions(api: StoreApi): Pick<
         e.status = 'revisto'
         e.reviewedBy = actorName(s.db, s.session)
         n++
-      })
+      }, 'Rever registos')
       if (n === 0) return
       set((s) => {
         log(s, clock(), 'horas', `Reviu ${plural(n, 'registo', 'registos')} de ${workerNames(s, ids)}.`, ids.length === 1 ? { workerId: s.db.entries[ids[0]!]?.workerId } : {})
@@ -145,7 +149,7 @@ export function operationActions(api: StoreApi): Pick<
       setStatus(ids, ['submetido', 'revisto'], (e) => {
         e.status = 'rejeitado'
         e.rejectionReason = reason.trim()
-      })
+      }, 'Devolver registos')
       set((s) => {
         log(s, clock(), 'horas', `Devolveu ${plural(ids.length, 'registo', 'registos')} de ${workerNames(s, ids)}: ${reason.trim()}`)
         for (const id of ids) {
@@ -162,7 +166,7 @@ export function operationActions(api: StoreApi): Pick<
         e.approvedBy = actorName(s.db, s.session)
         if (!e.reviewedBy) e.reviewedBy = actorName(s.db, s.session)
         n++
-      })
+      }, 'Aprovar registos')
       if (n === 0) return
       set((s) => {
         log(s, clock(), 'horas', `Aprovou ${plural(n, 'registo', 'registos')} de ${workerNames(s, ids)}.`, ids.length === 1 ? { workerId: s.db.entries[ids[0]!]?.workerId, siteId: s.db.entries[ids[0]!]?.siteId } : {})
@@ -179,7 +183,7 @@ export function operationActions(api: StoreApi): Pick<
         e.status = 'rejeitado'
         e.rejectionReason = reason.trim()
         e.approvedBy = null
-      })
+      }, 'Rejeitar registos')
       set((s) => {
         log(s, clock(), 'horas', `Rejeitou ${plural(ids.length, 'registo', 'registos')} de ${workerNames(s, ids)}: ${reason.trim()}`)
         for (const id of ids) {

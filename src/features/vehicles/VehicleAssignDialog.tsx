@@ -38,10 +38,11 @@ export function VehicleAssignDialog({ open, onOpenChange, vehicleId, teamId }: P
       .filter((x) => x.id !== vid && x.id !== team.vehicleId && x.seats >= team.memberIds.length)
       .filter((x) => x.status === 'operacional' && x.inspectionUntil >= until && x.insuranceUntil >= until)
       .filter((x) => !Object.values(db.assignments).some((a) => a.vehicleId === x.id && a.date >= from && a.date <= until && a.teamId !== tid))
-      .map((x) => ({ x, n: preview(tid, x.id, from).length }))
-      .sort((a, b) => a.n - b.n || a.x.seats - b.x.seats)
+      // Já filtradas por livres, utilizáveis e com lugares no período: não é preciso pré-visualizar cada uma.
+      .map((x) => ({ x }))
+      .sort((a, b) => a.x.seats - b.x.seats)
       .slice(0, 4)
-  }, [db, team, conflicts.length, vid, tid, from, until]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [db, team, conflicts.length, vid, tid, from, until])  
 
   const apply = (target: ID) => {
     setTeamVehicle(tid, target, from)
@@ -101,12 +102,12 @@ export function VehicleAssignDialog({ open, onOpenChange, vehicleId, teamId }: P
             <p className="text-sm text-ink-3">Não há viaturas livres com lugares suficientes nesse período.</p>
           ) : (
             <ul className="flex flex-col gap-1.5" data-tour="vehicle-alternatives">
-              {alternatives.map(({ x, n }) => (
+              {alternatives.map(({ x }) => (
                 <li key={x.id}>
                   <button type="button" onClick={() => apply(x.id)} className="flex w-full items-center gap-3 rounded-md border border-line px-3 py-2 text-left hover:border-pinho hover:bg-lima-soft/40">
                     <Plate plate={x.plate} />
                     <span className="flex-1 text-sm">{x.make} {x.model} · {x.seats} lugares{x.notes ? ` · ${x.notes}` : ''}</span>
-                    {n === 0 ? <Badge tone="ok" dot>Sem conflitos</Badge> : <Badge tone="warn" dot>{n} conflitos</Badge>}
+                    <Badge tone="ok" dot>Livre no período</Badge>
                     <span className="text-sm font-semibold text-pinho">Usar esta</span>
                   </button>
                 </li>

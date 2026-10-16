@@ -212,6 +212,7 @@ export function AbsenceScreen() {
   const today = useDemo((s) => s.session.today)
   const request = useDemo((s) => s.requestAbsence)
   const online = useDemo((s) => s.session.online)
+  const outbox = useDemo((s) => s.session.outbox)
   const [type, setType] = useState<AbsenceType>('ferias')
   const [start, setStart] = useState(addDays(weekStart(today), 7))
   const [end, setEnd] = useState(addDays(weekStart(today), 8))
@@ -252,7 +253,7 @@ export function AbsenceScreen() {
             <li key={a.id} className="rounded-md border border-line bg-surface px-3 py-2.5 text-sm">
               <span className="flex items-center justify-between gap-2">
                 <span className="font-medium">{ABSENCE_TYPE[a.type]}</span>
-                <Badge tone={a.status === 'aprovado' ? 'ok' : a.status === 'pedido' ? 'warn' : 'danger'} dot>{a.id.includes('pend') ? 'Por sincronizar' : ABSENCE_STATUS[a.status]}</Badge>
+                <Badge tone={a.status === 'aprovado' ? 'ok' : a.status === 'pedido' ? 'warn' : 'danger'} dot>{outbox.some((o) => o.absenceId === a.id) ? 'Por sincronizar' : ABSENCE_STATUS[a.status]}</Badge>
               </span>
               <span className="text-xs text-ink-3">{dateShort(a.start)}{a.end !== a.start && ` a ${dateShort(a.end)}`}</span>
               {a.decisionNote && <span className="block text-xs text-ink-2">{a.decisionNote}</span>}

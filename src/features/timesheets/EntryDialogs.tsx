@@ -108,9 +108,9 @@ export function ManualEntryDialog({ onClose, workerIds }: { onClose: () => void;
   const create = useDemo((s) => s.createManualEntry)
   const pool = (workerIds ?? Object.keys(db.workers)).map((id) => db.workers[id]!).filter(Boolean).sort((a, b) => a.name.localeCompare(b.name))
   const [workerId, setWorker] = useState(pool[0]?.id ?? '')
-  const assigned = Object.values(db.assignments).find((a) => a.workerId === workerId && a.date === today)
   const [siteId, setSite] = useState<string>('')
   const [date, setDate] = useState(today)
+  const assigned = Object.values(db.assignments).find((a) => a.workerId === workerId && a.date === date)
   const [clockIn, setIn] = useState('08:00')
   const [clockOut, setOut] = useState('17:00')
   const [pause, setPause] = useState(60)
@@ -132,7 +132,7 @@ export function ManualEntryDialog({ onClose, workerIds }: { onClose: () => void;
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>Cancelar</Button>
-          <Button variant="primary" icon={<ClipboardPen className="size-4" />} disabled={!workerId || !site || clockOut <= clockIn} onClick={save}>Registar horas</Button>
+          <Button variant="primary" icon={<ClipboardPen className="size-4" />} disabled={!workerId || !site || clockOut <= clockIn || dup} onClick={save}>Registar horas</Button>
         </>
       }
     >

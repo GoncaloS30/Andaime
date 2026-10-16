@@ -58,10 +58,7 @@ export function createDemoStore(opts: StoreOptions = {}): ZStore<DemoState> {
         get,
         clock,
         mctx: () => ({ uid, today: get().session.today, settings: get().session.settings }),
-        snapshot: (label) => {
-          const { db } = get()
-          return { label, assignments: db.assignments, teams: db.teams, vehicles: db.vehicles, workers: db.workers, sites: db.sites }
-        },
+        snapshot: (label) => ({ label, db: get().db }),
         syncDelayMs: opts.syncDelayMs ?? 550,
         freshState: () => freshState(opts.today ?? localToday()),
       }

@@ -188,8 +188,8 @@ function AssignmentSheet({ id, onClose }: { id: ID; onClose: () => void }) {
   const [transfer, setTransfer] = useState(false)
   if (!a) return null
   const w = db.workers[a.workerId]
-  const done = (m: string) => {
-    toast.success(m, { action: { label: 'Anular', onClick: () => undo() } })
+  const done = (m: string, steps = 1) => {
+    toast.success(m, { action: { label: 'Anular', onClick: () => { for (let i = 0; i < steps; i++) undo() } } })
     onClose()
   }
   return (
@@ -214,9 +214,11 @@ function AssignmentSheet({ id, onClose }: { id: ID; onClose: () => void }) {
           variant="primary"
           size="lg"
           onClick={() => {
-            if (site !== a.siteId) move(a.id, { siteId: site })
-            if (start !== a.start || end !== a.end) update(a.id, { start, end })
-            done('Atribuição atualizada')
+            let steps = 0
+            if (site !== a.siteId) { move(a.id, { siteId: site }); steps++ }
+            if (start !== a.start || end !== a.end) { update(a.id, { start, end }); steps++ }
+            if (steps) done('Atribuição atualizada', steps)
+            else onClose()
           }}
         >
           Guardar

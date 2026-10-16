@@ -59,13 +59,10 @@ export interface Session {
   seededAt: string
 }
 
+/** Estado do DB antes de uma ação (o immer partilha a estrutura, por isso guardar o DB inteiro é barato). */
 export interface UndoSnapshot {
   label: string
-  assignments: DB['assignments']
-  teams: DB['teams']
-  vehicles: DB['vehicles']
-  workers: DB['workers']
-  sites: DB['sites']
+  db: DB
 }
 
 export interface ScheduleInput {

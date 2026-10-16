@@ -224,12 +224,10 @@ export function planningActions(api: StoreApi): Pick<
       if (!snap) return null
       set((s) => {
         s.undoStack.pop()
-        s.db.assignments = snap.assignments
-        s.db.teams = snap.teams
-        s.db.vehicles = snap.vehicles
-        s.db.workers = snap.workers
-        s.db.sites = snap.sites
-        log(s, clock(), 'planeamento', `Anulou: ${snap.label.toLowerCase()}.`)
+        // Repõe tudo exceto o histórico e as notificações: o que aconteceu fica registado, mais o "Anulou".
+        const { activity, notifications } = s.db
+        s.db = { ...snap.db, activity, notifications }
+        log(s, clock(), 'planeamento', `Anulou: ${snap.label.charAt(0).toLowerCase()}${snap.label.slice(1)}.`)
       })
       return snap.label
     },

@@ -99,3 +99,25 @@ describe('demonstração', () => {
     expect(store.getState().session.personas.encarregado).toBe(other.foremanId)
   })
 })
+
+describe('anular depois de aprovar horas', () => {
+  it('repõe o estado do registo e não mexe no planeamento', () => {
+    const store = make()
+    const before = Object.keys(store.getState().db.assignments).length
+    const e = Object.values(store.getState().db.entries).find((x) => x.status === 'revisto')!
+    store.getState().approveEntries([e.id])
+    expect(store.getState().db.entries[e.id]!.status).toBe('aprovado')
+    store.getState().undo()
+    expect(store.getState().db.entries[e.id]!.status).toBe('revisto')
+    expect(Object.keys(store.getState().db.assignments)).toHaveLength(before)
+    expect(store.getState().db.activity[0]!.text).toMatch(/^Anulou: aprovar registos/)
+  })
+
+  it('anular a criação de uma obra remove também o cliente novo', () => {
+    const store = make()
+    const clients = Object.keys(store.getState().db.clients).length
+    store.getState().createSite({ name: 'Teste', newClient: { name: 'C', contactName: '', email: '', country: 'PT' }, country: 'PT', city: 'Porto', address: '', lat: 41, lng: -8, hourLimit: 100, startDate: TODAY, endDate: '2027-01-01', directorId: 'm1', description: '' })
+    store.getState().undo()
+    expect(Object.keys(store.getState().db.clients)).toHaveLength(clients)
+  })
+})
