@@ -25,6 +25,8 @@ interface ChipProps {
   context?: string
   /** Código discreto quando é a obra habitual da equipa (destaca as exceções). */
   muteCode?: boolean
+  /** Mostra a pega para alterar o período arrastando (perspetiva por trabalhador). */
+  resizable?: boolean
 }
 
 /**
@@ -32,13 +34,19 @@ interface ChipProps {
  * Conflito: contorno tijolo/âmbar + ícone (nunca só cor).
  */
 export function AssignmentChip({
-  a, site, label, sub, entry, realizedHours, conflicts, selected, dimmed, focused, today, onSelect, onOpen, draggable = true, context, muteCode,
+  a, site, label, sub, entry, realizedHours, conflicts, selected, dimmed, focused, today, onSelect, onOpen, draggable = true, context, muteCode, resizable,
 }: ChipProps) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `a:${a.id}`,
     data: { type: 'assignment', id: a.id },
     disabled: !draggable,
   })
+  const {
+    attributes: hAttributes,
+    listeners: hListeners,
+    setNodeRef: hRef,
+    isDragging: hDragging,
+  } = useDraggable({ id: `r:${a.id}`, data: { type: 'resize', id: a.id }, disabled: !resizable })
   // Realizado só com saída registada; com entrada e sem saída está a decorrer.
   const realized = !!entry && entry.status !== 'rejeitado' && !!entry.clockOut
   const live = !!entry && entry.status === 'aberto' && !entry.clockOut
@@ -62,6 +70,7 @@ export function AssignmentChip({
   }
 
   return (
+    <div className="group/chip relative">
     <button
       ref={setNodeRef}
       type="button"
@@ -108,6 +117,23 @@ export function AssignmentChip({
           <AlertTriangle aria-hidden className="absolute top-0.5 right-0.5 size-2.5 text-ambar-ink" />
         ))}
     </button>
+    {resizable && (
+      <button
+        ref={hRef}
+        type="button"
+        {...hAttributes}
+        {...hListeners}
+        aria-label={`Alterar período: arraste até ao último dia${context ? ` (${context})` : ''}`}
+        data-resize={a.id}
+        className={cn(
+          'absolute inset-y-0 -right-1 z-10 w-2.5 cursor-ew-resize rounded-r-xs opacity-0 transition-opacity',
+          'group-hover/chip:opacity-100 focus-visible:opacity-100',
+          'after:absolute after:inset-y-1.5 after:left-1/2 after:w-[3px] after:-translate-x-1/2 after:rounded-full after:bg-pinho/70',
+          hDragging && 'opacity-100',
+        )}
+      />
+    )}
+    </div>
   )
 }
 

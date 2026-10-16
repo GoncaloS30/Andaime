@@ -24,6 +24,7 @@ export function DropCell({ id, data, children, today, weekend, muted, onAdd, add
   return (
     <div
       ref={setNodeRef}
+      data-cell={id}
       className={cn(
         'group/cell relative flex min-h-12 flex-col gap-0.5 border-t border-l border-line-2 p-1 pb-2',
         today && 'bg-lima-soft/35',

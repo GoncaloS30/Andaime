@@ -5,7 +5,10 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  pointerWithin,
+  rectIntersection,
   type Announcements,
+  type CollisionDetection,
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core'
@@ -36,17 +39,24 @@ import { AssignDialog } from './dialogs/AssignDialog'
 import { CopyWeekDialog, DuplicateTeamWeekDialog } from './dialogs/CopyWeekDialog'
 import { NewScheduleDialog } from './dialogs/NewScheduleDialog'
 import { MobilePlanning } from './MobilePlanning'
-import { conflictIndex, type Perspective } from './model'
+import { conflictIndex, runs, type Perspective } from './model'
 import { MonthBoard } from './MonthBoard'
 import { PlanningContext, type AddTarget, type PlanningCtx } from './PlanningContext'
 import { Tray } from './Tray'
 import { usePlanningParams } from './usePlanningParams'
+
+/** Larga onde está o cursor; com teclado (sem cursor) usa a interseção de retângulos. */
+const collision: CollisionDetection = (args) => {
+  const hits = pointerWithin(args)
+  return hits.length > 0 ? hits : rectIntersection(args)
+}
 
 type DragData =
   | { type: 'assignment'; id: ID }
   | { type: 'site'; siteId: ID }
   | { type: 'worker'; workerId: ID }
   | { type: 'vehicle-block'; vehicleId: ID; date: ISODate; ids: ID[] }
+  | { type: 'resize'; id: ID }
 
 type DropData =
   | { type: 'worker-day'; workerId: ID; date: ISODate }
@@ -167,6 +177,10 @@ function DesktopPlanning() {
     }
     if (d.type === 'site') return `obra ${db.sites[d.siteId]?.code}`
     if (d.type === 'worker') return db.workers[d.workerId]?.name ?? 'trabalhador'
+    if (d.type === 'resize') {
+      const a = db.assignments[d.id]
+      return a ? `o período de ${db.workers[a.workerId]?.name} em ${db.sites[a.siteId]?.code}` : 'o período'
+    }
     return `viatura ${db.vehicles[d.vehicleId]?.plate}`
   }
   const targetLabel = (t: DropData | undefined) => {
@@ -216,6 +230,17 @@ function DesktopPlanning() {
         const nid = s.assign({ workerId: src.workerId, siteId: dst.siteId, date: dst.date })
         setRecent(new Set([nid]))
         msg = `${db.workers[src.workerId]?.name} atribuído a ${db.sites[dst.siteId]?.code}, ${dateShort(dst.date)}`
+      } else if (src.type === 'resize' && dst.type === 'worker-day') {
+        const a = s.db.assignments[src.id]
+        if (!a || dst.workerId !== a.workerId) {
+          toast.error('Arraste a pega ao longo da linha do mesmo trabalhador.')
+          return
+        }
+        const run = runs(Object.values(s.db.assignments).filter((x) => x.workerId === a.workerId && x.siteId === a.siteId)).find((x) => x.ids.includes(a.id))!
+        const [from, to] = dst.date >= run.from ? [run.from, dst.date] : [dst.date, run.to]
+        if (from === run.from && to === run.to) return
+        s.setRange(a.id, from, to)
+        msg = `Período de ${db.workers[a.workerId]?.name} em ${db.sites[a.siteId]?.code}: ${dateShort(from)} a ${dateShort(to)}`
       } else if (src.type === 'vehicle-block' && dst.type === 'vehicle-day') {
         if (src.vehicleId === dst.vehicleId) return
         if (src.date !== dst.date) {
@@ -251,7 +276,9 @@ function DesktopPlanning() {
         ? <ChipGhost label={db.sites[active.siteId]?.code ?? ''} color={db.sites[active.siteId]?.color ?? '#999'} />
         : active?.type === 'worker'
           ? <ChipGhost label={db.workers[active.workerId]?.name ?? ''} color="#13342a" />
-          : active?.type === 'vehicle-block'
+          : active?.type === 'resize'
+            ? <ChipGhost label="↔ alterar período" color="#c8e26a" />
+            : active?.type === 'vehicle-block'
             ? <ChipGhost label={db.vehicles[active.vehicleId]?.plate ?? ''} color="#13342a" />
             : null
 
@@ -399,7 +426,7 @@ function DesktopPlanning() {
             {scale === 'mes' ? (
               <MonthBoard week={week} perspective={perspective} onOpenWeek={(d) => update({ semana: d, escala: null })} />
             ) : (
-              <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setActive(null)} accessibility={{ announcements, screenReaderInstructions: { draggable: 'Para mover, carregue em Espaço. Use as setas para escolher o destino e Espaço para largar. Escape cancela.' } }}>
+              <DndContext sensors={sensors} collisionDetection={collision} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setActive(null)} accessibility={{ announcements, screenReaderInstructions: { draggable: 'Para mover, carregue em Espaço. Use as setas para escolher o destino e Espaço para largar. Escape cancela.' } }}>
                 <div className="max-h-[calc(100dvh-15rem)] overflow-auto" role="region" aria-label={`Planeamento da semana ${isoWeek(week)} por ${perspective}`} data-tour="board">
                   <div className="min-w-[860px]">
                     <DayHeader label={{ trabalhadores: 'Trabalhador', equipas: 'Equipa', obras: 'Obra', viaturas: 'Viatura' }[perspective]} totals={totals} />

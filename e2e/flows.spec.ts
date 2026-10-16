@@ -167,3 +167,42 @@ test('Modo apresentação: todos os passos correm sem erros', async ({ page }) =
   }
   await act(page, '(s) => s')
 })
+
+test('Planeamento: arrastar a pega altera o período', async ({ page }) => {
+  await open(page, '/')
+  const mon = await nextMonday(page)
+  const wid = await state<string>(page, '(s) => s.db.teams.t2.memberIds[2]')
+  const aid = await state<string>(page, `(s) => Object.values(s.db.assignments).find((a) => a.workerId === '${wid}' && a.date === '${mon}').id`)
+  const wed = await state<string>(page, `() => { const d = new Date('${mon}T00:00:00Z'); d.setUTCDate(d.getUTCDate() + 2); return d.toISOString().slice(0, 10) }`)
+  await go(page, `/planeamento?semana=${mon}&equipa=t2`)
+  const chip = page.locator(`[data-assignment="${aid}"]`)
+  await chip.hover()
+  const handle = page.locator(`[data-resize="${aid}"]`)
+  const from = (await handle.boundingBox())!
+  const to = (await page.locator(`[data-cell="wd:${wid}:${wed}"]`).boundingBox())!
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2)
+  await page.mouse.down()
+  for (let i = 1; i <= 12; i++) await page.mouse.move(from.x + ((to.x + to.width / 2 - from.x) * i) / 12, to.y + to.height / 2)
+  await page.mouse.up()
+  await expect(page.getByText(/Período de .* a /)).toBeVisible()
+  const days = await state<string[]>(page, `(s) => Object.values(s.db.assignments).filter((a) => a.workerId === '${wid}' && a.siteId === 's2' && a.date >= '${mon}' && a.date <= '${mon}'.replace(/..$/, (x) => String(Number(x) + 6).padStart(2, '0'))).map((a) => a.date).sort()`)
+  expect(days).toHaveLength(3)
+})
+
+test('Planeamento: arrastar um bloco para outro trabalhador move a atribuição', async ({ page }) => {
+  await open(page, '/')
+  const mon = await nextMonday(page)
+  const [a, b] = await state<string[]>(page, '(s) => [s.db.teams.t2.memberIds[2], s.db.teams.t2.memberIds[4]]')
+  const aid = await state<string>(page, `(s) => Object.values(s.db.assignments).find((x) => x.workerId === '${a}' && x.date === '${mon}').id`)
+  await go(page, `/planeamento?semana=${mon}&equipa=t2`)
+  const from = (await page.locator(`[data-assignment="${aid}"]`).boundingBox())!
+  const to = (await page.locator(`[data-cell="wd:${b}:${mon}"]`).boundingBox())!
+  await page.mouse.move(from.x + 20, from.y + from.height / 2)
+  await page.mouse.down()
+  for (let i = 1; i <= 12; i++) await page.mouse.move(from.x + 20 + ((to.x + 30 - from.x - 20) * i) / 12, from.y + ((to.y + to.height / 2 - from.y) * i) / 12)
+  await page.mouse.up()
+  await expect(page.getByText(/Movido para/)).toBeVisible()
+  expect(await state<string>(page, `(s) => s.db.assignments['${aid}'].workerId`)).toBe(b)
+  // Duas atribuições no mesmo dia, mesmo horário: o Andaime avisa da sobreposição
+  await expect(page.getByText(/Criou (um conflito|\d+ conflitos)/)).toBeVisible()
+})
