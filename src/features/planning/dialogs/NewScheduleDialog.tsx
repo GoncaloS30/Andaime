@@ -12,6 +12,7 @@ import { Button } from '@/ui/Button'
 import { ChipToggle, Field, Input, Select, Textarea } from '@/ui/Field'
 import { Dialog } from '@/ui/Overlay'
 import { ConflictCard } from '../../shared/ConflictCard'
+import { plural } from '@/lib/plural'
 
 const STEPS = ['Semana e equipa', 'Trabalhadores', 'Obra e horário', 'Verificar'] as const
 
@@ -120,7 +121,7 @@ export function NewScheduleDialog({ open, onOpenChange, initialWeek, onCreated }
             </Button>
           ) : (
             <Button variant="primary" icon={<CalendarCheck2 className="size-4" />} onClick={save} data-tour="save-schedule">
-              {conflicts.length ? `Guardar com ${conflicts.length} ${conflicts.length === 1 ? 'conflito' : 'conflitos'}` : 'Guardar escala'}
+              {conflicts.length ? `Guardar com ${plural(conflicts.length, 'conflito', 'conflitos')}` : 'Guardar escala'}
             </Button>
           )}
         </>
@@ -335,7 +336,7 @@ export function NewScheduleDialog({ open, onOpenChange, initialWeek, onCreated }
           ) : (
             <div className="flex flex-col gap-2">
               <p className="text-sm font-semibold">
-                {conflicts.length} {conflicts.length === 1 ? 'conflito encontrado' : 'conflitos encontrados'}
+                {plural(conflicts.length, 'conflito encontrado', 'conflitos encontrados')}
               </p>
               {conflicts.map((c) => (
                 <ConflictCard key={c.id} conflict={c} preview />

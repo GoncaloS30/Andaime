@@ -9,6 +9,7 @@ import { Button } from '@/ui/Button'
 import { ChipToggle, Field, Input, Select } from '@/ui/Field'
 import { Dialog } from '@/ui/Overlay'
 import { ConflictCard } from '../../shared/ConflictCard'
+import { plural } from '@/lib/plural'
 
 interface Props {
   open: boolean
@@ -46,7 +47,7 @@ export function AssignDialog({ open, onOpenChange, days, workerId, siteId, date,
     const res = create(input)
     const ids = Object.values(demoStore.getState().db.assignments).filter((a) => a.batchId === res.batchId).map((a) => a.id)
     toast.success(`${worker?.name} atribuído a ${db.sites[sid]?.code}`, {
-      description: `${res.created} ${res.created === 1 ? 'dia' : 'dias'} · ${start}–${end}`,
+      description: `${plural(res.created, 'dia', 'dias')} · ${start}–${end}`,
       action: { label: 'Anular', onClick: () => undo() },
     })
     onCreated?.(ids)
@@ -66,7 +67,7 @@ export function AssignDialog({ open, onOpenChange, days, workerId, siteId, date,
             Cancelar
           </Button>
           <Button variant="primary" disabled={!valid} icon={<CalendarPlus className="size-4" />} onClick={save}>
-            {conflicts.length ? `Atribuir com ${conflicts.length} ${conflicts.length === 1 ? 'conflito' : 'conflitos'}` : 'Atribuir'}
+            {conflicts.length ? `Atribuir com ${plural(conflicts.length, 'conflito', 'conflitos')}` : 'Atribuir'}
           </Button>
         </>
       }

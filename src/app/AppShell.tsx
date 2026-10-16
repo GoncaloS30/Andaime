@@ -1,14 +1,17 @@
-import { Suspense, useEffect, useRef } from 'react'
+import { lazy, Suspense, useEffect, useRef } from 'react'
 import { Outlet, useLocation, useNavigation } from 'react-router'
-import { GuidePanel } from '@/features/presentation/GuidePanel'
-import { StageFrame } from '@/features/presentation/StageFrame'
 import { useTour } from '@/features/presentation/tourStore'
 import { cn } from '@/lib/cn'
 import { SkeletonRows } from '@/ui/States'
-import { CommandPalette, useCommandPalette } from './shell/CommandPalette'
 import { MobileNav } from './shell/MobileNav'
 import { Sidebar } from './shell/Sidebar'
 import { Topbar } from './shell/Topbar'
+import { useCommandPalette } from './shell/useCommandPalette'
+
+// Carregados só quando abertos: não pesam no arranque.
+const CommandPalette = lazy(async () => ({ default: (await import('./shell/CommandPalette')).CommandPalette }))
+const GuidePanel = lazy(async () => ({ default: (await import('@/features/presentation/GuidePanel')).GuidePanel }))
+const StageFrame = lazy(async () => ({ default: (await import('@/features/presentation/StageFrame')).StageFrame }))
 
 /** Barra de progresso no topo enquanto um módulo carrega (rede ou dispositivo lentos). */
 function RouteProgress() {
@@ -59,9 +62,11 @@ export function AppShell() {
         </main>
       </div>
       <MobileNav />
-      <CommandPalette open={palette.open} onOpenChange={palette.setOpen} />
-      {stage && <StageFrame />}
-      <GuidePanel />
+      <Suspense fallback={null}>
+        {palette.open && <CommandPalette open={palette.open} onOpenChange={palette.setOpen} />}
+        {stage && <StageFrame />}
+        {tourOpen && <GuidePanel />}
+      </Suspense>
     </div>
   )
 }

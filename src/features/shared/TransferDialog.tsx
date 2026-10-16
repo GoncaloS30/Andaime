@@ -9,6 +9,7 @@ import { Button } from '@/ui/Button'
 import { Field, Input, Select, Switch } from '@/ui/Field'
 import { Dialog } from '@/ui/Overlay'
 import { ConflictCard } from './ConflictCard'
+import { plural } from '@/lib/plural'
 
 interface Props {
   open: boolean
@@ -69,7 +70,7 @@ export function TransferDialog({ open, onOpenChange, workerId, siteId, from, to,
             Cancelar
           </Button>
           <Button variant="primary" disabled={!valid} icon={<ArrowRightLeft className="size-4" />} onClick={confirm}>
-            {conflicts.length ? `Transferir com ${conflicts.length} ${conflicts.length === 1 ? 'conflito' : 'conflitos'}` : 'Confirmar transferência'}
+            {conflicts.length ? `Transferir com ${plural(conflicts.length, 'conflito', 'conflitos')}` : 'Confirmar transferência'}
           </Button>
         </>
       }

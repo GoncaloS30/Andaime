@@ -14,6 +14,7 @@ import { Badge, SiteCode } from '@/ui/Badge'
 import { Button, IconButton } from '@/ui/Button'
 import { EmptyState } from '@/ui/States'
 import { CorrectDialog, RejectDialog } from './EntryDialogs'
+import { plural } from '@/lib/plural'
 
 export const STATUS_TONE: Record<EntryStatus, 'info' | 'warn' | 'ok' | 'danger' | 'neutral'> = {
   aberto: 'info',
@@ -99,11 +100,12 @@ export function SheetList({ mode, status, workerIds, teamId, siteId }: Props) {
   const db = useDemo((s) => s.db)
   const selectedIds = useMemo(() => sheets.filter((s) => checked.has(s.key)).flatMap((s) => s.actionable), [sheets, checked])
 
-  const act = (ids: ID[], label: string) => {
+  const done: [string, string] = mode === 'gestor' ? ['registo aprovado', 'registos aprovados'] : ['registo revisto', 'registos revistos']
+  const act = (ids: ID[]) => {
     if (ids.length === 0) return
     if (mode === 'gestor') approve(ids)
     else review(ids)
-    toast.success(`${ids.length} ${ids.length === 1 ? 'registo' : 'registos'} ${label}`, {
+    toast.success(plural(ids.length, ...done), {
       description: mode === 'gestor' ? 'As horas aprovadas da obra foram atualizadas.' : 'Seguem para aprovação do gestor.',
       action: { label: 'Anular', onClick: () => undo() },
     })
@@ -118,7 +120,6 @@ export function SheetList({ mode, status, workerIds, teamId, siteId }: Props) {
     )
   }
 
-  const verbDone = mode === 'gestor' ? 'aprovados' : 'revistos'
   const verb = mode === 'gestor' ? 'Aprovar' : 'Validar'
 
   return (
@@ -126,7 +127,7 @@ export function SheetList({ mode, status, workerIds, teamId, siteId }: Props) {
       {selectedIds.length > 0 && (
         <div role="toolbar" aria-label="Ações nas folhas selecionadas" className="sticky top-16 z-10 mb-3 flex flex-wrap items-center gap-2 rounded-md bg-pinho px-3 py-2 text-white shadow-e1">
           <span className="text-sm font-semibold">{checked.size} folhas · {selectedIds.length} registos</span>
-          <Button size="sm" variant="accent" icon={<Check className="size-3.5" />} onClick={() => act(selectedIds, verbDone)} data-tour="approve-selected">{verb} selecionadas</Button>
+          <Button size="sm" variant="accent" icon={<Check className="size-3.5" />} onClick={() => act(selectedIds)} data-tour="approve-selected">{verb} selecionadas</Button>
           <Button size="sm" variant="ghost" className="text-white hover:bg-white/10 hover:text-white" icon={<X className="size-3.5" />} onClick={() => setReject(selectedIds)}>{mode === 'gestor' ? 'Rejeitar' : 'Devolver'}</Button>
           <button type="button" className="ml-auto text-xs text-white/70 hover:text-white" onClick={() => setChecked(new Set())}>Limpar seleção</button>
         </div>
@@ -174,14 +175,14 @@ export function SheetList({ mode, status, workerIds, teamId, siteId }: Props) {
                   <span className="flex w-44 flex-wrap justify-end gap-1">
                     {present.slice(0, 2).map(({ st, n }) => (
                       <Badge key={st} tone={STATUS_TONE[st]} dot>
-                        {n} {SHORT[st][n === 1 ? 0 : 1]}
+                        {plural(n, ...SHORT[st])}
                       </Badge>
                     ))}
                   </span>
                 </span>
                 {s.actionable.length > 0 && (
                   <span className="flex gap-1">
-                    <Button size="sm" variant="primary" icon={<Check className="size-3.5" />} onClick={() => act(s.actionable, verbDone)}>{verb}</Button>
+                    <Button size="sm" variant="primary" icon={<Check className="size-3.5" />} onClick={() => act(s.actionable)}>{verb}</Button>
                     <IconButton label={mode === 'gestor' ? 'Rejeitar folha' : 'Devolver folha'} size="sm" variant="secondary" onClick={() => setReject(s.actionable)}>
                       {mode === 'gestor' ? <X className="size-4" /> : <CornerUpLeft className="size-4" />}
                     </IconButton>

@@ -6,6 +6,7 @@ import { selectNotifications } from '@/store/selectors'
 import { useDemo } from '@/store/store'
 import { Button } from '@/ui/Button'
 import { AbsenceScreen, DocsScreen, NotificationsScreen, ProfileScreen, TodayScreen, UpcomingScreen, WeekScreen, type WorkerTab } from './WorkerScreens'
+import { plural } from '@/lib/plural'
 
 const TITLES: Record<WorkerTab, string> = {
   hoje: 'Hoje',
@@ -50,7 +51,7 @@ export function WorkerApp({ tab: controlled, onTabChange, embedded }: Props) {
   const doSync = async () => {
     const n = outbox.length
     await sync()
-    toast.success(`${n} ${n === 1 ? 'operação sincronizada' : 'operações sincronizadas'}`, { description: 'O encarregado e o escritório já veem os registos.' })
+    toast.success(`${plural(n, 'operação sincronizada', 'operações sincronizadas')}`, { description: 'O encarregado e o escritório já veem os registos.' })
   }
 
   return (
@@ -79,10 +80,10 @@ export function WorkerApp({ tab: controlled, onTabChange, embedded }: Props) {
             {online ? <RefreshCw className={cn('size-4 shrink-0', syncing && 'animate-spin')} aria-hidden /> : <CloudOff className="size-4 shrink-0" aria-hidden />}
             <span className="flex-1">
               {!online
-                ? `Sem rede (simulado). ${outbox.length ? `${outbox.length} ${outbox.length === 1 ? 'operação guardada' : 'operações guardadas'} no telemóvel.` : 'O que registar fica guardado no telemóvel.'}`
+                ? `Sem rede (simulado). ${outbox.length ? `${plural(outbox.length, 'operação guardada', 'operações guardadas')} no telemóvel.` : 'O que registar fica guardado no telemóvel.'}`
                 : syncing
                   ? `A sincronizar… faltam ${outbox.length}`
-                  : `${outbox.length} ${outbox.length === 1 ? 'operação por sincronizar' : 'operações por sincronizar'}.`}
+                  : `${plural(outbox.length, 'operação por sincronizar', 'operações por sincronizar')}.`}
             </span>
             {online && outbox.length > 0 && !syncing && (
               <Button size="sm" variant="primary" onClick={doSync} data-tour="worker-sync">Sincronizar</Button>

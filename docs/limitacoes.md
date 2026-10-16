@@ -16,10 +16,9 @@
 
 ## Técnicas
 - **Mapa**: os mosaicos vêm do OpenStreetMap e precisam de internet; sem ligação aparece um aviso e os pinos mantêm-se.
-- **Excel**: gerado no navegador com ExcelJS (≈ 0,9 MB, carregado só ao exportar). O `npm audit` reporta 2 vulnerabilidades moderadas numa dependência do ExcelJS (`uuid`); sem impacto nesta demo sem servidor, a rever antes de produção.
-- Arrastar e largar não tem redimensionamento por arrasto: "Alterar período" faz-se no painel do bloco (com datas), com teclado ou rato.
+- **Excel**: gerado no navegador com ExcelJS (≈ 0,9 MB, carregado só ao exportar). O `uuid` usado pelo ExcelJS é forçado a ≥ 11.1.1 (`overrides` no `package.json`); `npm audit` reporta 0 vulnerabilidades.
+- Redimensionar por arrasto (pega no fim do bloco) altera o período só para dias de hoje em diante; o passado altera-se no painel do bloco ("Alterar período").
 - Textos de interface: glossário e textos partilhados estão centralizados; a maioria dos textos de ecrã está junto dos componentes (tradução exigiria extrair para ficheiros de mensagens).
-- Pluralização feita em mais de um sítio (achado de revisão adiado; sem impacto funcional).
 - Sem modo escuro.
-- Lighthouse não foi executado (sem instalação local); performance avaliada por tamanho de bundles, carregamento por rota e testes com JavaScript lento.
+- **Desempenho em telemóvel** (Lighthouse, 4G lento simulado + CPU 4×): primeira pintura ≈ 2,2 s (ecrã de arranque estático), mas a página interativa demora ≈ 4 s e o planeamento e a ficha da obra têm 300–1150 ms de bloqueio (pontuação 61–83, variável entre execuções). A semente e a store correm no arranque, no navegador; com backend real os dados chegariam por página. Em desktop: 98–99.
 - Testado em Microsoft Edge (Chromium) desktop, tablet e emulação de telemóvel; não testado em Safari/iOS real nem com leitores de ecrã reais (NVDA/VoiceOver).

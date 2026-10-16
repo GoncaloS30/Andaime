@@ -26,7 +26,7 @@ npm run preview
 | `npm run build` | TypeScript + build de produção |
 | `npm run typecheck` | `tsc -b` (TypeScript strict) |
 | `npm run lint` | ESLint |
-| `npm test` | Vitest — domínio, store, semente, Excel, componentes (102 testes) |
+| `npm test` | Vitest — domínio, store, semente, Excel, componentes (104 testes) |
 | `npm run e2e` | Playwright — 9 fluxos, guião, acessibilidade (axe) em desktop/tablet/telemóvel. Usa o Microsoft Edge instalado |
 | `npx playwright test -g @quality` | Quality gate: capturas a 1440/1024/768/390/360 px em `docs/review/screens`, overflow, foco, movimento reduzido, JS lento |
 

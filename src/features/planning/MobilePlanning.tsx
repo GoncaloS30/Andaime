@@ -19,6 +19,7 @@ import { TransferDialog } from '../shared/TransferDialog'
 import { conflictIndex } from './model'
 import { NewScheduleDialog } from './dialogs/NewScheduleDialog'
 import { usePlanningParams } from './usePlanningParams'
+import { plural } from '@/lib/plural'
 
 /** Planeamento no telemóvel: um dia de cada vez, agrupado por obra. Sem arrastar. */
 export function MobilePlanning() {
@@ -92,7 +93,7 @@ export function MobilePlanning() {
           >
             <AlertOctagon className="size-4" aria-hidden />
             <span className="flex-1">
-              {dayConflicts.length} {dayConflicts.length === 1 ? 'conflito' : 'conflitos'} neste dia
+              {plural(dayConflicts.length, 'conflito', 'conflitos')} neste dia
             </span>
             <ChevronRight className="size-4" aria-hidden />
           </button>

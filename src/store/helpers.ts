@@ -55,4 +55,4 @@ export function notify(
   if (s.db.notifications.length > 200) s.db.notifications.length = 200
 }
 
-export const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
+export { plural } from '@/lib/plural'

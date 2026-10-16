@@ -8,6 +8,7 @@ import { useDemo } from '@/store/store'
 import { Button } from '@/ui/Button'
 import { Checkbox, ChipToggle } from '@/ui/Field'
 import { Dialog } from '@/ui/Overlay'
+import { plural } from '@/lib/plural'
 
 interface CopyProps {
   open: boolean
@@ -132,7 +133,7 @@ export function DuplicateTeamWeekDialog({ open, onOpenChange, teamId, week }: Du
       if (n > 0) applied++
     }
     toast.success(`Escala de ${team?.name} duplicada`, {
-      description: `${created} atribuições em ${chosen.length} ${chosen.length === 1 ? 'semana' : 'semanas'}.`,
+      description: `${plural(created, 'atribuição', 'atribuições')} em ${plural(chosen.length, 'semana', 'semanas')}.`,
       action: {
         label: 'Anular',
         onClick: () => {

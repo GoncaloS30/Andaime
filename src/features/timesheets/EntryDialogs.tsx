@@ -8,6 +8,7 @@ import { useDemo } from '@/store/store'
 import { Button } from '@/ui/Button'
 import { Field, Input, Select, Textarea } from '@/ui/Field'
 import { Dialog } from '@/ui/Overlay'
+import { plural } from '@/lib/plural'
 
 /** Rejeitar / devolver registos: o motivo é obrigatório e chega a quem registou. */
 export function RejectDialog({ ids, onClose, mode = 'rejeitar' }: { ids: ID[]; onClose: () => void; mode?: 'rejeitar' | 'devolver' }) {
@@ -21,7 +22,7 @@ export function RejectDialog({ ids, onClose, mode = 'rejeitar' }: { ids: ID[]; o
     if (!reason.trim()) return
     if (mode === 'rejeitar') reject(ids, reason)
     else giveBack(ids, reason)
-    toast.success(`${ids.length} ${ids.length === 1 ? 'registo' : 'registos'} ${mode === 'rejeitar' ? 'rejeitados' : 'devolvidos'}`, { description: 'Quem registou foi notificado com o motivo.' })
+    toast.success(mode === 'rejeitar' ? plural(ids.length, 'registo rejeitado', 'registos rejeitados') : plural(ids.length, 'registo devolvido', 'registos devolvidos'), { description: 'Quem registou foi notificado com o motivo.' })
     onClose()
   }
   return (
@@ -29,7 +30,7 @@ export function RejectDialog({ ids, onClose, mode = 'rejeitar' }: { ids: ID[]; o
       open
       onOpenChange={(o) => !o && onClose()}
       size="sm"
-      title={`${verb} ${ids.length} ${ids.length === 1 ? 'registo' : 'registos'}`}
+      title={`${verb} ${plural(ids.length, 'registo', 'registos')}`}
       description="Explique o que tem de ser corrigido. O motivo fica no registo."
       footer={
         <>

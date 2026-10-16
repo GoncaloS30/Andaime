@@ -8,11 +8,14 @@ Data: 16/10/2026 · Ramo `feat/andaime-v3` · Protótipo demonstrativo com dados
 |---|---|---|
 | TypeScript strict | `npx tsc -b` | exit 0 |
 | Lint | `npx eslint .` | 0 erros, 0 avisos |
-| Testes unitários e de store | `npx vitest run` | **102/102** em 16 ficheiros |
-| Build de produção | `npm run build` | exit 0 (bundle principal 477 KB; ExcelJS 929 KB carregado só ao exportar) |
-| E2E + acessibilidade + quality gate | `npx playwright test` (Edge) | **23/23** — desktop 1440, tablet 834, telemóvel (Pixel 7) |
+| Testes unitários e de store | `npx vitest run` | **104/104** em 17 ficheiros |
+| Build de produção | `npm run build` | exit 0 (arranque 601 KB / 190 KB gzip; guião, paleta de comandos, palco e cada módulo carregados a pedido; ExcelJS 929 KB só ao exportar) |
+| Dependências | `npm audit` | **0 vulnerabilidades** (`uuid` forçado a ≥ 11.1.1) |
+| Lighthouse (Edge, desktop) | `lighthouse --preset=desktop` | Painel 99 · Planeamento 98 de desempenho; **100** acessibilidade e boas práticas |
+| Lighthouse (telemóvel, 4G lento + CPU 4×) | `lighthouse` | Painel 83 · Planeamento 66–78 · Obra 61–73 (variável entre execuções); FCP 2,2 s; **100** acessibilidade e boas práticas. Relatórios em `docs/review/lighthouse` |
+| E2E + acessibilidade + quality gate | `npx playwright test` (Edge) | **29/29** — desktop 1440, tablet 834, telemóvel (Pixel 7) |
 
-Os 23 testes E2E cobrem: os **9 fluxos** pela interface; o **guião de apresentação** completo (todos os passos de todos os capítulos sem erro); **axe WCAG 2.1 AA** em 20 rotas do gestor, 4 separadores da ficha, 5 rotas do encarregado e 5 ecrãs da app (zero violações sérias/críticas); alternativa por teclado ao arrastar; sem overflow em 1440/1024/768/390/360; landmarks, um `h1` por página, imagens com `alt`; "Saltar para o conteúdo" e foco visível; erros de formulário anunciados; `prefers-reduced-motion`; carregamento visível com JavaScript lento. Capturas em `docs/review/screens` (7 ecrãs × 5 larguras).
+Os 29 testes E2E cobrem: os **9 fluxos** pela interface; o **guião de apresentação** completo (todos os passos de todos os capítulos sem erro); **axe WCAG 2.1 AA** em 20 rotas do gestor, 4 separadores da ficha, 5 rotas do encarregado e 5 ecrãs da app (zero violações sérias/críticas); alternativa por teclado ao arrastar; arrastar um bloco para outro trabalhador e redimensionar o período pela pega; sem overflow em 1440/1024/768/390/360; landmarks, um `h1` por página, imagens com `alt`; "Saltar para o conteúdo" e foco visível; erros de formulário anunciados; `prefers-reduced-motion`; carregamento visível com JavaScript lento. Capturas em `docs/review/screens` (7 ecrãs × 5 larguras).
 
 Regressão de "Anular" verificada em ciclo vermelho-verde (sem a correção o teste falha; com a correção passa).
 
@@ -51,6 +54,10 @@ Regressão de "Anular" verificada em ciclo vermelho-verde (sem a correção o te
 | Code review | Selo "Por sincronizar" nunca aparecia | Verifica a caixa de saída |
 | Code review | Pré-visualizações repetidas por alternativa de viatura | Alternativas já filtradas, sem pré-visualização por item |
 | Copy | Concordância e género ("Férias aprovada", "escalado", "1 ausentes", "1 expirados") | Frases neutras e concordância corrigida |
+| Code review (adiado, depois feito) | Pluralização repetida em 15 sítios, com erros ("1 registo aprovados", "1 registo rejeitados", "1 atribuições") | `plural()` único em `src/lib/plural.ts` (testado), com nome e particípio concordantes |
+| Lighthouse | Telemóvel: semente com procura O(n²) no arranque (TBT alto) | Índice por trabalhador × dia (desempenho 67–74 → 77–80 no painel antes do ecrã de arranque) |
+| Lighthouse | Ecrã em branco ≈ 3,4 s em 4G lento | Ecrã de arranque estático no `index.html` (FCP ≈ 2,2 s); guião, paleta e palco fora do arranque (−41 KB) |
+| Pedido | Sem redimensionamento por arrasto | Pega no fim de cada bloco (de hoje em diante) + deteção de colisão pelo ponteiro |
 
 ## 4. Avaliação visual final
 
@@ -69,4 +76,4 @@ Desvios (assumidos):
 - `using-git-worktrees`: não usado (repositório novo, sem trabalho paralelo) — ramo `feat/andaime-v3`.
 - TDD estrito no domínio e na store; nos componentes a cobertura vem dos E2E; alguns testes de utilitários (CSV, avatar, regressões da revisão) foram escritos junto ou depois da correção.
 - `testing-strategy`, `requesting-code-review`, `receiving-code-review`, `theme-factory`, `web-artifacts-builder`: não invocadas (sem necessidade concreta; revisão feita com `code-review`).
-- Redimensionar períodos por arrasto não implementado (alternativa "Alterar período" no painel). Lighthouse não executado. Ver `docs/limitacoes.md`.
+- Lighthouse executado com Edge (`CHROME_PATH`) via `npx lighthouse@12`; o desempenho em telemóvel continua abaixo de 90. Ver `docs/limitacoes.md`.

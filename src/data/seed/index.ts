@@ -350,6 +350,8 @@ export function createSeed({ today, seed = 20261015 }: { today: ISODate; seed?: 
   const rejectTargets = new Set([tm('t3', 3).id, tm('t5', 1).id])
   const rejected = new Set<ID>()
   let correctionDone = false
+  // Um registo por trabalhador e dia (índice em vez de procurar em todos os registos: evita O(n²)).
+  const entryKeys = new Set<string>()
   const leaderName = (wid: ID) => {
     const t = teams[workers[wid]!.teamId ?? '']
     return t ? workers[t.foremanId!]!.name : 'Encarregado'
@@ -359,8 +361,7 @@ export function createSeed({ today, seed = 20261015 }: { today: ISODate; seed?: 
     if (a.workerId === personas.trabalhador && a.date === today) continue
     if (absentOn(a.workerId, a.date)) continue
     if (a.teamId === null && a.siteId === 's3') continue // sobreposição futura
-    const exists = Object.values(entries).some((e) => e.workerId === a.workerId && e.date === a.date)
-    if (exists) continue
+    if (entryKeys.has(`${a.workerId}|${a.date}`)) continue
 
     const inMin = toMinutes(a.start) + r.int(-12, 10)
     let status: EntryStatus
@@ -414,6 +415,7 @@ export function createSeed({ today, seed = 20261015 }: { today: ISODate; seed?: 
       e.source = 'encarregado'
     }
     entries[e.id] = e
+    entryKeys.add(`${e.workerId}|${e.date}`)
   }
 
   // ── Histórico anterior para atingir o consumo alvo de cada obra ──

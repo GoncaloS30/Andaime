@@ -16,6 +16,7 @@ import { Button } from '@/ui/Button'
 import { Field, Input, Segmented, Select, Switch, Textarea } from '@/ui/Field'
 import { PageHeader, Panel } from '@/ui/Layout'
 import { SiteMap } from '../shared/SiteMap'
+import { plural } from '@/lib/plural'
 
 const STEPS = ['Obra e cliente', 'Localização', 'Prazos e horas', 'Equipa e viatura', 'Confirmar'] as const
 
@@ -222,7 +223,7 @@ export function NewSitePage() {
                   <Field label="Planear as próximas">
                     {(p) => (
                       <Select {...p} value={planWeeks} onChange={(e) => setPlanWeeks(Number(e.target.value))}>
-                        {[1, 2, 3, 4].map((n) => <option key={n} value={n}>{n} {n === 1 ? 'semana' : 'semanas'}</option>)}
+                        {[1, 2, 3, 4].map((n) => <option key={n} value={n}>{plural(n, 'semana', 'semanas')}</option>)}
                       </Select>
                     )}
                   </Field>

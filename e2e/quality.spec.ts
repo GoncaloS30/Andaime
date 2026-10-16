@@ -80,6 +80,8 @@ test.describe('@quality', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await open(page, '/')
     await page.getByRole('button', { name: 'Apresentar' }).click()
+    // O guião é carregado a pedido: espera que exista antes de ler o estilo.
+    await expect(page.locator('aside[aria-label="Guião de apresentação"]')).toBeVisible()
     const dur = await page.evaluate(() => getComputedStyle(document.querySelector('aside[aria-label="Guião de apresentação"]')!).animationDuration)
     expect(['0.001s', '1e-06s', '0s']).toContain(dur)
   })

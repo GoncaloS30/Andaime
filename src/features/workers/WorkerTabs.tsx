@@ -20,6 +20,7 @@ import { ActivityList } from '../shared/ActivityList'
 import { DocumentDialog } from '../shared/DocumentDialog'
 import { runs } from '../planning/model'
 import { SizesFields } from './WorkerForm'
+import { plural } from '@/lib/plural'
 
 const tone = (st: string) => (st === 'valido' || st === 'aprovado' || st === 'verificado' ? 'ok' : st === 'a_expirar' || st === 'por_verificar' || st === 'pedido' || st === 'revisto' || st === 'submetido' ? 'warn' : st === 'aberto' ? 'info' : 'danger')
 
@@ -142,7 +143,7 @@ export function SitesTab({ id, onTransfer }: { id: ID; onTransfer: () => void })
                     <Link to={`/obras/${r.siteId}`} className="block truncate text-sm font-medium hover:underline">{s?.name}</Link>
                     <span className="text-xs text-ink-3">
                       {dateShort(r.from)}
-                      {r.to !== r.from && ` a ${dateShort(r.to)}`} · {r.days} {r.days === 1 ? 'dia' : 'dias'} · {a?.start}–{a?.end}
+                      {r.to !== r.from && ` a ${dateShort(r.to)}`} · {plural(r.days, 'dia', 'dias')} · {a?.start}–{a?.end}
                     </span>
                   </span>
                   {a?.vehicleId && <Plate plate={d.db.vehicles[a.vehicleId]?.plate ?? ''} />}

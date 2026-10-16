@@ -1,7 +1,6 @@
 import * as RD from '@radix-ui/react-dialog'
 import { Command } from 'cmdk'
 import { Building2, CalendarPlus, CornerDownLeft, Search, Truck, User, UsersRound } from 'lucide-react'
-import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useDemo } from '@/store/store'
 import { GESTOR_NAV } from '../nav'
@@ -9,21 +8,6 @@ import { GESTOR_NAV } from '../nav'
 const item =
   'flex h-9 cursor-pointer items-center gap-2.5 rounded-sm px-2 text-sm text-ink aria-selected:bg-line-2 [&_svg]:size-4 [&_svg]:text-ink-3'
 const group = 'px-1 pt-2 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-ink-3'
-
-export function useCommandPalette() {
-  const [open, setOpen] = useState(false)
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault()
-        setOpen((o) => !o)
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
-  return { open, setOpen }
-}
 
 /** Pesquisa global: trabalhadores, obras, equipas, viaturas, páginas e ações. */
 export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {

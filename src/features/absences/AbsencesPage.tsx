@@ -22,6 +22,7 @@ import { EmptyState } from '@/ui/States'
 import { Tabs, TabPanel } from '@/ui/Tabs'
 import { AbsenceDialog } from '../shared/AbsenceDialog'
 import { ConflictCard } from '../shared/ConflictCard'
+import { plural } from '@/lib/plural'
 
 const TYPE_COLOR: Record<AbsenceType, string> = {
   ferias: '#1a9e72',
@@ -53,7 +54,7 @@ function Impact({ a }: { a: Absence }) {
       ) : (
         <>
           <p className="flex flex-wrap items-center gap-1.5 text-ink-2">
-            {data.affected.length} {data.affected.length === 1 ? 'dia escalado' : 'dias escalados'} em
+            {plural(data.affected.length, 'dia escalado', 'dias escalados')} em
             {sites.map((s) => db.sites[s] && <SiteCode key={s} code={db.sites[s]!.code} color={db.sites[s]!.color} />)}
           </p>
           {data.created.length > 0 && (

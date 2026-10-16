@@ -14,6 +14,7 @@ import { ChipToggle, Field, Input, Select, Switch, Textarea } from '@/ui/Field'
 import { ConflictCard } from '../shared/ConflictCard'
 import { TransferDialog } from '../shared/TransferDialog'
 import { usePlanning } from './PlanningContext'
+import { plural } from '@/lib/plural'
 
 type Mode = null | 'mover' | 'duplicar' | 'periodo'
 
@@ -182,7 +183,7 @@ export function AssignmentDetail({ id, onClose }: { id: ID; onClose: () => void 
             disabled={dupDays.length === 0}
             onClick={() => {
               for (const d of dupDays) move(a.id, { date: d }, true)
-              toast.success(`Duplicada para ${dupDays.length} ${dupDays.length === 1 ? 'dia' : 'dias'}`, {
+              toast.success(`Duplicada para ${plural(dupDays.length, 'dia', 'dias')}`, {
                 action: { label: 'Anular', onClick: () => dupDays.forEach(() => undo()) },
               })
               setDupDays([])
