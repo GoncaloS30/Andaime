@@ -210,7 +210,7 @@ export function planningActions(api: StoreApi): Pick<
         pushUndo(s, snap)
         message = mApplyFix(s.db, fix.action, mctx()).message
         const refs = { workerId: conflict.workerIds.length === 1 ? conflict.workerIds[0] : undefined, siteId: conflict.siteIds[0], vehicleId: conflict.vehicleIds[0] }
-        log(s, clock(), 'conflito', `Resolveu "${conflict.title}": ${fix.label.toLowerCase()}.`, refs)
+        log(s, clock(), 'conflito', `Resolveu "${conflict.title}": ${fix.label.charAt(0).toLowerCase()}${fix.label.slice(1)}.`, refs)
         if (fix.action.kind === 'raise_limit') {
           log(s, clock(), 'obra', `Limite de horas de ${s.db.sites[fix.action.siteId]?.code} ajustado para ${formatHours(fix.action.limit)}.`, { siteId: fix.action.siteId })
         }

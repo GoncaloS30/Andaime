@@ -32,11 +32,13 @@ export function useApplyFix() {
 interface Props {
   conflict: Conflict
   compact?: boolean
+  /** Pré-visualização: explica o conflito sem mostrar correções. */
+  preview?: boolean
   onFocus?: (c: Conflict) => void
   className?: string
 }
 
-export function ConflictCard({ conflict: c, compact, onFocus, className }: Props) {
+export function ConflictCard({ conflict: c, compact, preview, onFocus, className }: Props) {
   const apply = useApplyFix()
   const critical = c.severity === 'critico'
   const Icon = critical ? AlertOctagon : AlertTriangle
@@ -74,7 +76,7 @@ export function ConflictCard({ conflict: c, compact, onFocus, className }: Props
           </button>
         )}
       </div>
-      {!compact && c.fixes.length > 0 && (
+      {!compact && !preview && c.fixes.length > 0 && (
         <div className="border-t border-line-2 px-3 py-2">
           <p className="mb-1.5 text-xs font-medium text-ink-3">Correções sugeridas</p>
           <ul className="flex flex-col gap-1">
@@ -99,7 +101,7 @@ export function ConflictCard({ conflict: c, compact, onFocus, className }: Props
           </ul>
         </div>
       )}
-      {!compact && c.fixes.length === 0 && (
+      {!compact && !preview && c.fixes.length === 0 && (
         <p className="border-t border-line-2 px-3 py-2 text-xs text-ink-3">Sem alternativas livres. Ajuste o planeamento manualmente.</p>
       )}
     </article>
