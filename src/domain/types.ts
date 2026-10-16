@@ -1,3 +1,6 @@
+import type { PhotoRef } from './photos'
+
+export type { PhotoRef } from './photos'
 /** Modelo de domínio do Andaime. Sem React nem estado: só formas de dados. */
 
 export type ID = string
@@ -19,6 +22,7 @@ export interface Manager {
   name: string
   title: string
   email: string
+  photo?: PhotoRef
 }
 
 export interface Client {
@@ -55,6 +59,7 @@ export interface Site {
   directorId: ID
   foremanId: ID | null
   color: string
+  photo?: PhotoRef
   description: string
   /** Código de ordem/centro de custo para exportação ERP. */
   erpOrder: string
@@ -97,6 +102,7 @@ export interface Worker {
   dailyHours: number
   hourlyCost: number
   sizes: Sizes
+  photo?: PhotoRef
 }
 
 export interface TeamHistoryItem {
@@ -130,6 +136,7 @@ export interface Vehicle {
   maintenanceDue: ISODate
   teamId: ID | null
   notes: string
+  photo?: PhotoRef
 }
 
 /** Unidade do planeamento: um trabalhador, numa obra, num dia (ADR-0003). */
@@ -253,6 +260,7 @@ export interface EquipmentItem {
   stock: number
   /** Nº de série para ferramentas; vazio para consumíveis. */
   serial: string
+  photo?: PhotoRef
 }
 
 export type DeliveryStatus = 'entregue' | 'devolvido' | 'danificado' | 'perdido'
