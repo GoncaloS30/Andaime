@@ -23,6 +23,14 @@ const SiteDetailPage = page(() => import('@/features/sites/SiteDetailPage'), 'Si
 const NewSitePage = page(() => import('@/features/sites/NewSitePage'), 'NewSitePage')
 const VehiclesPage = page(() => import('@/features/vehicles/VehiclesPage'), 'VehiclesPage')
 const VehicleDetailPage = page(() => import('@/features/vehicles/VehicleDetailPage'), 'VehicleDetailPage')
+const TimesheetsPage = page(() => import('@/features/timesheets/TimesheetsPage'), 'TimesheetsPage')
+const AbsencesPage = page(() => import('@/features/absences/AbsencesPage'), 'AbsencesPage')
+const WeeklyMapsPage = page(() => import('@/features/weekly-maps/WeeklyMapsPage'), 'WeeklyMapsPage')
+const DocumentsPage = page(() => import('@/features/documents/DocumentsPage'), 'DocumentsPage')
+const EquipmentPage = page(() => import('@/features/equipment/EquipmentPage'), 'EquipmentPage')
+const GeoMapPage = page(() => import('@/features/geo-map/GeoMapPage'), 'GeoMapPage')
+const ReportsPage = page(() => import('@/features/reports/ReportsPage'), 'ReportsPage')
+const SettingsPage = page(() => import('@/features/settings/SettingsPage'), 'SettingsPage')
 
 function RouteError() {
   const err = useRouteError()
@@ -63,6 +71,14 @@ export const router = createBrowserRouter([
       { path: 'obras/:id', element: gestor(<SiteDetailPage />) },
       { path: 'viaturas', element: gestor(<VehiclesPage />) },
       { path: 'viaturas/:id', element: gestor(<VehicleDetailPage />) },
+      { path: 'horas', element: gestor(<TimesheetsPage />) },
+      { path: 'ausencias', element: gestor(<AbsencesPage />) },
+      { path: 'mapas', element: gestor(<WeeklyMapsPage />) },
+      { path: 'documentos', element: gestor(<DocumentsPage />) },
+      { path: 'equipamentos', element: gestor(<EquipmentPage />) },
+      { path: 'mapa', element: gestor(<GeoMapPage />) },
+      { path: 'relatorios', element: gestor(<ReportsPage />) },
+      { path: 'definicoes', element: <SettingsPage /> },
       { path: 'inicio', element: <Navigate to="/" replace /> },
       { path: '*', element: <NotFound /> },
     ],
