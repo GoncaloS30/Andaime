@@ -92,7 +92,7 @@ function DraggableWorker({ id, state, hours }: { id: ID; state: AvailabilityStat
           isDragging && 'opacity-40',
         )}
       >
-        <Avatar name={w.name} size="xs" color={team?.color ?? '#7d847f'} />
+        <Avatar name={w.name} photo={w.photo} size="xs" color={team?.color ?? '#7d847f'} />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-xs font-medium text-ink">{w.name}</span>
           <span className="block truncate text-[10.5px] text-ink-3">{w.category}</span>

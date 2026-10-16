@@ -85,7 +85,7 @@ export function TodayScreen({ go }: { go: (t: WorkerTab) => void }) {
             {mates.length > 0 && (
               <p className="mt-3 flex items-center gap-2 text-xs text-ink-3">
                 <Users className="size-3.5" aria-hidden />
-                <span className="flex -space-x-1">{mates.slice(0, 5).map((m) => <Avatar key={m.id} name={m.name} size="xs" ring />)}</span>
+                <span className="flex -space-x-1">{mates.slice(0, 5).map((m) => <Avatar key={m.id} name={m.name} photo={m.photo} size="xs" ring />)}</span>
                 Com {mates.length} colegas
               </p>
             )}
@@ -326,7 +326,7 @@ export function ProfileScreen() {
   return (
     <div className="flex flex-col gap-3">
       <Card className="flex items-center gap-3">
-        <Avatar name={worker.name} size="lg" color={team?.color} />
+        <Avatar name={worker.name} photo={worker.photo} size="lg" color={team?.color} />
         <span>
           <span className="block font-expanded text-lg font-semibold">{worker.name}</span>
           <span className="block text-sm text-ink-3">{worker.category} · N.º {worker.number}</span>

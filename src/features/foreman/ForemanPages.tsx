@@ -83,7 +83,7 @@ export function ForemanToday() {
                 const ab = absenceOn(idx, a.workerId, today)
                 return (
                   <li key={a.id} className="flex flex-wrap items-center gap-3 px-4 py-2.5">
-                    <Avatar name={w?.name ?? '?'} size="sm" color={db.teams[w?.teamId ?? '']?.color} />
+                    <Avatar name={w?.name ?? '?'} photo={w?.photo} size="sm" color={db.teams[w?.teamId ?? '']?.color} onSite={!!e?.clockIn && !ab} />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-medium">{w?.name}</span>
                       <span className="flex items-center gap-2 text-xs text-ink-3">

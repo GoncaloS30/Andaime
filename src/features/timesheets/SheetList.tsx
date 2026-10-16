@@ -154,7 +154,7 @@ export function SheetList({ mode, status, workerIds, teamId, siteId }: Props) {
                 />
                 <button type="button" aria-expanded={isOpen} onClick={() => setOpen((o) => { const n = new Set(o); if (n.has(s.key)) n.delete(s.key); else n.add(s.key); return n })} className="flex min-w-[220px] flex-1 items-center gap-3 text-left">
                   <ChevronDown aria-hidden className={cn('size-4 shrink-0 text-ink-3 transition-transform', !isOpen && '-rotate-90')} />
-                  <Avatar name={w?.name ?? '?'} size="sm" color={db.teams[w?.teamId ?? '']?.color} />
+                  <Avatar name={w?.name ?? '?'} photo={w?.photo} size="sm" color={db.teams[w?.teamId ?? '']?.color} />
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-semibold">{w?.name}</span>
                     <span className="block text-xs text-ink-3">Semana {isoWeek(s.week)} · {dateShort(s.week)} a {dateShort(addDays(s.week, 6))} · {s.entries.length} dias</span>

@@ -55,7 +55,7 @@ export function AssignmentDetail({ id, onClose }: { id: ID; onClose: () => void 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
-        <Avatar name={w?.name ?? '?'} size="md" color={db.teams[w?.teamId ?? '']?.color} />
+        <Avatar name={w?.name ?? '?'} photo={w?.photo} size="md" color={db.teams[w?.teamId ?? '']?.color} />
         <div className="min-w-0">
           <Link to={`/trabalhadores/${a.workerId}`} className="block truncate font-semibold text-ink hover:underline">
             {w?.name}

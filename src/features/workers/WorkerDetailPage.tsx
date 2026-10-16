@@ -63,7 +63,7 @@ export function WorkerDetailPage() {
         <ArrowLeft className="size-4" aria-hidden /> Trabalhadores
       </Link>
       <header className="mb-2 flex flex-wrap items-start gap-4">
-        <Avatar name={w.name} size="lg" color={team?.color ?? '#7d847f'} />
+        <Avatar name={w.name} photo={w.photo} size="lg" color={team?.color ?? '#7d847f'} />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="font-expanded text-2xl font-semibold tracking-tight">{w.name}</h1>

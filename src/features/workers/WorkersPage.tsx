@@ -129,7 +129,7 @@ export function WorkersPage() {
                   <tr key={w.id}>
                     <td>
                       <Link to={`/trabalhadores/${w.id}`} className="flex items-center gap-2.5 font-medium text-ink hover:underline">
-                        <Avatar name={w.name} size="sm" color={t?.color ?? '#7d847f'} />
+                        <Avatar name={w.name} photo={w.photo} size="sm" color={t?.color ?? '#7d847f'} />
                         <span>
                           {w.name}
                           <span className="block text-xs font-normal text-ink-3 tabular">N.º {w.number}</span>

@@ -1,4 +1,6 @@
+import type { PhotoRef } from '@/domain/photos'
 import { cn } from '@/lib/cn'
+import { Photo } from './Photo'
 
 export function initials(name: string) {
   const parts = name.trim().split(/\s+/)
@@ -29,27 +31,39 @@ export function avatarBackground(hex: string): string {
 interface AvatarProps {
   name: string
   color?: string
+  /** Retrato. Sem foto (ou se falhar) mostra as iniciais. É sempre decorativo: o nome está ao lado. */
+  photo?: PhotoRef
   size?: 'xs' | 'sm' | 'md' | 'lg'
   className?: string
   ring?: boolean
+  /** Ponto Lima: em obra hoje. */
+  onSite?: boolean
 }
 
-export function Avatar({ name, color = '#24543f', size = 'sm', className, ring }: AvatarProps) {
-  return (
-    <span
-      aria-hidden
-      className={cn(
-        'inline-flex shrink-0 items-center justify-center rounded-full font-semibold select-none font-wide',
-        size === 'xs' && 'size-5 text-[9px]',
-        size === 'sm' && 'size-7 text-[11px]',
-        size === 'md' && 'size-9 text-sm',
-        size === 'lg' && 'size-14 text-lg',
-        ring && 'ring-2 ring-surface',
-        className,
-      )}
-      style={{ background: avatarBackground(color), color: '#ffffff' }}
-    >
+const BOX = { xs: 'size-5 text-[9px]', sm: 'size-7 text-[11px]', md: 'size-9 text-sm', lg: 'size-14 text-lg' }
+
+export function Avatar({ name, color = '#24543f', photo, size = 'sm', className, ring, onSite }: AvatarProps) {
+  const round = size === 'lg' ? 'rounded-md' : 'rounded-full'
+  const letters = (
+    <span aria-hidden className="flex size-full items-center justify-center font-semibold select-none font-wide" style={{ background: avatarBackground(color), color: '#ffffff' }}>
       {initials(name)}
+    </span>
+  )
+  return (
+    <span className={cn('relative inline-block shrink-0', round, BOX[size], ring && 'ring-2 ring-surface', className)}>
+      <Photo photo={photo} format="retrato" alt="" sizes={size === 'lg' ? '56px' : '36px'} rounded={size === 'lg' ? 'md' : 'full'} fallback={letters} className="size-full" />
+      {onSite && <span aria-hidden className="absolute -right-0.5 -bottom-0.5 size-2.5 rounded-full border-2 border-surface bg-lima" />}
+    </span>
+  )
+}
+
+/** Retratos sobrepostos de uma equipa: até `max`, e o resto como "+N". */
+export function PhotoStack({ people, max = 4 }: { people: { id: string; name: string; color?: string; photo?: PhotoRef }[]; max?: number }) {
+  const rest = people.length - max
+  return (
+    <span className="flex -space-x-1.5">
+      {people.slice(0, max).map((p) => <Avatar key={p.id} name={p.name} color={p.color} photo={p.photo} size="sm" ring />)}
+      {rest > 0 && <span className="relative flex size-7 items-center justify-center rounded-full bg-pinho text-[11px] font-semibold text-lima ring-2 ring-surface">+{rest}</span>}
     </span>
   )
 }

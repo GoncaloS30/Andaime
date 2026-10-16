@@ -3,6 +3,7 @@ import { useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { SERIES } from '@/domain/palette'
 import type { SiteMetrics } from '@/domain/siteMetrics'
+import { useDemo } from '@/store/store'
 import { Avatar } from '@/ui/Avatar'
 import { Badge, Kbd, Plate, SiteCode } from '@/ui/Badge'
 import { Button, IconButton } from '@/ui/Button'
@@ -39,6 +40,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 
 /** Galeria viva do design system Andaime (ver docs/design-system.md). */
 export function DesignPage() {
+  const portrait = useDemo((s) => s.db.managers.m1?.photo)
   const [seg, setSeg] = useState<'semana' | 'mes'>('semana')
   const [sw, setSw] = useState(true)
   const [chip, setChip] = useState(true)
@@ -112,6 +114,7 @@ export function DesignPage() {
           <Badge dot>Planeado</Badge>
           <SiteCode code="OB-25-012" color={SERIES[2]} />
           <Plate plate="AT-41-RQ" />
+          <Avatar name="Marta Albuquerque" photo={portrait} onSite />
           <Avatar name="Marta Albuquerque" />
           <Kbd>Ctrl</Kbd><Kbd>K</Kbd>
         </div>

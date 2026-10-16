@@ -7,7 +7,7 @@ import { availability } from '@/domain/availability'
 import { buildIndex } from '@/domain/indexes'
 import { weekDays, weekStart } from '@/domain/weeks'
 import { cn } from '@/lib/cn'
-import { Avatar } from '@/ui/Avatar'
+import { PhotoStack } from '@/ui/Avatar'
 import { Badge, Plate, SiteCode } from '@/ui/Badge'
 import { Button } from '@/ui/Button'
 import { PageHeader } from '@/ui/Layout'
@@ -44,11 +44,7 @@ export function TeamsPage() {
                   <span className="block truncate text-xs text-ink-3">{foreman ? `Responsável: ${foreman.name}` : 'Sem responsável'}</span>
                 </span>
                 <span className="flex items-center gap-2">
-                  <span className="flex -space-x-1.5">
-                    {members.slice(0, 6).map((m) => (
-                      <Avatar key={m.id} name={m.name} size="sm" color={t.color} ring />
-                    ))}
-                  </span>
+                  <PhotoStack people={members.map((m) => ({ ...m, color: t.color }))} max={5} />
                   <span className="text-xs text-ink-3">{members.length} elementos</span>
                 </span>
                 <span>{site ? <><SiteCode code={site.code} color={site.color} /><span className="block truncate text-xs text-ink-3">{site.name}</span></> : <span className="text-xs text-ink-3">Sem obra</span>}</span>

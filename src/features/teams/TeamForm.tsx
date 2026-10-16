@@ -98,7 +98,7 @@ export function TeamForm({ open, onOpenChange }: { open: boolean; onOpenChange: 
               <li key={w.id}>
                 <label className="flex cursor-pointer items-center gap-3 px-3 py-2 hover:bg-cal">
                   <input type="checkbox" className="size-4 accent-pinho" checked={members.includes(w.id)} onChange={() => setMembers((x) => (x.includes(w.id) ? x.filter((y) => y !== w.id) : [...x, w.id]))} />
-                  <Avatar name={w.name} size="xs" color={db.teams[w.teamId ?? '']?.color} />
+                  <Avatar name={w.name} photo={w.photo} size="xs" color={db.teams[w.teamId ?? '']?.color} />
                   <span className="min-w-0 flex-1 text-sm">
                     {w.name}
                     <span className="block text-xs text-ink-3">{w.category}{w.teamId ? ` · está em ${db.teams[w.teamId]?.name}` : ' · sem equipa'}</span>

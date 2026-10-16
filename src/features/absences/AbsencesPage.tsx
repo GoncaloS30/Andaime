@@ -84,7 +84,7 @@ function Requests({ highlight }: { highlight: string | null }) {
         return (
           <article key={a.id} className={cn('rounded-lg border bg-surface p-4', highlight === a.id ? 'border-pinho ring-2 ring-lima' : 'border-line')} aria-label={`Pedido de ${w?.name}`}>
             <header className="flex items-start gap-3">
-              <Avatar name={w?.name ?? '?'} size="md" color={db.teams[w?.teamId ?? '']?.color} />
+              <Avatar name={w?.name ?? '?'} photo={w?.photo} size="md" color={db.teams[w?.teamId ?? '']?.color} />
               <div className="min-w-0 flex-1">
                 <Link to={`/trabalhadores/${a.workerId}?tab=ausencias`} className="font-semibold hover:underline">{w?.name}</Link>
                 <p className="text-sm text-ink-2">

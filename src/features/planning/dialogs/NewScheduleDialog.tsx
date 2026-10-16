@@ -197,7 +197,7 @@ export function NewScheduleDialog({ open, onOpenChange, initialWeek, onCreated }
                       checked={on}
                       onChange={() => setWorkers((x) => (on ? x.filter((y) => y !== id) : [...x, id]))}
                     />
-                    <Avatar name={w.name} size="xs" color={team?.color} />
+                    <Avatar name={w.name} photo={w.photo} size="xs" color={team?.color} />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-medium">{w.name}</span>
                       <span className="block text-xs text-ink-3">{w.category}</span>

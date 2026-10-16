@@ -92,7 +92,7 @@ export function TeamDetailPage() {
                 const isLead = t.foremanId === m
                 return (
                   <li key={m} className="flex items-center gap-3 px-4 py-2.5">
-                    <Avatar name={w.name} size="sm" color={t.color} />
+                    <Avatar name={w.name} photo={w.photo} size="sm" color={t.color} />
                     <Link to={`/trabalhadores/${m}`} className="min-w-0 flex-1 hover:underline">
                       <span className="block truncate text-sm font-medium">{w.name}</span>
                       <span className="block text-xs text-ink-3">{w.category}</span>

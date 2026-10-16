@@ -22,6 +22,7 @@ export function RoleSwitcher({ compact }: { compact?: boolean }) {
   const setPersona = useDemo((s) => s.setPersona)
 
   const nameOf = (r: Role) => (r === 'gestor' ? db.managers[personas.gestor]?.name : db.workers[personas[r]]?.name) ?? ''
+  const photoOf = (r: Role) => (r === 'gestor' ? db.managers[personas.gestor]?.photo : db.workers[personas[r]]?.photo)
   const Icon = ICON[role]
 
   const choose = (r: Role) => {
@@ -114,7 +115,7 @@ export function RoleSwitcher({ compact }: { compact?: boolean }) {
         })}
       </ul>
       <div className="mt-2 flex items-center gap-2 border-t border-line-2 px-2 pt-2 text-xs text-ink-3">
-        <Avatar name={nameOf(role)} size="xs" />
+        <Avatar name={nameOf(role)} photo={photoOf(role)} size="xs" />
         As permissões são simuladas nesta demonstração.
       </div>
     </Popover>

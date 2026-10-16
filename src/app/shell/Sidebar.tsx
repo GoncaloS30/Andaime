@@ -96,7 +96,7 @@ export function Sidebar() {
       </nav>
       <div className={cn('border-t border-white/10 p-3', L)}>
         <div className="flex items-center gap-2.5">
-          {who && <Avatar name={who.name} color="#24543f" size="sm" className="ring-1 ring-white/20" />}
+          {who && <Avatar name={who.name} photo={who.photo} color="#24543f" size="sm" className="ring-1 ring-white/20" />}
           <div className="min-w-0">
             <p className="truncate text-sm font-medium">{who?.name}</p>
             <p className="truncate text-xs text-white/60">{title}</p>

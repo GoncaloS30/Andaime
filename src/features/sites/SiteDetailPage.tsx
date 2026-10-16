@@ -151,7 +151,7 @@ export function SiteDetailPage() {
               {people.length === 0 ? <p className="px-4 py-4 text-sm text-ink-3">Ninguém planeado.</p> : (
                 <ul className="flex flex-wrap gap-2 p-4">
                   {people.map((w) => (
-                    <li key={w.id}><Link to={`/trabalhadores/${w.id}`} className="flex items-center gap-1.5 rounded-full border border-line py-0.5 pr-2.5 pl-0.5 text-xs hover:border-ink-4"><Avatar name={w.name} size="xs" color={db.teams[w.teamId ?? '']?.color} />{w.name}</Link></li>
+                    <li key={w.id}><Link to={`/trabalhadores/${w.id}`} className="flex items-center gap-1.5 rounded-full border border-line py-0.5 pr-2.5 pl-0.5 text-xs hover:border-ink-4"><Avatar name={w.name} photo={w.photo} size="xs" color={db.teams[w.teamId ?? '']?.color} />{w.name}</Link></li>
                   ))}
                 </ul>
               )}

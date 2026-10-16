@@ -154,7 +154,7 @@ function MobileRow({ a, conflict, onOpen }: { a: Assignment; conflict: boolean; 
   return (
     <li>
       <button type="button" onClick={onOpen} className="flex w-full items-center gap-3 px-3 py-2.5 text-left active:bg-cal">
-        <Avatar name={w?.name ?? '?'} size="sm" color={db.teams[w?.teamId ?? '']?.color} />
+        <Avatar name={w?.name ?? '?'} photo={w?.photo} size="sm" color={db.teams[w?.teamId ?? '']?.color} />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-medium">
             {w?.name}
@@ -262,7 +262,7 @@ function AddSheet({ siteId, date, onClose }: { siteId: ID; date: ISODate; onClos
                   onClose()
                 }}
               >
-                <Avatar name={w.name} size="sm" color={db.teams[w.teamId ?? '']?.color} />
+                <Avatar name={w.name} photo={w.photo} size="sm" color={db.teams[w.teamId ?? '']?.color} />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium">{w.name}</span>
                   <span className="block text-xs text-ink-3">

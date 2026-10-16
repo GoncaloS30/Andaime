@@ -116,7 +116,7 @@ function WorkerRow({ w, team }: { w: Worker; team: Team | null }) {
   return (
     <div className={cn('grid', GRID_COLS)} data-worker={w.id}>
       <div className="sticky left-0 z-10 flex min-w-0 items-center gap-2 border-t border-line-2 bg-surface px-3 py-1.5">
-        <Avatar name={w.name} size="sm" color={team?.color ?? '#7d847f'} />
+        <Avatar name={w.name} photo={w.photo} size="sm" color={team?.color ?? '#7d847f'} onSite={cellOf(db, w.id, today).assignments.length > 0} />
         <span className="min-w-0">
           <Link to={`/trabalhadores/${w.id}`} className="block truncate text-sm font-medium text-ink hover:underline">
             {w.name}
