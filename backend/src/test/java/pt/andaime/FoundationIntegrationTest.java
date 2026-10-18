@@ -2,6 +2,13 @@ package pt.andaime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -9,26 +16,34 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
 
+import jakarta.servlet.http.Cookie;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
+import pt.andaime.identity.application.IdentityMailGateway;
 import pt.andaime.shared.tenant.TenantContext;
 
 @Testcontainers
 @SpringBootTest
 @ActiveProfiles("test")
+@AutoConfigureMockMvc
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class FoundationIntegrationTest {
 
@@ -48,6 +63,12 @@ class FoundationIntegrationTest {
 
     @Autowired
     JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    MockMvc mockMvc;
+
+    @MockitoBean
+    IdentityMailGateway mailGateway;
 
     @DynamicPropertySource
     static void databaseProperties(DynamicPropertyRegistry registry) {
@@ -98,7 +119,7 @@ class FoundationIntegrationTest {
                 versions.add(result.getString("version"));
             }
             assertThat(versions).containsExactlyElementsOf(
-                    List.of("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"));
+                    List.of("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"));
         }
     }
 
@@ -208,6 +229,149 @@ class FoundationIntegrationTest {
         assertThat(currentOrgWithoutContext).isNull();
     }
 
+    @Test
+    void fluxoRegistoVerificacaoLoginEOnboarding() throws Exception {
+        var suffix = UUID.randomUUID().toString().substring(0, 8);
+        var email = "owner-" + suffix + "@andaime.local";
+        var password = "Palavra-passe-" + suffix;
+
+        var anonymousCsrf = obtainCsrf();
+
+        mockMvc.perform(post("/api/auth/signup")
+                        .cookie(anonymousCsrf.cookie())
+                        .header(anonymousCsrf.headerName(), anonymousCsrf.token())
+                        .contentType("application/json")
+                        .content("""
+                                {"email":"%s","password":"%s","displayName":"Dona da Obra"}
+                                """.formatted(email, password)))
+                .andExpect(status().isAccepted());
+
+        var token = ArgumentCaptor.forClass(String.class);
+        verify(mailGateway).sendVerification(anyString(), anyString(), token.capture());
+
+        mockMvc.perform(post("/api/auth/verify-email")
+                        .cookie(anonymousCsrf.cookie())
+                        .header(anonymousCsrf.headerName(), anonymousCsrf.token())
+                        .contentType("application/json")
+                        .content("{\"token\":\"" + token.getValue() + "\"}"))
+                .andExpect(status().isNoContent());
+
+        var login = mockMvc.perform(post("/api/auth/login")
+                        .cookie(anonymousCsrf.cookie())
+                        .header(anonymousCsrf.headerName(), anonymousCsrf.token())
+                        .contentType("application/json")
+                        .content("""
+                                {"email":"%s","password":"%s"}
+                                """.formatted(email, password)))
+                .andExpect(status().isOk())
+                .andExpect(cookie().exists("ANDAIME_SESSION"))
+                .andExpect(jsonPath("$.user.email").value(email))
+                .andExpect(jsonPath("$.memberships").isEmpty())
+                .andReturn();
+
+        var sessionCookie = login.getResponse().getCookie("ANDAIME_SESSION");
+        assertThat(sessionCookie).isNotNull();
+        var authenticatedCsrf = obtainCsrf(sessionCookie);
+
+        var onboarding = mockMvc.perform(post("/api/orgs")
+                        .cookie(sessionCookie, authenticatedCsrf.cookie())
+                        .header(authenticatedCsrf.headerName(), authenticatedCsrf.token())
+                        .contentType("application/json")
+                        .content("""
+                                {"name":"Obras %s","country":"pt","timezone":"Europe/Lisbon"}
+                                """.formatted(suffix)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.name").value("Obras " + suffix))
+                .andExpect(jsonPath("$.country").value("PT"))
+                .andReturn();
+
+        var organizationId = UUID.fromString(com.jayway.jsonpath.JsonPath.read(
+                onboarding.getResponse().getContentAsString(), "$.id"));
+        assertThat(organizationId.version()).isEqualTo(7);
+
+        mockMvc.perform(get("/api/me").cookie(sessionCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.activeOrgId").value(organizationId.toString()))
+                .andExpect(jsonPath("$.memberships[0].orgId").value(organizationId.toString()))
+                .andExpect(jsonPath("$.memberships[0].role").value("OWNER"));
+
+        try (var connection = ownerConnection()) {
+            assertThat(count(connection,
+                    "SELECT count(*) FROM labor_policies WHERE organization_id = ?", organizationId)).isOne();
+            assertThat(count(connection,
+                    "SELECT count(*) FROM conflict_rule_settings WHERE organization_id = ?", organizationId)).isEqualTo(9);
+            assertThat(count(connection,
+                    "SELECT count(*) FROM audit_event WHERE organization_id = ?", organizationId)).isOne();
+        }
+    }
+
+    @Test
+    void meSemSessaoResponde401() throws Exception {
+        mockMvc.perform(get("/api/me"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("unauthenticated"));
+    }
+
+    @Test
+    void mutacaoSemCsrfERecusadaSemCriarUtilizador() throws Exception {
+        var email = "sem-csrf-" + UUID.randomUUID().toString().substring(0, 8) + "@andaime.local";
+        mockMvc.perform(post("/api/auth/signup")
+                        .contentType("application/json")
+                        .content("""
+                                {"email":"%s","password":"Palavra-passe-segura","displayName":"Sem CSRF"}
+                                """.formatted(email)))
+                .andExpect(status().isForbidden());
+
+        try (var connection = ownerConnection()) {
+            assertThat(count(connection, "SELECT count(*) FROM users WHERE email = ?", email)).isZero();
+        }
+    }
+
+    @Test
+    void bloqueiaTemporariamenteDepoisDeCincoLoginsFalhados() throws Exception {
+        var csrf = obtainCsrf();
+        for (int attempt = 0; attempt < 5; attempt++) {
+            mockMvc.perform(post("/api/auth/login")
+                            .cookie(csrf.cookie())
+                            .header(csrf.headerName(), csrf.token())
+                            .contentType("application/json")
+                            .content("""
+                                    {"email":"inexistente-throttle@andaime.local","password":"palavra-passe-errada"}
+                                    """))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        mockMvc.perform(post("/api/auth/login")
+                        .cookie(csrf.cookie())
+                        .header(csrf.headerName(), csrf.token())
+                        .contentType("application/json")
+                        .content("""
+                                {"email":"inexistente-throttle@andaime.local","password":"palavra-passe-errada"}
+                                """))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.code").value("rate-limited"));
+    }
+
+    private CsrfExchange obtainCsrf(Cookie... cookies) throws Exception {
+        var request = get("/api/auth/csrf");
+        if (cookies.length > 0) {
+            request.cookie(cookies);
+        }
+        var result = mockMvc.perform(request)
+                .andExpect(status().isOk())
+                .andExpect(cookie().exists("XSRF-TOKEN"))
+                .andExpect(jsonPath("$.headerName").value("X-XSRF-TOKEN"))
+                .andReturn();
+        var response = result.getResponse();
+        return new CsrfExchange(
+                com.jayway.jsonpath.JsonPath.read(response.getContentAsString(), "$.token"),
+                com.jayway.jsonpath.JsonPath.read(response.getContentAsString(), "$.headerName"),
+                response.getCookie("XSRF-TOKEN"));
+    }
+
+    private record CsrfExchange(String token, String headerName, Cookie cookie) {
+    }
+
     private static Connection ownerConnection() throws SQLException {
         return DriverManager.getConnection(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
     }
@@ -239,6 +403,17 @@ class FoundationIntegrationTest {
                 statement.setObject(index + 1, arguments[index]);
             }
             statement.execute();
+        }
+    }
+
+    private static int count(Connection connection, String sql, Object... arguments) throws SQLException {
+        try (var statement = connection.prepareStatement(sql)) {
+            for (int index = 0; index < arguments.length; index++) {
+                statement.setObject(index + 1, arguments[index]);
+            }
+            var result = statement.executeQuery();
+            result.next();
+            return result.getInt(1);
         }
     }
 }

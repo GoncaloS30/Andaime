@@ -36,6 +36,21 @@ public final class TenantContext {
         };
     }
 
+    public static Scope openForUser(UUID userId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("O contexto exige um utilizador");
+        }
+        var previous = CURRENT.get();
+        CURRENT.set(new State(null, userId));
+        return () -> {
+            if (previous == null) {
+                CURRENT.remove();
+            } else {
+                CURRENT.set(previous);
+            }
+        };
+    }
+
     public static void clear() {
         CURRENT.remove();
     }

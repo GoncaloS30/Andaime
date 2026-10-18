@@ -29,6 +29,8 @@ O contrato vivo é o OpenAPI gerado pelo backend: `http://localhost:8088/api/doc
 
 ## F1 — Identidade e organizações
 
+Implementado: CSRF, registo, verificação de email, login, logout, `GET /api/me` e onboarding com `POST /api/orgs`. Os restantes endpoints desta tabela continuam a ser o contrato-alvo de F1.
+
 | Método | Caminho | Quem | Descrição |
 |---|---|---|---|
 | GET | `/api/auth/csrf` | público | Emite o cookie `XSRF-TOKEN` |

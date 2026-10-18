@@ -7,7 +7,7 @@ Plano completo: secções "Arquitetura", "Modelo", "Endpoints" e "Sequência" em
 ## Decisões fechadas
 
 - Monorepo: frontend na raiz; `backend/` (Maven, Java 21, Spring Boot 4.1.1, Modulith 2.1.1, springdoc 3.1); `infra/` (Docker Compose).
-- Docker só existe no WSL Ubuntu → build e testes do backend correm no WSL. O WSL tem JDK 25; compilamos com `--release 21` (o CI e a imagem Docker usam JDK 21).
+- Docker só existe no WSL Ubuntu → build e testes do backend correm no WSL com JDK 21 (o CI e a imagem Docker usam a mesma versão).
 - Autenticação por sessões Spring Security + Spring Session JDBC.
 - Modo demo removido; módulos por migrar ficam em `/demo/*` com aviso até serem migrados.
 - Portas: Postgres **55442**, API **8088**, Mailpit **51035** (SMTP) / **58035** (UI), MinIO **59010/59011** (F5). Nunca tocar nos contentores do projeto Mesa (8081, 55432, 51025, 58025) nem nos volumes `infra_*`.
@@ -54,10 +54,34 @@ GET http://localhost:8088/actuator/health/readiness
 
 O WSL tinha apenas o runtime Java 25, sem `javac`; foi instalado `openjdk-21-jdk-headless`. Até o Java 21 ser selecionado por omissão, usar `JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64` nos comandos.
 
+### Identidade, sessão e onboarding (concluída em 2026-10-18)
+
+- Registo com palavra-passe Argon2id, token de verificação aleatório de 32 bytes e apenas o respetivo SHA-256 persistido; respostas neutras para contas já existentes.
+- Verificação de email, login e logout com Spring Security; sessão JDBC no cookie `ANDAIME_SESSION` (`HttpOnly`, `SameSite=Lax`, `Secure` em produção).
+- CSRF em modo SPA: `GET /api/auth/csrf` emite `XSRF-TOKEN` e as mutações validam `X-XSRF-TOKEN`.
+- Bloqueio por email após cinco logins inválidos, com espera exponencial de 30 segundos até 15 minutos e resposta 429 com `Retry-After`.
+- `GET /api/me` e `POST /api/orgs`; o onboarding cria UUIDv7, membership OWNER, política laboral, nove regras de conflito, organização ativa e evento de auditoria numa única transação.
+- Migração V12 permite ao utilizador descobrir as organizações onde tem membership ativa sem abrir permissões de escrita fora do tenant corrente.
+- Erros HTTP normalizados em `application/problem+json`, com `code`, `requestId` e detalhes de validação.
+
+Verificação real desta subentrega:
+
+```text
+./mvnw verify
+Tests run: 14, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
+
+GET http://localhost:8088/actuator/health/readiness
+{"status":"UP"}
+
+Flyway: schema public atualizado de V11 para V12
+```
+
 ### F1 ainda pendente
 
-- Serviços e endpoints de auth, `/api/me`, organizações, memberships, convites, auditoria e plataforma.
-- Proteção contra brute force, ciclo de tokens por email, gestão/revogação de sessões, suite IDOR completa e testes HTTP/CSRF/429.
+- Recuperação/alteração de palavra-passe, edição de `/api/me`, seleção da organização ativa e gestão/revogação de sessões.
+- Consulta/edição de organizações, memberships, convites, auditoria e endpoints de plataforma.
+- Rate limiting por IP, duração absoluta da sessão, rotação/revogação completa de tokens e suite IDOR completa.
 - Cliente HTTP/TanStack Query e ecrãs de autenticação/onboarding no frontend.
 - Remoção do modo de apresentação e separação dos módulos ainda locais sob `/demo/*`.
 - Playwright full-stack do fluxo de onboarding e convite.
