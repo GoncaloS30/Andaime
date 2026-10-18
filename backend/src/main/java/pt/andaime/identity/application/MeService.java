@@ -3,11 +3,13 @@ package pt.andaime.identity.application;
 import java.util.UUID;
 
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import pt.andaime.identity.MeView;
 import pt.andaime.identity.UserPrincipal;
+import pt.andaime.shared.api.ApiException;
 
 @Service
 public class MeService {
@@ -52,6 +54,37 @@ public class MeService {
                 memberships,
                 user.lastActiveOrgId(),
                 platformAdmin);
+    }
+
+    @Transactional
+    public MeView updateProfile(UserPrincipal principal, String displayName, String locale) {
+        jdbcTemplate.update("""
+                UPDATE users
+                SET display_name = ?, locale = ?, version = version + 1
+                WHERE id = ?
+                """, displayName.strip(), locale, principal.id());
+        return load(principal);
+    }
+
+    @Transactional
+    public void selectActiveOrganization(UserPrincipal principal, UUID organizationId) {
+        var allowed = Boolean.TRUE.equals(jdbcTemplate.queryForObject("""
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM memberships membership
+                    JOIN organizations organization ON organization.id = membership.organization_id
+                    WHERE membership.user_id = ?
+                      AND membership.organization_id = ?
+                      AND membership.status = 'ACTIVE'
+                      AND organization.status = 'ACTIVE'
+                )
+                """, Boolean.class, principal.id(), organizationId));
+        if (!allowed) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "not-found", "A organização não foi encontrada.");
+        }
+        jdbcTemplate.update("""
+                UPDATE users SET last_active_org_id = ?, version = version + 1 WHERE id = ?
+                """, organizationId, principal.id());
     }
 
     private record UserRow(

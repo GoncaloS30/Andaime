@@ -38,4 +38,15 @@ final class SmtpIdentityMailGateway implements IdentityMailGateway {
         message.setText("Foi tentado um novo registo com este endereço. A sua conta existente não foi alterada.");
         mailSender.send(message);
     }
+
+    @Override
+    public void sendPasswordReset(String email, String token) {
+        var message = new SimpleMailMessage();
+        message.setTo(email);
+        message.setSubject("Reponha a palavra-passe do Andaime");
+        message.setText("Foi pedida a reposição da sua palavra-passe. Continue em:\n"
+                + publicUrl + "/repor-palavra-passe?token=" + token
+                + "\n\nSe não fez este pedido, ignore esta mensagem.");
+        mailSender.send(message);
+    }
 }

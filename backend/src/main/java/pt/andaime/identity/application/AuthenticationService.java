@@ -29,6 +29,7 @@ public class AuthenticationService {
 
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final Duration VERIFICATION_VALIDITY = Duration.ofHours(24);
+    private static final Duration PASSWORD_RESET_VALIDITY = Duration.ofHours(1);
 
     private final JdbcTemplate jdbcTemplate;
     private final PasswordEncoder passwordEncoder;
@@ -107,6 +108,73 @@ public class AuthenticationService {
         }
     }
 
+    @Transactional
+    public void requestPasswordReset(String rawEmail) {
+        var email = normalize(rawEmail);
+        var users = jdbcTemplate.query(
+                "SELECT id FROM users WHERE email = ? AND status = 'ACTIVE'",
+                (resultSet, rowNumber) -> resultSet.getObject(1, UUID.class),
+                email);
+        if (users.isEmpty()) {
+            return;
+        }
+
+        var userId = users.getFirst();
+        jdbcTemplate.update("""
+                UPDATE password_reset_tokens
+                SET used_at = now()
+                WHERE user_id = ? AND used_at IS NULL
+                """, userId);
+        var token = newToken();
+        jdbcTemplate.update("""
+                INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
+                VALUES (?, ?, ?)
+                """, userId, hash(token),
+                OffsetDateTime.ofInstant(clock.instant().plus(PASSWORD_RESET_VALIDITY), ZoneOffset.UTC));
+        mailGateway.sendPasswordReset(email, token);
+    }
+
+    @Transactional
+    public void resetPassword(String token, String newPassword) {
+        var users = jdbcTemplate.query("""
+                UPDATE password_reset_tokens
+                SET used_at = now()
+                WHERE token_hash = ?
+                  AND used_at IS NULL
+                  AND expires_at > now()
+                RETURNING user_id
+                """, (resultSet, rowNumber) -> resultSet.getObject(1, UUID.class), hash(token));
+        if (users.isEmpty()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "invalid-token", "O código é inválido ou expirou.");
+        }
+
+        var userId = users.getFirst();
+        var email = jdbcTemplate.queryForObject(
+                "SELECT email::text FROM users WHERE id = ?", String.class, userId);
+        jdbcTemplate.update("""
+                UPDATE users SET password_hash = ?, version = version + 1 WHERE id = ?
+                """, passwordEncoder.encode(newPassword), userId);
+        jdbcTemplate.update("DELETE FROM spring_session WHERE principal_name = ?", email);
+    }
+
+    @Transactional
+    public void changePassword(UUID userId, String currentPassword, String newPassword, String currentSessionId) {
+        var user = jdbcTemplate.queryForObject("""
+                SELECT email::text, password_hash FROM users WHERE id = ?
+                """, (resultSet, rowNumber) -> new PasswordRow(
+                resultSet.getString("email"), resultSet.getString("password_hash")), userId);
+        if (user == null || !passwordEncoder.matches(currentPassword, user.passwordHash())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "invalid-password", "A palavra-passe atual está incorreta.");
+        }
+        jdbcTemplate.update("""
+                UPDATE users SET password_hash = ?, version = version + 1 WHERE id = ?
+                """, passwordEncoder.encode(newPassword), userId);
+        jdbcTemplate.update("""
+                DELETE FROM spring_session
+                WHERE principal_name = ? AND session_id <> ?
+                """, user.email(), currentSessionId);
+    }
+
     private void enforceThrottle(String email) {
         var lockedUntil = jdbcTemplate.query("""
                 SELECT locked_until FROM login_throttle WHERE email_key = ?
@@ -153,5 +221,8 @@ public class AuthenticationService {
         } catch (NoSuchAlgorithmException exception) {
             throw new IllegalStateException("SHA-256 indisponível", exception);
         }
+    }
+
+    private record PasswordRow(String email, String passwordHash) {
     }
 }

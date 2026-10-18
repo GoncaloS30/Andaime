@@ -3,9 +3,13 @@ package pt.andaime;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -295,6 +299,38 @@ class FoundationIntegrationTest {
                 .andExpect(jsonPath("$.memberships[0].orgId").value(organizationId.toString()))
                 .andExpect(jsonPath("$.memberships[0].role").value("OWNER"));
 
+        mockMvc.perform(patch("/api/me")
+                        .cookie(sessionCookie, authenticatedCsrf.cookie())
+                        .header(authenticatedCsrf.headerName(), authenticatedCsrf.token())
+                        .contentType("application/json")
+                        .content("""
+                                {"displayName":"Dona Atualizada","locale":"en-GB"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.user.displayName").value("Dona Atualizada"))
+                .andExpect(jsonPath("$.user.locale").value("en-GB"));
+
+        mockMvc.perform(put("/api/me/active-org")
+                        .cookie(sessionCookie, authenticatedCsrf.cookie())
+                        .header(authenticatedCsrf.headerName(), authenticatedCsrf.token())
+                        .contentType("application/json")
+                        .content("{\"orgId\":\"" + organizationId + "\"}"))
+                .andExpect(status().isNoContent());
+
+        var sessionList = mockMvc.perform(get("/api/me/sessions").cookie(sessionCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].current").value(true))
+                .andReturn();
+        var currentSessionId = (String) com.jayway.jsonpath.JsonPath.read(
+                sessionList.getResponse().getContentAsString(), "$[0].id");
+
+        mockMvc.perform(delete("/api/me/sessions/{id}", currentSessionId)
+                        .cookie(sessionCookie, authenticatedCsrf.cookie())
+                        .header(authenticatedCsrf.headerName(), authenticatedCsrf.token()))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/me").cookie(sessionCookie))
+                .andExpect(status().isUnauthorized());
+
         try (var connection = ownerConnection()) {
             assertThat(count(connection,
                     "SELECT count(*) FROM labor_policies WHERE organization_id = ?", organizationId)).isOne();
@@ -350,6 +386,110 @@ class FoundationIntegrationTest {
                                 """))
                 .andExpect(status().isTooManyRequests())
                 .andExpect(jsonPath("$.code").value("rate-limited"));
+    }
+
+    @Test
+    void recuperaEAlteraPasswordRevogandoAsOutrasSessoes() throws Exception {
+        var suffix = UUID.randomUUID().toString().substring(0, 8);
+        var email = "password-" + suffix + "@andaime.local";
+        var originalPassword = "Original-segura-" + suffix;
+        var resetPassword = "Reposta-segura-" + suffix;
+        var finalPassword = "Final-segura-" + suffix;
+        var csrf = obtainCsrf();
+
+        mockMvc.perform(post("/api/auth/signup")
+                        .cookie(csrf.cookie())
+                        .header(csrf.headerName(), csrf.token())
+                        .contentType("application/json")
+                        .content("""
+                                {"email":"%s","password":"%s","displayName":"Conta Password"}
+                                """.formatted(email, originalPassword)))
+                .andExpect(status().isAccepted());
+        var verificationToken = ArgumentCaptor.forClass(String.class);
+        verify(mailGateway).sendVerification(eq(email), anyString(), verificationToken.capture());
+        mockMvc.perform(post("/api/auth/verify-email")
+                        .cookie(csrf.cookie())
+                        .header(csrf.headerName(), csrf.token())
+                        .contentType("application/json")
+                        .content("{\"token\":\"" + verificationToken.getValue() + "\"}"))
+                .andExpect(status().isNoContent());
+
+        var firstLogin = login(email, originalPassword, csrf);
+        var firstSession = firstLogin.getResponse().getCookie("ANDAIME_SESSION");
+        assertThat(firstSession).isNotNull();
+
+        mockMvc.perform(post("/api/auth/password/forgot")
+                        .cookie(csrf.cookie())
+                        .header(csrf.headerName(), csrf.token())
+                        .contentType("application/json")
+                        .content("{\"email\":\"" + email + "\"}"))
+                .andExpect(status().isAccepted());
+        var resetToken = ArgumentCaptor.forClass(String.class);
+        verify(mailGateway).sendPasswordReset(eq(email), resetToken.capture());
+
+        mockMvc.perform(post("/api/auth/password/reset")
+                        .cookie(csrf.cookie())
+                        .header(csrf.headerName(), csrf.token())
+                        .contentType("application/json")
+                        .content("""
+                                {"token":"%s","password":"%s"}
+                                """.formatted(resetToken.getValue(), resetPassword)))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/me").cookie(firstSession))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/auth/password/reset")
+                        .cookie(csrf.cookie())
+                        .header(csrf.headerName(), csrf.token())
+                        .contentType("application/json")
+                        .content("""
+                                {"token":"%s","password":"%s"}
+                                """.formatted(resetToken.getValue(), finalPassword)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("invalid-token"));
+        mockMvc.perform(post("/api/auth/login")
+                        .cookie(csrf.cookie())
+                        .header(csrf.headerName(), csrf.token())
+                        .contentType("application/json")
+                        .content("""
+                                {"email":"%s","password":"%s"}
+                                """.formatted(email, originalPassword)))
+                .andExpect(status().isUnauthorized());
+
+        var currentLogin = login(email, resetPassword, csrf);
+        var currentSession = currentLogin.getResponse().getCookie("ANDAIME_SESSION");
+        var otherLogin = login(email, resetPassword, csrf);
+        var otherSession = otherLogin.getResponse().getCookie("ANDAIME_SESSION");
+        assertThat(currentSession).isNotNull();
+        assertThat(otherSession).isNotNull();
+        var authenticatedCsrf = obtainCsrf(currentSession);
+
+        mockMvc.perform(post("/api/auth/password/change")
+                        .cookie(currentSession, authenticatedCsrf.cookie())
+                        .header(authenticatedCsrf.headerName(), authenticatedCsrf.token())
+                        .contentType("application/json")
+                        .content("""
+                                {"currentPassword":"%s","newPassword":"%s"}
+                                """.formatted(resetPassword, finalPassword)))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/me").cookie(currentSession))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/me").cookie(otherSession))
+                .andExpect(status().isUnauthorized());
+        login(email, finalPassword, csrf);
+    }
+
+    private org.springframework.test.web.servlet.MvcResult login(
+            String email, String password, CsrfExchange csrf) throws Exception {
+        return mockMvc.perform(post("/api/auth/login")
+                        .cookie(csrf.cookie())
+                        .header(csrf.headerName(), csrf.token())
+                        .contentType("application/json")
+                        .content("""
+                                {"email":"%s","password":"%s"}
+                                """.formatted(email, password)))
+                .andExpect(status().isOk())
+                .andExpect(cookie().exists("ANDAIME_SESSION"))
+                .andReturn();
     }
 
     private CsrfExchange obtainCsrf(Cookie... cookies) throws Exception {

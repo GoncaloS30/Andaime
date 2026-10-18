@@ -33,7 +33,8 @@ class SecurityConfig {
                         .requestMatchers("/actuator/health/**").permitAll()
                         .requestMatchers("/api/docs/**").permitAll()
                         .requestMatchers("/api/auth/csrf", "/api/auth/signup",
-                                "/api/auth/verify-email", "/api/auth/login").permitAll()
+                                "/api/auth/verify-email", "/api/auth/login",
+                                "/api/auth/password/forgot", "/api/auth/password/reset").permitAll()
                         .anyRequest().authenticated())
                 .securityContext(context -> context
                         .securityContextRepository(securityContextRepository)

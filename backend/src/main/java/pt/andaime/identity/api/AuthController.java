@@ -1,6 +1,7 @@
 package pt.andaime.identity.api;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.DeferredCsrfToken;
@@ -89,6 +90,28 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/password/forgot")
+    ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authenticationService.requestPasswordReset(request.email());
+        return ResponseEntity.accepted().build();
+    }
+
+    @PostMapping("/password/reset")
+    ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authenticationService.resetPassword(request.token(), request.password());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/password/change")
+    ResponseEntity<Void> changePassword(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody ChangePasswordRequest body,
+            HttpServletRequest request) {
+        authenticationService.changePassword(
+                principal.id(), body.currentPassword(), body.newPassword(), request.getSession().getId());
+        return ResponseEntity.noContent().build();
+    }
+
     record CsrfView(String token, String headerName, String parameterName) {
     }
 
@@ -102,5 +125,18 @@ public class AuthController {
     }
 
     record LoginRequest(@NotBlank @Email String email, @NotBlank String password) {
+    }
+
+    record ForgotPasswordRequest(@NotBlank @Email String email) {
+    }
+
+    record ResetPasswordRequest(
+            @NotBlank String token,
+            @NotBlank @Size(min = 12, max = 128) String password) {
+    }
+
+    record ChangePasswordRequest(
+            @NotBlank String currentPassword,
+            @NotBlank @Size(min = 12, max = 128) String newPassword) {
     }
 }

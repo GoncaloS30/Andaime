@@ -77,11 +77,26 @@ GET http://localhost:8088/actuator/health/readiness
 Flyway: schema public atualizado de V11 para V12
 ```
 
+### Perfil, passwords e sessões (concluída em 2026-10-18)
+
+- Recuperação de palavra-passe com resposta neutra, token de utilização única válido por uma hora e revogação de todas as sessões após o reset.
+- Alteração autenticada da palavra-passe, validando a atual e preservando apenas a sessão corrente.
+- Edição de nome/locale e seleção da organização ativa, recusando organizações sem membership ativa com 404.
+- Listagem e revogação de sessões Spring Session; os IDs devolvidos pela API são hashes opacos e não os identificadores que autenticam os cookies.
+- Testes HTTP usam o cookie/cabeçalho CSRF reais e cobrem token não reutilizável, passwords antigas recusadas e revogação de sessões.
+
+Verificação real acumulada:
+
+```text
+./mvnw verify
+Tests run: 15, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
+```
+
 ### F1 ainda pendente
 
-- Recuperação/alteração de palavra-passe, edição de `/api/me`, seleção da organização ativa e gestão/revogação de sessões.
 - Consulta/edição de organizações, memberships, convites, auditoria e endpoints de plataforma.
-- Rate limiting por IP, duração absoluta da sessão, rotação/revogação completa de tokens e suite IDOR completa.
+- Rate limiting por IP, duração absoluta da sessão e suite IDOR completa.
 - Cliente HTTP/TanStack Query e ecrãs de autenticação/onboarding no frontend.
 - Remoção do modo de apresentação e separação dos módulos ainda locais sob `/demo/*`.
 - Playwright full-stack do fluxo de onboarding e convite.
