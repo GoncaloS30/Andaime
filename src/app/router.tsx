@@ -76,6 +76,7 @@ export const router = createBrowserRouter([
       { path: 'encarregado', ...lazyPage(() => import('@/features/foreman/ForemanPages'), 'ForemanToday', E) },
       { path: 'encarregado/semana', ...lazyPage(() => import('@/features/foreman/ForemanPages'), 'ForemanWeek', E) },
       { path: 'encarregado/horas', ...lazyPage(() => import('@/features/foreman/ForemanPages'), 'ForemanHours', E) },
+      { path: 'encarregado/diario', ...lazyPage(() => import('@/features/foreman/ForemanDiary'), 'ForemanDiary', E) },
       { path: 'encarregado/documentos', ...lazyPage(() => import('@/features/foreman/ForemanPages'), 'ForemanDocs', E) },
       { path: 'encarregado/problemas', ...lazyPage(() => import('@/features/foreman/ForemanPages'), 'ForemanIssues', E) },
       { path: 'inicio', element: <Navigate to="/" replace /> },

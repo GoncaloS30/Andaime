@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  BookOpen,
   Building2,
   CalendarRange,
   ClipboardCheck,
@@ -69,6 +70,7 @@ export const ENCARREGADO_NAV: NavGroup[] = [
       { to: '/encarregado', label: 'Hoje', icon: HardHat, end: true },
       { to: '/encarregado/semana', label: 'Escala da semana', icon: CalendarRange },
       { to: '/encarregado/horas', label: 'Horas da equipa', icon: ClipboardCheck, badge: 'approvals' },
+      { to: '/encarregado/diario', label: 'Diário de obra', icon: BookOpen },
       { to: '/encarregado/documentos', label: 'Documentação', icon: FileCheck2 },
       { to: '/encarregado/problemas', label: 'Problemas', icon: MessageSquareWarning },
     ],
