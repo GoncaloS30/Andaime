@@ -83,3 +83,17 @@ Fotos de banco com licença livre usadas na demonstração. As pessoas retratada
 | epi/eq-berbequim | Christina & Peter | Pexels License | https://www.pexels.com/photo/close-up-of-an-electric-drill-with-bit-30413424/ |
 | epi/eq-rebarbadora | Anna Shvets | Pexels License | https://www.pexels.com/photo/a-person-using-a-grinder-on-a-metal-4315559/ |
 | epi/eq-laser | Tima Miroshnichenko | Pexels License | https://www.pexels.com/photo/close-up-shot-of-a-line-laser-6474119/ |
+| diario/d01 | SÀI GÒN CÔNG TY CP SẢN XUẤT - THƯƠNG MẠI | Pexels License | https://www.pexels.com/photo/construction-workers-pouring-concrete-on-site-37121400/ |
+| diario/d02 | yajna S R | Pexels License | https://www.pexels.com/photo/construction-workers-working-on-top-of-a-building-20591230/ |
+| diario/d03 | Mehmet Turgut Kirkgoz | Pexels License | https://www.pexels.com/photo/construction-site-with-two-workers-on-rebar-grid-37733179/ |
+| diario/d04 | Unal POLAT | Pexels License | https://www.pexels.com/photo/construction-site-with-metal-framework-in-izmir-39869453/ |
+| diario/d05 | Davide Locatelli | Pexels License | https://www.pexels.com/photo/men-working-in-a-construction-site-2383650/ |
+| diario/d06 | wal_ 172619 | Pexels License | https://www.pexels.com/photo/close-up-of-rusty-rebar-grid-for-construction-37475275/ |
+| diario/d07 | Vadym Alyekseyenko | Pexels License | https://www.pexels.com/photo/reinforcement-steel-bars-at-construction-site-38520003/ |
+| diario/d08 | FOX | Pexels License | https://www.pexels.com/photo/body-of-water-near-concrete-buildings-1183924/ |
+| diario/d09 | GOWTHAM AGM | Pexels License | https://www.pexels.com/photo/close-up-of-man-building-bricks-wall-19688828/ |
+| diario/d10 | Ünzile Aslan | Pexels License | https://www.pexels.com/photo/red-brick-wall-with-horizontal-pattern-36259359/ |
+| diario/d11 | Jan van der Wolf | Pexels License | https://www.pexels.com/photo/scaffolding-on-urban-building-facade-38798439/ |
+| diario/d12 | Aliaksei Smalenski | Pexels License | https://www.pexels.com/photo/stacked-cement-bags-on-wooden-pallet-outdoors-29817952/ |
+| diario/d13 | Bulat843 | Pexels License | https://www.pexels.com/photo/roofer-applying-waterproof-membrane-to-flat-roof-39238328/ |
+| diario/d14 | Gundula Vogel | Pexels License | https://www.pexels.com/photo/roofer-performing-maintenance-on-red-brick-building-31762405/ |

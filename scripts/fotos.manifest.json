@@ -776,5 +776,131 @@
     "autor": "Tima Miroshnichenko",
     "licenca": "Pexels License",
     "alt": "Artigo de EPI ou ferramenta"
+  },
+  {
+    "id": "d01",
+    "categoria": "diario",
+    "original": "fotos-originais/diario/d01.jpg",
+    "url": "https://www.pexels.com/photo/construction-workers-pouring-concrete-on-site-37121400/",
+    "autor": "SÀI GÒN CÔNG TY CP SẢN XUẤT - THƯƠNG MẠI",
+    "licenca": "Pexels License",
+    "alt": "Betonagem de laje"
+  },
+  {
+    "id": "d02",
+    "categoria": "diario",
+    "original": "fotos-originais/diario/d02.jpg",
+    "url": "https://www.pexels.com/photo/construction-workers-working-on-top-of-a-building-20591230/",
+    "autor": "yajna S R",
+    "licenca": "Pexels License",
+    "alt": "Equipa a betonar na cobertura"
+  },
+  {
+    "id": "d03",
+    "categoria": "diario",
+    "original": "fotos-originais/diario/d03.jpg",
+    "url": "https://www.pexels.com/photo/construction-site-with-two-workers-on-rebar-grid-37733179/",
+    "autor": "Mehmet Turgut Kirkgoz",
+    "licenca": "Pexels License",
+    "alt": "Trabalhadores sobre a armadura da laje"
+  },
+  {
+    "id": "d04",
+    "categoria": "diario",
+    "original": "fotos-originais/diario/d04.jpg",
+    "url": "https://www.pexels.com/photo/construction-site-with-metal-framework-in-izmir-39869453/",
+    "autor": "Unal POLAT",
+    "licenca": "Pexels License",
+    "alt": "Cofragem metálica montada"
+  },
+  {
+    "id": "d05",
+    "categoria": "diario",
+    "original": "fotos-originais/diario/d05.jpg",
+    "url": "https://www.pexels.com/photo/men-working-in-a-construction-site-2383650/",
+    "autor": "Davide Locatelli",
+    "licenca": "Pexels License",
+    "alt": "Montagem de cofragem"
+  },
+  {
+    "id": "d06",
+    "categoria": "diario",
+    "original": "fotos-originais/diario/d06.jpg",
+    "url": "https://www.pexels.com/photo/close-up-of-rusty-rebar-grid-for-construction-37475275/",
+    "autor": "wal_ 172619",
+    "licenca": "Pexels License",
+    "alt": "Malha de armadura"
+  },
+  {
+    "id": "d07",
+    "categoria": "diario",
+    "original": "fotos-originais/diario/d07.jpg",
+    "url": "https://www.pexels.com/photo/reinforcement-steel-bars-at-construction-site-38520003/",
+    "autor": "Vadym Alyekseyenko",
+    "licenca": "Pexels License",
+    "alt": "Varões de aço nos pilares"
+  },
+  {
+    "id": "d08",
+    "categoria": "diario",
+    "original": "fotos-originais/diario/d08.jpg",
+    "url": "https://www.pexels.com/photo/body-of-water-near-concrete-buildings-1183924/",
+    "autor": "FOX",
+    "licenca": "Pexels License",
+    "alt": "Estaleiro com água da chuva"
+  },
+  {
+    "id": "d09",
+    "categoria": "diario",
+    "original": "fotos-originais/diario/d09.jpg",
+    "url": "https://www.pexels.com/photo/close-up-of-man-building-bricks-wall-19688828/",
+    "autor": "GOWTHAM AGM",
+    "licenca": "Pexels License",
+    "alt": "Assentamento de tijolo"
+  },
+  {
+    "id": "d10",
+    "categoria": "diario",
+    "original": "fotos-originais/diario/d10.jpg",
+    "url": "https://www.pexels.com/photo/red-brick-wall-with-horizontal-pattern-36259359/",
+    "autor": "Ünzile Aslan",
+    "licenca": "Pexels License",
+    "alt": "Parede de alvenaria"
+  },
+  {
+    "id": "d11",
+    "categoria": "diario",
+    "original": "fotos-originais/diario/d11.jpg",
+    "url": "https://www.pexels.com/photo/scaffolding-on-urban-building-facade-38798439/",
+    "autor": "Jan van der Wolf",
+    "licenca": "Pexels License",
+    "alt": "Andaime na fachada"
+  },
+  {
+    "id": "d12",
+    "categoria": "diario",
+    "original": "fotos-originais/diario/d12.jpg",
+    "url": "https://www.pexels.com/photo/stacked-cement-bags-on-wooden-pallet-outdoors-29817952/",
+    "autor": "Aliaksei Smalenski",
+    "licenca": "Pexels License",
+    "alt": "Sacos de cimento em palete"
+  },
+  {
+    "id": "d13",
+    "categoria": "diario",
+    "original": "fotos-originais/diario/d13.jpg",
+    "url": "https://www.pexels.com/photo/roofer-applying-waterproof-membrane-to-flat-roof-39238328/",
+    "autor": "Bulat843",
+    "licenca": "Pexels License",
+    "alt": "Membrana de impermeabilização na cobertura"
+  },
+  {
+    "id": "d14",
+    "categoria": "diario",
+    "original": "fotos-originais/diario/d14.jpg",
+    "url": "https://www.pexels.com/photo/roofer-performing-maintenance-on-red-brick-building-31762405/",
+    "autor": "Gundula Vogel",
+    "licenca": "Pexels License",
+    "alt": "Trabalho na cobertura"
   }
 ]
