@@ -10,6 +10,8 @@ interface PhotoProps {
   /** Por defeito, o alt da foto. "" = decorativa (o nome já está ao lado). */
   alt?: string
   eager?: boolean
+  /** Foto visível ao abrir a página (candidata a LCP): carrega já e com prioridade alta. */
+  priority?: boolean
   rounded?: 'none' | 'sm' | 'md' | 'full'
   fallback: ReactNode
   className?: string
@@ -18,7 +20,7 @@ interface PhotoProps {
 const ROUND = { none: '', sm: 'rounded-sm', md: 'rounded-md', full: 'rounded-full' }
 
 /** Foto com proporção reservada (sem saltos), tratamento de cor da marca e alternativa se faltar. */
-export function Photo({ photo, format, sizes, alt, eager, rounded = 'md', fallback, className }: PhotoProps) {
+export function Photo({ photo, format, sizes, alt, eager, priority, rounded = 'md', fallback, className }: PhotoProps) {
   const url = usePhotoUrl(photo)
   const [failed, setFailed] = useState<string | null>(null)
   const show = photo && url && failed !== url
@@ -35,10 +37,11 @@ export function Photo({ photo, format, sizes, alt, eager, rounded = 'md', fallba
           alt={alt ?? photo.alt}
           width={photo.w}
           height={photo.h}
-          loading={eager ? 'eager' : 'lazy'}
+          loading={eager || priority ? 'eager' : 'lazy'}
+          fetchPriority={priority ? 'high' : undefined}
           decoding="async"
           onError={() => setFailed(url)}
-          className="size-full object-cover motion-safe:animate-fade-in"
+          className={cn('size-full object-cover', !priority && 'motion-safe:animate-fade-in')}
         />
       ) : (
         <span className="flex size-full items-center justify-center">{fallback}</span>

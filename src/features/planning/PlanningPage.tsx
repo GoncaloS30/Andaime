@@ -366,6 +366,8 @@ function DesktopPlanning() {
               { value: 'viaturas', label: 'Viaturas' },
             ]}
           />
+          {/* Os filtros começam sempre numa linha nova: com a quebra fixa, a troca de fonte não os faz saltar (CLS). */}
+          <div aria-hidden className="h-0 basis-full" />
           <div className="relative">
             <Search aria-hidden className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-ink-3" />
             <label htmlFor="plan-q" className="sr-only">

@@ -9,7 +9,7 @@ export default defineConfig({
   workers: 3,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
-    baseURL: 'http://localhost:4173',
+    baseURL: 'http://localhost:4823',
     trace: 'retain-on-failure',
     locale: 'pt-PT',
     channel: 'msedge',
@@ -21,9 +21,9 @@ export default defineConfig({
     { name: 'mobile', use: { ...devices['Pixel 7'], channel: 'msedge' }, grep: /@responsive|@mobile/ },
   ],
   webServer: {
-    command: 'npx vite build --mode e2e --outDir dist-e2e && npx vite preview --outDir dist-e2e --port 4173 --strictPort',
-    url: 'http://localhost:4173',
-    reuseExistingServer: true,
+    command: 'npx vite build --mode e2e --outDir dist-e2e && npx vite preview --outDir dist-e2e --port 4823 --strictPort',
+    url: 'http://localhost:4823',
+    reuseExistingServer: false,
     timeout: 240_000,
   },
 })

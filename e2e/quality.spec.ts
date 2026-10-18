@@ -11,11 +11,16 @@ const PAGES: { path: string; role: 'gestor' | 'encarregado' | 'trabalhador'; nam
   { path: '/mapas', role: 'gestor', name: 'mapas' },
   { path: '/encarregado', role: 'encarregado', name: 'encarregado' },
   { path: '/app', role: 'trabalhador', name: 'app-trabalhador' },
+  // Ecrãs com fotos (bloco 1)
+  { path: '/obras', role: 'gestor', name: 'obras' },
+  { path: '/trabalhadores/w-0001', role: 'gestor', name: 'trabalhador' },
+  { path: '/viaturas/v11', role: 'gestor', name: 'viatura' },
+  { path: '/equipas', role: 'gestor', name: 'equipas' },
 ]
 
 test.describe('@quality', () => {
   test('capturas, overflow e conteúdo cortado em 5 larguras', async ({ page }) => {
-    test.setTimeout(300_000)
+    test.setTimeout(480_000)
     const problems: string[] = []
     await open(page, '/')
     for (const w of WIDTHS) {

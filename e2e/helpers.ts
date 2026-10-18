@@ -17,7 +17,14 @@ export async function act(page: Page, fn: string): Promise<void> {
 }
 
 /** Primeira abertura (cada teste corre num contexto novo: sem dados guardados). */
+/**
+ * "Hoje" fixo para os testes: quinta-feira, 15/10/2026, 10:00. A demonstração gera os dados à volta da data do
+ * dispositivo, e ao fim de semana o trabalhador não tem trabalho atribuído — os testes não podem depender do dia em que correm.
+ */
+export const TEST_NOW = new Date('2026-10-15T10:00:00')
+
 export async function open(page: Page, path = '/') {
+  await page.clock.setFixedTime(TEST_NOW)
   await page.goto(path)
   await expect(page.locator('#root')).not.toBeEmpty()
   await page.waitForFunction(() => !!(window as unknown as { __andaime?: unknown }).__andaime)

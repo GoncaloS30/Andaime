@@ -5,7 +5,7 @@ import sharp from 'sharp'
 
 const RATIO = { trabalhadores: 1, gestores: 1, obras: 16 / 9, viaturas: 4 / 3, epi: 1 }
 // As mesmas larguras de sizeWidths() em src/domain/photos.ts.
-const WIDTHS = (cat) => (cat === 'obras' ? { s: 320, m: 1280 } : { s: 200, m: 800 })
+const WIDTHS = (cat) => (cat === 'obras' ? { s: 320, c: 640, m: 1280 } : { s: 200, m: 800 })
 const manifest = JSON.parse(await readFile('scripts/fotos.manifest.json', 'utf8'))
 const out = { trabalhadores: [], gestores: [], obras: [], viaturas: [], epi: [] }
 
@@ -29,7 +29,7 @@ for (const f of manifest) {
     const retrato = f.categoria === 'trabalhadores' || f.categoria === 'gestores'
     await img
       .resize(w, h, { fit: 'cover', position: f.foco ?? (retrato ? 'north' : 'attention') })
-      .webp({ quality: size === 's' ? 70 : 74 })
+      .webp({ quality: size === 'm' ? 74 : 70 })
       .toFile(file)
     if (size === 'm') mDims = { w, h }
   }

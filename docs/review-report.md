@@ -59,6 +59,26 @@ Regressão de "Anular" verificada em ciclo vermelho-verde (sem a correção o te
 | Lighthouse | Ecrã em branco ≈ 3,4 s em 4G lento | Ecrã de arranque estático no `index.html` (FCP ≈ 2,2 s); guião, paleta e palco fora do arranque (−41 KB) |
 | Pedido | Sem redimensionamento por arrasto | Pega no fim de cada bloco (de hoje em diante) + deteção de colisão pelo ponteiro |
 
+## 3b. Bloco 1 da V3.1 — fotos (17/10/2026)
+
+| Verificação | Resultado |
+|---|---|
+| `npx tsc -b`, `npx eslint .` | 0 erros |
+| `npx vitest run` | **127/127** em 22 ficheiros (novos: domínio das fotos, seed com fotos, IndexedDB, `setPhoto`, `<Photo>`, `Avatar`) |
+| `npx playwright test` | **33/33** (novos: fluxo 15 — carregar foto, refletir no planeamento e persistir; obras em cartões; repor volta às fotos de banco) |
+| Bundle inicial | +3 KB gzip (199,5 → 202,5 KB); as fotos (4,4 MB) nunca entram no bundle |
+| Lighthouse desktop | Obras 96 · Planeamento 90–97; CLS 0–0,005 |
+| Lighthouse telemóvel (A/B com o build anterior, mesmas condições) | Obras 62–72 vs 66–71; LCP 4,1–4,3 s vs 3,5–3,6 s; painel igual. Medições absolutas variam com a carga da máquina |
+
+**Corrigido durante o bloco:**
+- Seed partilhava objetos de gestores com o catálogo: a store congela o estado e o seed seguinte falhava (teste de regressão).
+- Os E2E corriam contra outra aplicação que ocupava a porta 4173: passam a usar a porta 4823 e a não reutilizar servidores.
+- LCP de 7 s nas obras em telemóvel (capa de 1280 px): tamanho intermédio de 640 px, prioridade só na primeira capa e, no telemóvel, cartão compacto com miniatura.
+- CLS de 0,028 no planeamento (anterior às fotos): a troca de fonte fazia saltar os filtros para outra linha; quebra de linha fixa.
+- Ficha da viatura com scroll horizontal (anterior às fotos, apanhado ao acrescentar o ecrã às capturas): grelha com `minmax(0, …)`.
+- Tira da semana na ficha do trabalhador sobrepunha as horas a 360–390 px.
+- Recortes de retratos com a cabeça cortada: recorte a partir de cima e recorte manual em 4 fotos.
+
 ## 4. Avaliação visual final
 
 - **Gestor:** centro de operações com hierarquia clara (faixa de indicadores ligáveis → horas por obra → no terreno → alertas e decisões). A assinatura tracejado/sólido/limite é consistente no medidor, no quadro, no gráfico semanal e nas legendas. O quadro de planeamento é denso mas legível; conflitos explicados com correções de um clique e "Anular".

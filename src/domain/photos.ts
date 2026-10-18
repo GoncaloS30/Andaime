@@ -12,20 +12,22 @@ export const PHOTO_FORMATS: Record<PhotoFormat, { ratio: number }> = {
   artigo: { ratio: 1 },
 }
 
-/** Largura do tamanho pequeno ("-s") e médio ("-m"), igual à do pipeline (scripts/fotos.mjs). */
-export function sizeWidths(ref: Extract<PhotoRef, { kind: 'banco' }>): { s: number; m: number } {
-  const cover = ref.src.startsWith('obras/')
-  return { s: cover ? 320 : 200, m: cover ? 1280 : 800 }
+/**
+ * Larguras de cada tamanho, iguais às do pipeline (scripts/fotos.mjs): pequeno ("-s"), médio ("-m") e,
+ * só nas capas de obra, um intermédio ("-c") para telemóvel — sem ele o telemóvel descarregava a de 1280 px.
+ */
+export function sizeWidths(ref: Extract<PhotoRef, { kind: 'banco' }>): { s: number; c?: number; m: number } {
+  return ref.src.startsWith('obras/') ? { s: 320, c: 640, m: 1280 } : { s: 200, m: 800 }
 }
 
-export function photoUrl(ref: PhotoRef, size: 's' | 'm'): string | null {
+export function photoUrl(ref: PhotoRef, size: 's' | 'c' | 'm'): string | null {
   return ref.kind === 'banco' ? `/fotos/${ref.src}-${size}.webp` : null
 }
 
 export function photoSrcSet(ref: PhotoRef): string | undefined {
   if (ref.kind !== 'banco') return undefined
   const w = sizeWidths(ref)
-  return `${photoUrl(ref, 's')} ${w.s}w, ${photoUrl(ref, 'm')} ${w.m}w`
+  return [`${photoUrl(ref, 's')} ${w.s}w`, w.c ? `${photoUrl(ref, 'c')} ${w.c}w` : null, `${photoUrl(ref, 'm')} ${w.m}w`].filter(Boolean).join(', ')
 }
 
 /** Medidas que cabem num quadrado de lado `max`, sem deformar nem ampliar. */

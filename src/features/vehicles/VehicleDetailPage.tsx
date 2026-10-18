@@ -50,7 +50,7 @@ export function VehicleDetailPage() {
       <header className="mb-4 flex flex-wrap items-end gap-4">
         <div className="w-full space-y-2 sm:w-64">
           <div className="relative">
-            <Photo photo={v.photo} format="viatura" eager sizes="256px" fallback={<Truck className="size-8 text-ink-4" aria-hidden />} />
+            <Photo photo={v.photo} format="viatura" priority sizes="256px" fallback={<Truck className="size-8 text-ink-4" aria-hidden />} />
             <Plate plate={v.plate} className="absolute right-2 bottom-2 shadow-e1" />
             {v.status !== 'operacional' && (
               <Badge tone="danger" dot className="absolute top-2 left-2" icon={v.status === 'oficina' ? <Wrench className="size-3" aria-hidden /> : undefined}>
@@ -84,7 +84,7 @@ export function VehicleDetailPage() {
         </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <Panel title="Disponibilidade" description="Quatro semanas a partir desta" flush>
           <div className="overflow-x-auto p-3">
             <table className="w-full min-w-[560px] border-separate border-spacing-1 text-xs">

@@ -49,7 +49,7 @@ export function OverviewTab({ id }: { id: ID }) {
       <Panel title="Esta semana" description={`Semana ${isoWeek(d.today)}`}>
         <ol className="grid grid-cols-7 gap-1.5">
           {d.days.map(({ date, list, worked, absence }) => (
-            <li key={date} className={cn('flex min-h-24 flex-col gap-1 rounded-md border p-1.5', date === d.today ? 'border-pinho bg-lima-soft/40' : 'border-line-2')}>
+            <li key={date} className={cn('flex min-h-24 min-w-0 flex-col gap-1 rounded-md border p-1.5', date === d.today ? 'border-pinho bg-lima-soft/40' : 'border-line-2')}>
               <span className="text-[11px] font-semibold text-ink-3 uppercase">
                 {dayShort(date)} {date.slice(8)}
               </span>
@@ -58,7 +58,7 @@ export function OverviewTab({ id }: { id: ID }) {
                 const s = d.db.sites[a.siteId]
                 return s ? <SiteCode key={a.id} code={s.code.slice(3)} color={s.color} /> : null
               })}
-              {list.length > 0 && <span className="mt-auto font-mono text-[11px] text-ink-2 tabular">{worked !== null ? `✓ ${formatHours(worked)}` : `${list.reduce((s, x) => s + x.hours, 0)}h plan.`}</span>}
+              {list.length > 0 && <span className="mt-auto flex flex-wrap gap-x-1 font-mono text-[11px] leading-tight text-ink-2 tabular">{worked !== null ? <><span aria-hidden>✓</span><span className="sr-only">Registado:</span><span className="whitespace-nowrap">{formatHours(Math.round(worked * 10) / 10)}</span></> : `${list.reduce((s, x) => s + x.hours, 0)}h plan.`}</span>}
               {!list.length && !absence && <span className="mt-auto text-[11px] text-ink-3">Livre</span>}
             </li>
           ))}

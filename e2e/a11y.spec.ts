@@ -2,7 +2,7 @@ import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 import { asRole, go, open, state } from './helpers'
 
-const GESTOR = ['/', '/planeamento', '/planeamento?vista=obras', '/planeamento?escala=mes', '/trabalhadores', '/equipas', '/equipas/t1', '/obras', '/obras/s1?tab=horas', '/obras/nova', '/viaturas', '/viaturas/v4', '/horas', '/ausencias', '/mapas', '/documentos', '/equipamentos', '/relatorios', '/definicoes', '/design']
+const GESTOR = ['/', '/planeamento', '/planeamento?vista=obras', '/planeamento?escala=mes', '/trabalhadores', '/equipas', '/equipas/t1', '/obras', '/obras?vista=tabela', '/obras/s1?tab=horas', '/obras/nova', '/viaturas', '/viaturas/v4', '/horas', '/ausencias', '/mapas', '/documentos', '/equipamentos', '/relatorios', '/definicoes', '/design']
 
 /** Violações sérias ou críticas (WCAG 2.1 AA) da página atual. */
 async function audit(page: import('@playwright/test').Page, label: string) {
@@ -20,6 +20,8 @@ async function audit(page: import('@playwright/test').Page, label: string) {
 for (let i = 0; i < GESTOR.length; i += 5) {
   const routes = GESTOR.slice(i, i + 5)
   test(`acessibilidade — gestor ${routes.join(' ')}`, async ({ page }) => {
+    // Cinco rotas pesadas (planeamento) por teste: com a suite toda em paralelo, 90 s não chegam.
+    test.setTimeout(150_000)
     const found: string[] = []
     await open(page, '/')
     for (const p of routes) {

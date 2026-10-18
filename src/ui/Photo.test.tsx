@@ -8,7 +8,7 @@ describe('<Photo>', () => {
   it('foto de banco com srcset, lazy, medidas e tratamento de cor', () => {
     render(<Photo photo={banco} format="capa" sizes="320px" fallback={<span>sem foto</span>} />)
     const img = screen.getByRole('img', { name: 'Obra Edifício Atlântida' })
-    expect(img).toHaveAttribute('srcset', '/fotos/obras/s1-s.webp 320w, /fotos/obras/s1-m.webp 1280w')
+    expect(img).toHaveAttribute('srcset', '/fotos/obras/s1-s.webp 320w, /fotos/obras/s1-c.webp 640w, /fotos/obras/s1-m.webp 1280w')
     expect(img).toHaveAttribute('loading', 'lazy')
     expect(img).toHaveAttribute('width', '1280')
     expect(img.parentElement).toHaveClass('photo-grade')

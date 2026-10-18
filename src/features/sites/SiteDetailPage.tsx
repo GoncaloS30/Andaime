@@ -125,7 +125,7 @@ export function SiteDetailPage() {
           </Link>
         </div>
         <div className="order-first space-y-2 md:order-none">
-          <Photo photo={s.photo} format="capa" eager sizes="(min-width: 768px) 320px, 100vw" fallback={<Building2 className="size-8 text-ink-4" aria-hidden />} />
+          <Photo photo={s.photo} format="capa" priority sizes="(min-width: 768px) 320px, 100vw" fallback={<Building2 className="size-8 text-ink-4" aria-hidden />} />
           <PhotoUpload target={{ type: 'obra', id }} current={s.photo} alt={`Obra ${s.name}, em ${s.city}`} label="Alterar capa" />
         </div>
       </header>

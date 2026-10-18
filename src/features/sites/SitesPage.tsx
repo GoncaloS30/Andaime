@@ -80,8 +80,9 @@ export function SitesPage() {
             </div>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {list.map(({ s, client, foreman, teams }) => (
-                <SiteCard key={s.id} s={s} client={client} foreman={foreman} teams={teams} m={metrics[s.id]!} />
+              {list.map(({ s, client, foreman, teams }, i) => (
+                // As primeiras capas estão à vista ao abrir: carregam já; a primeira é a candidata a LCP.
+                <SiteCard key={s.id} s={s} client={client} foreman={foreman} teams={teams} m={metrics[s.id]!} priority={i === 0} eager={i < 3} />
               ))}
             </div>
           )

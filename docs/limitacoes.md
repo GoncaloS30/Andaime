@@ -20,5 +20,7 @@
 - Redimensionar por arrasto (pega no fim do bloco) altera o período só para dias de hoje em diante; o passado altera-se no painel do bloco ("Alterar período").
 - Textos de interface: glossário e textos partilhados estão centralizados; a maioria dos textos de ecrã está junto dos componentes (tradução exigiria extrair para ficheiros de mensagens).
 - Sem modo escuro.
+- **Fotos carregadas** ficam só neste navegador (IndexedDB); numa janela privada ficam em memória e desaparecem ao fechar o separador (a app avisa). Os pinos do mapa só mostram miniatura das fotos de banco; as carregadas aparecem no painel da obra.
+- As fotos de banco são ilustrativas (Pexels); as pessoas não correspondem aos nomes fictícios.
 - **Desempenho em telemóvel** (Lighthouse, 4G lento simulado + CPU 4×): primeira pintura ≈ 2,2 s (ecrã de arranque estático), mas a página interativa demora ≈ 4 s e o planeamento e a ficha da obra têm 300–1150 ms de bloqueio (pontuação 61–83, variável entre execuções). A semente e a store correm no arranque, no navegador; com backend real os dados chegariam por página. Em desktop: 98–99.
 - Testado em Microsoft Edge (Chromium) desktop, tablet e emulação de telemóvel; não testado em Safari/iOS real nem com leitores de ecrã reais (NVDA/VoiceOver).

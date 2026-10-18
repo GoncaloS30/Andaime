@@ -16,6 +16,10 @@ describe('fotos', () => {
   it('srcset com as larguras reais de cada tamanho', () => {
     expect(photoSrcSet(banco)).toBe('/fotos/trabalhadores/t01-s.webp 200w, /fotos/trabalhadores/t01-m.webp 800w')
   })
+  it('capas têm um tamanho intermédio para telemóvel', () => {
+    const capa: PhotoRef = { kind: 'banco', src: 'obras/s1', credit: 'c', alt: 'Obra', w: 1280, h: 720 }
+    expect(photoSrcSet(capa)).toBe('/fotos/obras/s1-s.webp 320w, /fotos/obras/s1-c.webp 640w, /fotos/obras/s1-m.webp 1280w')
+  })
   it('fitWithin reduz o lado maior sem deformar e nunca amplia', () => {
     expect(fitWithin(4000, 3000, 1600)).toEqual({ w: 1600, h: 1200 })
     expect(fitWithin(3000, 4000, 1600)).toEqual({ w: 1200, h: 1600 })

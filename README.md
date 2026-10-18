@@ -27,6 +27,8 @@ npm run preview
 | `npm run typecheck` | `tsc -b` (TypeScript strict) |
 | `npm run lint` | ESLint |
 | `npm test` | Vitest — domínio, store, semente, Excel, componentes (104 testes) |
+| `npm run fotos` | Gera as fotos tratadas (WebP) e o manifesto a partir de `scripts/fotos.manifest.json` e de `fotos-originais/` (fora do git) |
+| `npm run fotos:folha` | Folha de contacto das fotos em `docs/review/fotos-folha.html` |
 | `npm run e2e` | Playwright — 9 fluxos, guião, acessibilidade (axe) em desktop/tablet/telemóvel. Usa o Microsoft Edge instalado |
 | `npx playwright test -g @quality` | Quality gate: capturas a 1440/1024/768/390/360 px em `docs/review/screens`, overflow, foco, movimento reduzido, JS lento |
 
@@ -50,6 +52,10 @@ npm run preview
 | 7 Equipamento | Ficha → Fardamento → Registar entrega |
 | 8 Mapas semanais | Mapas semanais → Exportar Excel |
 | 9 Documentos | Documentos → Atualizar |
+
+## Fotos
+
+As 79 fotos da demonstração (trabalhadores, gestores, obras, viaturas e EPI) são fotos de banco do Pexels com licença livre, tratadas em WebP com a cor da marca. Créditos em `public/fotos/CREDITOS.md`. As pessoas retratadas não têm relação com os nomes fictícios. Quem usa a demo pode carregar fotos próprias (ficam no IndexedDB deste navegador; "Repor demonstração" apaga-as).
 
 ## Arquitetura
 
