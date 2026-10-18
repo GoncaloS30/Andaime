@@ -22,6 +22,13 @@ Funcionalidades do Lyrical Design e fotos (spec `docs/superpowers/specs/2026-10-
   - exportação Word (A4, fotos de 7 cm sem deformar) e Excel;
   - dashboard com os últimos registos;
   - fluxo 11 com testes de store, do Word e E2E.
+- **Dormidas e hotéis** (bloco 3):
+  - página Dormidas por semana: quem dorme fora a partir da escala (sem dias de ausência), datas propostas, noites e resumo;
+  - sugestão "longe de casa" (outro país ou mais de 100 km da residência);
+  - estadias sem escala; exportação Excel;
+  - separador Alojamento na obra (hotéis com foto, morada, contacto e uso) e na ficha do trabalhador;
+  - "Onde durmo esta semana" na app do trabalhador, com notificação; painel no dashboard;
+  - fluxo 10 com testes de domínio, store e E2E.
 - Repositório configurado para trabalho em equipa: CI, Dependabot, CODEOWNERS, modelos de issue e PR, licença e guia de contribuição.
 
 ### Alterado

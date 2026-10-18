@@ -14,6 +14,7 @@ import { AbsenceDialog } from '../shared/AbsenceDialog'
 import { DeliveryDialog } from '../shared/DeliveryDialog'
 import { TransferDialog } from '../shared/TransferDialog'
 import { WorkerForm } from './WorkerForm'
+import { WorkerStays } from '../lodging/WorkerStays'
 import {
   AbsencesTab,
   DocumentsTab,
@@ -35,6 +36,7 @@ const TABS = [
   { value: 'ausencias', label: 'Ausências' },
   { value: 'fardamento', label: 'Fardamento' },
   { value: 'equipamentos', label: 'Equipamentos' },
+  { value: 'alojamento', label: 'Alojamento' },
   { value: 'historico', label: 'Histórico' },
 ]
 
@@ -132,6 +134,7 @@ export function WorkerDetailPage() {
         <TabPanel value="ausencias"><AbsencesTab id={id} onNew={() => setDialog('absence')} /></TabPanel>
         <TabPanel value="fardamento"><UniformTab id={id} onDeliver={() => setDialog('delivery')} /></TabPanel>
         <TabPanel value="equipamentos"><EquipmentTab id={id} onDeliver={() => setDialog('delivery')} /></TabPanel>
+        <TabPanel value="alojamento"><WorkerStays id={id} /></TabPanel>
         <TabPanel value="historico"><HistoryTab id={id} /></TabPanel>
       </Tabs>
 

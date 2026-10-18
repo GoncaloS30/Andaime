@@ -16,6 +16,7 @@ import { FieldWeek } from './FieldWeek'
 import { PendingPanel } from './PendingPanel'
 import { SitesHours } from './SitesHours'
 import { LatestDiary } from './LatestDiary'
+import { LodgingPanel } from './LodgingPanel'
 
 export function DashboardPage() {
   const today = useDemo((s) => s.session.today)
@@ -93,6 +94,7 @@ export function DashboardPage() {
               )}
             </Panel>
             <PendingPanel />
+            <LodgingPanel />
             <LatestDiary />
             <Panel title="Atividade recente" id="atividade">
               <ActivityList events={activity} limit={8} />

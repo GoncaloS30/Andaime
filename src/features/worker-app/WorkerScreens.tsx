@@ -19,6 +19,7 @@ import { Button } from '@/ui/Button'
 import { Field, Input, Select, Textarea } from '@/ui/Field'
 import { EmptyState } from '@/ui/States'
 import { DocumentDialog } from '../shared/DocumentDialog'
+import { WhereISleep } from '../lodging/WorkerStays'
 
 export type WorkerTab = 'hoje' | 'proximas' | 'semana' | 'ausencias' | 'documentos' | 'notificacoes' | 'perfil'
 
@@ -59,6 +60,7 @@ export function TodayScreen({ go }: { go: (t: WorkerTab) => void }) {
   return (
     <div className="flex flex-col gap-3">
       <p className="text-sm text-ink-3 first-letter:uppercase">{dateLong(today)}</p>
+      {worker && <WhereISleep workerId={worker.id} today={today} />}
       {!a ? (
         <Card>
           <EmptyState compact icon={<CalendarClock />} title="Sem trabalho atribuído hoje" action={<Button onClick={() => go('proximas')}>Ver próximas atribuições</Button>}>
@@ -180,6 +182,7 @@ export function WeekScreen() {
       <div className="flex gap-1.5">
         {[-1, 0, 1].map((o) => <Button key={o} size="sm" variant={offset === o ? 'primary' : 'secondary'} onClick={() => setOffset(o)}>{o === -1 ? 'Anterior' : o === 0 ? 'Esta semana' : 'Próxima'}</Button>)}
       </div>
+      {worker && <WhereISleep workerId={worker.id} today={ws} />}
       <ul className="flex flex-col gap-1.5">
         {days.map((d) => {
           const list = Object.values(db.assignments).filter((x) => x.workerId === worker?.id && x.date === d)
