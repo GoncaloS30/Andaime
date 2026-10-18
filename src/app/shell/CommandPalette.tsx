@@ -1,8 +1,10 @@
 import * as RD from '@radix-ui/react-dialog'
 import { Command } from 'cmdk'
-import { Building2, CalendarPlus, CornerDownLeft, Search, Truck, User, UsersRound } from 'lucide-react'
+import { Building2, CalendarPlus, CornerDownLeft, Search, Truck, UsersRound } from 'lucide-react'
 import { useNavigate } from 'react-router'
 import { useDemo } from '@/store/store'
+import { Avatar } from '@/ui/Avatar'
+import { Photo } from '@/ui/Photo'
 import { GESTOR_NAV } from '../nav'
 
 const item =
@@ -62,7 +64,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
                   <Command.Group heading="Obras" className={group}>
                     {Object.values(db.sites).map((s) => (
                       <Command.Item key={s.id} className={item} value={`${s.code} ${s.name} ${s.city}`} onSelect={() => go(`/obras/${s.id}`)}>
-                        <Building2 aria-hidden />
+                        <Photo photo={s.photo} format="capa" alt="" sizes="40px" rounded="sm" className="w-10" fallback={<Building2 aria-hidden />} />
                         <span className="font-mono text-xs text-ink-3">{s.code}</span> {s.name}
                         <span className="ml-auto text-xs text-ink-3">{s.city}</span>
                       </Command.Item>
@@ -71,7 +73,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
                   <Command.Group heading="Trabalhadores" className={group}>
                     {Object.values(db.workers).map((w) => (
                       <Command.Item key={w.id} className={item} value={`${w.name} ${w.number} ${w.category}`} onSelect={() => go(`/trabalhadores/${w.id}`)}>
-                        <User aria-hidden /> {w.name}
+                        <Avatar name={w.name} photo={w.photo} color={db.teams[w.teamId ?? '']?.color} size="xs" /> {w.name}
                         <span className="ml-auto text-xs text-ink-3">{w.category}</span>
                       </Command.Item>
                     ))}
@@ -86,7 +88,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
                   <Command.Group heading="Viaturas" className={group}>
                     {Object.values(db.vehicles).map((v) => (
                       <Command.Item key={v.id} className={item} value={`${v.plate} ${v.make} ${v.model}`} onSelect={() => go(`/viaturas/${v.id}`)}>
-                        <Truck aria-hidden /> <span className="font-mono text-xs">{v.plate}</span> {v.make} {v.model}
+                        <Photo photo={v.photo} format="viatura" alt="" sizes="32px" rounded="sm" className="w-8" fallback={<Truck aria-hidden />} /> <span className="font-mono text-xs">{v.plate}</span> {v.make} {v.model}
                       </Command.Item>
                     ))}
                   </Command.Group>

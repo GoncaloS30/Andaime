@@ -5,6 +5,7 @@ import type { ID } from '@/domain/types'
 import { addDays, dateShort, weekStart } from '@/domain/weeks'
 import { useDemo } from '@/store/store'
 import { Badge, Plate } from '@/ui/Badge'
+import { Photo } from '@/ui/Photo'
 import { Button } from '@/ui/Button'
 import { Field, Input, Select } from '@/ui/Field'
 import { Dialog } from '@/ui/Overlay'
@@ -88,6 +89,18 @@ export function VehicleAssignDialog({ open, onOpenChange, vehicleId, teamId }: P
         </Field>
         <Field label="A partir de">{(p) => <Input {...p} type="date" value={from} min={today} onChange={(e) => setFrom(e.target.value)} />}</Field>
       </div>
+      {v && (
+        <div className="mt-4 flex items-center gap-3 rounded-md border border-line-2 p-2">
+          <div className="relative w-28 shrink-0">
+            <Photo photo={v.photo} format="viatura" sizes="112px" rounded="sm" fallback={<Truck className="size-5 text-ink-4" aria-hidden />} />
+            <Plate plate={v.plate} className="absolute right-1 bottom-1 scale-90" />
+          </div>
+          <p className="text-sm">
+            <span className="block font-semibold">{v.make} {v.model}</span>
+            <span className="text-ink-3">{v.seats} lugares{v.teamId ? ` · hoje com ${db.teams[v.teamId]?.name}` : ' · de reserva'}</span>
+          </p>
+        </div>
+      )}
       {v && team && conflicts.length === 0 && (
         <p className="mt-4 rounded-md border border-ok/30 bg-ok-soft px-3 py-2.5 text-sm font-medium text-ok">
           Sem conflitos: {v.plate} ({v.seats} lugares) serve a equipa {team.name} ({team.memberIds.length} pessoas).
@@ -105,6 +118,7 @@ export function VehicleAssignDialog({ open, onOpenChange, vehicleId, teamId }: P
               {alternatives.map(({ x }) => (
                 <li key={x.id}>
                   <button type="button" onClick={() => apply(x.id)} className="flex w-full items-center gap-3 rounded-md border border-line px-3 py-2 text-left hover:border-pinho hover:bg-lima-soft/40">
+                    <Photo photo={x.photo} format="viatura" alt="" sizes="64px" rounded="sm" className="w-16" fallback={<Truck className="size-4 text-ink-4" aria-hidden />} />
                     <Plate plate={x.plate} />
                     <span className="flex-1 text-sm">{x.make} {x.model} · {x.seats} lugares{x.notes ? ` · ${x.notes}` : ''}</span>
                     <Badge tone="ok" dot>Livre no período</Badge>
