@@ -1,6 +1,6 @@
 // Gerado por scripts/fotos.mjs a partir de scripts/fotos.manifest.json. Não editar à mão.
 export interface ManifestPhoto { id: string; src: string; w: number; h: number; alt: string; credit: string; look?: 'a' | 'b' }
-export const PHOTOS: Record<'trabalhadores' | 'gestores' | 'obras' | 'viaturas' | 'epi' | 'diario', ManifestPhoto[]> = {
+export const PHOTOS: Record<'trabalhadores' | 'gestores' | 'obras' | 'viaturas' | 'epi' | 'diario' | 'hoteis', ManifestPhoto[]> = {
   "trabalhadores": [
     {
       "id": "t01",
@@ -799,5 +799,6 @@ export const PHOTOS: Record<'trabalhadores' | 'gestores' | 'obras' | 'viaturas' 
       "alt": "Trabalho na cobertura",
       "credit": "Foto: Gundula Vogel / Pexels"
     }
-  ]
+  ],
+  "hoteis": []
 }

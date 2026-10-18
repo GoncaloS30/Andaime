@@ -305,6 +305,33 @@ export interface DiaryEntry {
   photos: PhotoRef[]
 }
 
+/** Hotel de uma obra: uma opção onde a equipa pode ficar, não uma reserva. */
+export interface Hotel {
+  id: ID
+  siteId: ID
+  name: string
+  address: string
+  contact: string
+  notes: string
+  photo?: PhotoRef
+  createdAt: string
+}
+
+/** Estadia: quem dorme fora, em que obra, em que hotel (ou por definir) e de quando a quando. */
+export interface Stay {
+  id: ID
+  workerId: ID
+  siteId: ID
+  /** null = por definir (marca-se a necessidade primeiro, reserva-se depois). */
+  hotelId: ID | null
+  /** Segunda-feira da semana a que pertence. Única por (trabalhador, semana, obra). */
+  week: ISODate
+  checkIn: ISODate
+  checkOut: ISODate
+  notes: string
+  createdAt: string
+}
+
 export interface WeekNote {
   weekStart: ISODate
   text: string
@@ -360,6 +387,8 @@ export interface DB {
   issues: Record<ID, Issue>
   weekNotes: Record<ISODate, WeekNote>
   diary: Record<ID, DiaryEntry>
+  hotels: Record<ID, Hotel>
+  stays: Record<ID, Stay>
   activity: ActivityEvent[]
   notifications: Notification[]
 }

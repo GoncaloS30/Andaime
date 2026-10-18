@@ -4,9 +4,9 @@ import { pushUndo, type StoreApi } from '../api'
 import { log } from '../helpers'
 import type { DemoActions } from '../types'
 
-export type PhotoTarget = { type: 'trabalhador' | 'gestor' | 'obra' | 'viatura' | 'artigo'; id: ID }
+export type PhotoTarget = { type: 'trabalhador' | 'gestor' | 'obra' | 'viatura' | 'artigo' | 'hotel'; id: ID }
 
-const COLLECTION = { trabalhador: 'workers', gestor: 'managers', obra: 'sites', viatura: 'vehicles', artigo: 'equipment' } as const
+const COLLECTION = { trabalhador: 'workers', gestor: 'managers', obra: 'sites', viatura: 'vehicles', artigo: 'equipment', hotel: 'hotels' } as const
 
 type WithPhoto = { photo?: PhotoRef; name?: string; plate?: string }
 
