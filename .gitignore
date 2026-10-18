@@ -7,3 +7,5 @@ playwright-report
 .DS_Store
 dist-e2e
 fotos-originais/
+backend/target/
+infra/.env

@@ -1,0 +1,54 @@
+name: andaime
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: andaime-postgres
+    environment:
+      POSTGRES_DB: andaime
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_local}
+    ports:
+      - "55442:5432"
+    volumes:
+      - andaime-postgres-data:/var/lib/postgresql
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d andaime"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  mailpit:
+    image: axllent/mailpit:v1.27.8
+    container_name: andaime-mailpit
+    ports:
+      - "51035:1025"
+      - "58035:8025"
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ../backend
+    container_name: andaime-backend
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      ANDAIME_DATABASE_URL: jdbc:postgresql://postgres:5432/andaime
+      ANDAIME_DATABASE_OWNER: andaime_owner
+      ANDAIME_DATABASE_OWNER_PASSWORD: ${ANDAIME_DATABASE_OWNER_PASSWORD:-andaime_owner_local}
+      ANDAIME_DATABASE_USER: andaime_app
+      ANDAIME_DATABASE_PASSWORD: ${ANDAIME_DATABASE_PASSWORD:-andaime_app_local}
+      ANDAIME_MAIL_HOST: mailpit
+      ANDAIME_MAIL_PORT: 1025
+    ports:
+      - "8088:8088"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  andaime-postgres-data:
