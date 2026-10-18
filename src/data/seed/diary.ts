@@ -3,16 +3,19 @@ import type { DB, DiaryEntry, ISODate } from '@/domain/types'
 import { addDays, isWeekend } from '@/domain/weeks'
 import { PHOTOS } from './photoManifest'
 
-/** Registos-tipo de um diário de obra (fictícios). As fotos vêm do manifesto, se houver categoria "diario". */
-const ENTRIES: { title: string; text: string; photos: number }[] = [
-  { title: 'Betonagem da laje do piso 2', text: 'Betonagem concluída às 15h30, 42 m³ de betão C30/37.\nVibração e regularização sem incidentes. Cura com rega a partir de amanhã.', photos: 3 },
-  { title: 'Montagem de cofragem', text: 'Cofragem dos pilares do eixo C montada e verificada pelo encarregado.\nFalta escorar a viga V12.', photos: 2 },
-  { title: 'Armaduras inspecionadas', text: 'Visita da fiscalização às armaduras da laje.\nAprovado com uma correção: recobrimento nas vigas de bordadura.', photos: 2 },
-  { title: 'Chuva — trabalhos parados à tarde', text: 'Chuva forte a partir das 14h. Equipa passou para trabalhos interiores (arrumação de estaleiro e marcações).', photos: 1 },
-  { title: 'Alvenarias do piso 1', text: 'Fecho das alvenarias exteriores do alçado norte. Aberturas de janelas conforme projeto.', photos: 2 },
-  { title: 'Entrega de material', text: 'Receção de 18 paletes de tijolo e 6 t de aço A500. Guias conferidas e arquivadas.', photos: 1 },
-  { title: 'Reunião de obra', text: 'Reunião semanal com o dono de obra. Pedido de antecipação da cobertura em uma semana; a avaliar no planeamento.', photos: 0 },
-  { title: 'Impermeabilização da cobertura', text: 'Aplicação da primeira demão de impermeabilização na cobertura do bloco A.', photos: 2 },
+/**
+ * Registos-tipo de um diário de obra (fictícios). Cada um leva as fotos do seu tema (ids do manifesto,
+ * categoria "diario"), para a foto bater sempre com o título.
+ */
+const ENTRIES: { title: string; text: string; photos: string[] }[] = [
+  { title: 'Betonagem da laje do piso 2', text: 'Betonagem concluída às 15h30, 42 m³ de betão C30/37.\nVibração e regularização sem incidentes. Cura com rega a partir de amanhã.', photos: ['d01', 'd02', 'd03'] },
+  { title: 'Montagem de cofragem', text: 'Cofragem dos pilares do eixo C montada e verificada pelo encarregado.\nFalta escorar a viga V12.', photos: ['d04', 'd05'] },
+  { title: 'Armaduras inspecionadas', text: 'Visita da fiscalização às armaduras da laje.\nAprovado com uma correção: recobrimento nas vigas de bordadura.', photos: ['d06', 'd07'] },
+  { title: 'Chuva — trabalhos parados à tarde', text: 'Chuva forte a partir das 14h. Equipa passou para trabalhos interiores (arrumação de estaleiro e marcações).', photos: ['d08'] },
+  { title: 'Alvenarias do piso 1', text: 'Fecho das alvenarias exteriores do alçado norte. Aberturas de janelas conforme projeto.', photos: ['d09', 'd10', 'd11'] },
+  { title: 'Entrega de material', text: 'Receção de 18 paletes de cimento e 6 t de aço A500. Guias conferidas e arquivadas.', photos: ['d12'] },
+  { title: 'Reunião de obra', text: 'Reunião semanal com o dono de obra. Pedido de antecipação da cobertura em uma semana; a avaliar no planeamento.', photos: [] },
+  { title: 'Impermeabilização da cobertura', text: 'Aplicação da primeira demão de impermeabilização na cobertura do bloco A.', photos: ['d13', 'd14'] },
 ]
 
 const AUTHOR_TIMES = ['17:10', '17:45', '18:05', '16:50']
@@ -20,8 +23,6 @@ const AUTHOR_TIMES = ['17:10', '17:45', '18:05', '16:50']
 /** Diário das últimas 3 semanas para as obras em curso: um registo a cada dois dias úteis, aproximadamente. */
 export function seedDiary(db: DB, today: ISODate): Record<string, DiaryEntry> {
   const out: Record<string, DiaryEntry> = {}
-  const pool = PHOTOS.diario
-  let photoIdx = 0
   const sites = Object.values(db.sites).filter((s) => s.status === 'em_curso').sort((a, b) => a.id.localeCompare(b.id))
   sites.forEach((site, si) => {
     const author = site.foremanId ? db.workers[site.foremanId] : undefined
@@ -32,11 +33,10 @@ export function seedDiary(db: DB, today: ISODate): Record<string, DiaryEntry> {
       if (isWeekend(date) || (back + si) % 2 === 1) continue
       const spec = ENTRIES[(n + si * 3) % ENTRIES.length]!
       const byForeman = !!author && n % 3 !== 2
-      const photos: PhotoRef[] = []
-      for (let k = 0; k < spec.photos && pool.length; k++) {
-        const p = pool[photoIdx++ % pool.length]!
-        photos.push({ kind: 'banco', src: p.src, credit: p.credit, alt: `${spec.title} — foto ${k + 1}`, w: p.w, h: p.h })
-      }
+      const photos: PhotoRef[] = spec.photos
+        .map((pid) => PHOTOS.diario.find((p) => p.id === pid))
+        .filter((p) => p !== undefined)
+        .map((p, k) => ({ kind: 'banco', src: p.src, credit: p.credit, alt: `${spec.title} — foto ${k + 1}`, w: p.w, h: p.h }))
       const at = `${date}T${AUTHOR_TIMES[(n + si) % AUTHOR_TIMES.length]}:00`
       const id = `dj-${site.id}-${date}`
       out[id] = {
