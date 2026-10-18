@@ -15,6 +15,13 @@ Funcionalidades do Lyrical Design e fotos (spec `docs/superpowers/specs/2026-10-
   - miniaturas no mapa.
 - Carregar e remover fotos (reduzidas no navegador e guardadas no IndexedDB). "Repor demonstração" apaga-as.
 - Fluxo 15 (fotos) com testes de store e E2E.
+- **Diário de obra** (bloco 2):
+  - separador na ficha da obra com linha do tempo por dia, atalhos por mês e pesquisa sem acentos;
+  - registos com até 20 fotos, galeria acessível, editar e apagar com anular;
+  - encarregado com câmara no telemóvel; o gestor é notificado;
+  - exportação Word (A4, fotos de 7 cm sem deformar) e Excel;
+  - dashboard com os últimos registos;
+  - fluxo 11 com testes de store, do Word e E2E.
 - Repositório configurado para trabalho em equipa: CI, Dependabot, CODEOWNERS, modelos de issue e PR, licença e guia de contribuição.
 
 ### Alterado
