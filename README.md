@@ -1,5 +1,7 @@
 # Andaime V3 — protótipo demonstrativo
 
+[![CI](https://github.com/GoncaloS30/Andaime/actions/workflows/ci.yml/badge.svg)](https://github.com/GoncaloS30/Andaime/actions/workflows/ci.yml)
+
 Centro de operações para empresas de construção: **planeamento → execução → controlo → análise** de trabalhadores, equipas, viaturas e obras em Portugal e no estrangeiro.
 
 > **Protótipo de alta fidelidade.** Corre inteiramente no navegador com **dados fictícios** ("Construções Ribeira Alta, S.A."). Não há servidor, autenticação nem envio de dados. As permissões e o modo offline são **simulados**. Ver [docs/limitacoes.md](docs/limitacoes.md).
@@ -7,9 +9,11 @@ Centro de operações para empresas de construção: **planeamento → execuçã
 ## Arrancar
 
 ```bash
-npm install
+npm ci
 npm run dev        # http://localhost:5173
 ```
+
+Para contribuir (ramos, commits, pull requests e versões), ver [CONTRIBUTING.md](CONTRIBUTING.md). Alterações por versão em [CHANGELOG.md](CHANGELOG.md). Software proprietário: ver [LICENSE](LICENSE).
 
 Build estático (pronto para Vercel/Netlify — inclui `vercel.json` e `_redirects` para o fallback SPA):
 

@@ -1,0 +1,26 @@
+version: 2
+updates:
+  # Dependências npm: um PR por semana com as atualizações menores agrupadas.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '07:00'
+      timezone: Europe/Lisbon
+    open-pull-requests-limit: 5
+    labels: [dependencias]
+    commit-message:
+      prefix: chore(deps)
+    groups:
+      menores:
+        update-types: [minor, patch]
+
+  # Ações do GitHub usadas na CI.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    labels: [dependencias, ci]
+    commit-message:
+      prefix: chore(ci)

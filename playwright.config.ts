@@ -6,7 +6,10 @@ export default defineConfig({
   timeout: 90_000,
   expect: { timeout: 10_000 },
   fullyParallel: true,
-  workers: 3,
+  workers: process.env.CI ? 2 : 3,
+  // Na CI: falha se ficar um test.only esquecido e repete uma vez o que falhar por instabilidade.
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 1 : 0,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
     baseURL: 'http://localhost:4823',

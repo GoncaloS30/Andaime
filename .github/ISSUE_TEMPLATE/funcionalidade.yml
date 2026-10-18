@@ -1,0 +1,31 @@
+name: Funcionalidade
+description: Proposta de funcionalidade ou melhoria.
+title: '[Funcionalidade] '
+labels: [tipo:funcionalidade, triagem]
+body:
+  - type: textarea
+    id: problema
+    attributes:
+      label: Problema
+      description: Que trabalho é difícil hoje, e para quem (gestor, encarregado, trabalhador)?
+    validations:
+      required: true
+  - type: textarea
+    id: proposta
+    attributes:
+      label: Proposta
+      description: O que deve acontecer. Esboços são bem-vindos.
+    validations:
+      required: true
+  - type: textarea
+    id: efeitos
+    attributes:
+      label: Efeitos noutros módulos
+      description: Onde a mudança tem de aparecer (dashboard, planeamento, ficha, app…).
+  - type: textarea
+    id: aceitacao
+    attributes:
+      label: Critérios de aceitação
+      placeholder: |
+        - [ ] …
+        - [ ] Teste de store e E2E

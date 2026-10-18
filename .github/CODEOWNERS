@@ -1,0 +1,9 @@
+# Responsáveis por defeito: todas as alterações pedem revisão de quem é dono da área.
+# Quando a equipa crescer, divide-se por pastas (ex.: /src/features/planning/ @pessoa).
+*                     @GoncaloS30
+
+# Áreas sensíveis: regras de negócio, dados e infraestrutura do repositório
+/src/domain/          @GoncaloS30
+/src/store/           @GoncaloS30
+/.github/             @GoncaloS30
+/docs/adr/            @GoncaloS30
