@@ -277,3 +277,44 @@ describe('Fluxo 15 — fotos', () => {
     expect(() => store.getState().setPhoto({ type: 'viatura', id: 'nao-existe' }, null)).toThrow('Registo não encontrado')
   })
 })
+
+describe('Fluxo 11 — diário de obra', () => {
+  it('o encarregado regista o dia com fotos; o gestor é notificado e pode anular', () => {
+    const store = make()
+    const st = () => store.getState()
+    st().setRole('encarregado')
+    const foreman = st().db.workers[st().session.personas.encarregado]!
+    const site = Object.values(st().db.sites).find((s) => s.foremanId === foreman.id) ?? Object.values(st().db.sites)[0]!
+    const before = Object.keys(st().db.diary).length
+    const photos = [1, 2].map((i) => ({ kind: 'carregada' as const, id: `ph-${i}`, alt: `Foto ${i}`, w: 1600, h: 1200 }))
+    const id = st().createDiaryEntry({ siteId: site.id, date: TODAY, title: 'Betonagem do piso 3', text: 'Correu bem.', photos })
+    const e = st().db.diary[id]!
+    expect(e).toMatchObject({ siteId: site.id, authorId: foreman.id, authorRole: 'encarregado', title: 'Betonagem do piso 3' })
+    expect(e.photos).toHaveLength(2)
+    expect(st().db.activity[0]).toMatchObject({ kind: 'diario', refs: { siteId: site.id } })
+    expect(st().db.notifications.some((n) => n.role === 'gestor' && n.body.includes('Betonagem do piso 3'))).toBe(true)
+    st().undo()
+    expect(Object.keys(st().db.diary)).toHaveLength(before)
+  })
+  it('recusa título vazio e mais de 20 fotos', () => {
+    const store = make()
+    const st = () => store.getState()
+    expect(() => st().createDiaryEntry({ siteId: 's1', date: TODAY, title: ' ', text: '', photos: [] })).toThrow('título')
+    const many = Array.from({ length: 21 }, (_, i) => ({ kind: 'carregada' as const, id: `p${i}`, alt: '', w: 1, h: 1 }))
+    expect(() => st().createDiaryEntry({ siteId: 's1', date: TODAY, title: 'X', text: '', photos: many })).toThrow('20 fotos')
+  })
+  it('editar e apagar', () => {
+    const store = make()
+    const st = () => store.getState()
+    const id = st().createDiaryEntry({ siteId: 's1', date: TODAY, title: 'A', text: '', photos: [] })
+    st().updateDiaryEntry(id, { title: 'B', text: 'Mais texto' })
+    expect(st().db.diary[id]).toMatchObject({ title: 'B', text: 'Mais texto' })
+    st().removeDiaryEntry(id)
+    expect(st().db.diary[id]).toBeUndefined()
+  })
+  it('o seed tem diário nas obras em curso', () => {
+    const store = make()
+    const sites = new Set(Object.values(store.getState().db.diary).map((e) => e.siteId))
+    expect(sites.size).toBeGreaterThan(3)
+  })
+})

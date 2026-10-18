@@ -3,11 +3,11 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import sharp from 'sharp'
 
-const RATIO = { trabalhadores: 1, gestores: 1, obras: 16 / 9, viaturas: 4 / 3, epi: 1 }
+const RATIO = { trabalhadores: 1, gestores: 1, obras: 16 / 9, viaturas: 4 / 3, epi: 1, diario: 4 / 3 }
 // As mesmas larguras de sizeWidths() em src/domain/photos.ts.
-const WIDTHS = (cat) => (cat === 'obras' ? { s: 320, c: 640, m: 1280 } : { s: 200, m: 800 })
+const WIDTHS = (cat) => (cat === 'obras' || cat === 'diario' ? { s: 320, c: 640, m: 1280 } : { s: 200, m: 800 })
 const manifest = JSON.parse(await readFile('scripts/fotos.manifest.json', 'utf8'))
-const out = { trabalhadores: [], gestores: [], obras: [], viaturas: [], epi: [] }
+const out = { trabalhadores: [], gestores: [], obras: [], viaturas: [], epi: [], diario: [] }
 
 for (const f of manifest) {
   const ratio = RATIO[f.categoria]
@@ -45,7 +45,7 @@ for (const f of manifest) {
 
 const ts = `// Gerado por scripts/fotos.mjs a partir de scripts/fotos.manifest.json. Não editar à mão.
 export interface ManifestPhoto { id: string; src: string; w: number; h: number; alt: string; credit: string; look?: 'a' | 'b' }
-export const PHOTOS: Record<'trabalhadores' | 'gestores' | 'obras' | 'viaturas' | 'epi', ManifestPhoto[]> = ${JSON.stringify(out, null, 2)}
+export const PHOTOS: Record<'trabalhadores' | 'gestores' | 'obras' | 'viaturas' | 'epi' | 'diario', ManifestPhoto[]> = ${JSON.stringify(out, null, 2)}
 `
 await writeFile('src/data/seed/photoManifest.ts', ts)
 

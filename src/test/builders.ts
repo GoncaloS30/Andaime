@@ -188,6 +188,7 @@ export function db(parts: {
     company: { name: 'Teste', nif: '500000000', city: 'Lisboa' },
     managers: {},
     clients: {},
+    diary: {},
     sites: byId(parts.sites ?? []),
     workers: byId(parts.workers ?? []),
     teams: byId(parts.teams ?? []),

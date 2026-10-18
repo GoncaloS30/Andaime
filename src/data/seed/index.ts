@@ -40,6 +40,7 @@ import {
   TEAMS,
   VEHICLES,
 } from './catalog'
+import { seedDiary } from './diary'
 import { assignSeedPhotos } from './photos'
 
 export interface Personas {
@@ -583,9 +584,11 @@ export function createSeed({ today, seed = 20261015 }: { today: ISODate; seed?: 
     deliveries,
     issues,
     weekNotes,
+    diary: {},
     activity,
     notifications,
   }
   assignSeedPhotos(db)
+  db.diary = seedDiary(db, today)
   return { db, personas }
 }
