@@ -20,7 +20,7 @@ Plano completo: secções "Arquitetura", "Modelo", "Endpoints" e "Sequência" em
 | F1 — Fundação SaaS | ✅ concluída em 2026-10-19 |
 | F2 — Trabalhadores, obras, equipas | ✅ concluída em 2026-10-19 |
 | F3 — Planeamento e viaturas | ✅ concluída em 2026-10-19 |
-| F4 — Horas e aprovações | ⏳ |
+| F4 — Horas e aprovações | ✅ concluída em 2026-10-19 |
 | F5 — Documentos, ausências, equipamentos, notificações | ⏳ |
 | F6 — Mapas e relatórios | ⏳ |
 | F7 — Hardening | ⏳ |
@@ -204,6 +204,41 @@ Semente: cria 9 viaturas e duas semanas de planeamento
 - Conflitos com ausências e documentos em falta (entram com F5, quando existirem esses dados).
 - Vista mensal, vistas por obra/equipa/viatura e planeamento no telemóvel (o protótipo tem-nas; ficam para F7).
 - Esticar uma atribuição arrastando a pega (fazer com "Nova escala" ou "Copiar").
+
+## F4 — Horas e aprovações (concluída em 2026-10-19)
+
+Backend (`timekeeping`):
+- **V17** `clock_events` (registo bruto do ponto, só acrescento, único por trabalhador + chave de idempotência), `time_entries` (instantes `timestamptz`, fuso da obra, dia local, pausa, minutos trabalhados, origem ponto/encarregado/escritório), `time_entry_revisions` (antes/depois + motivo) e `timesheets` (trabalhador × semana ISO).
+- Na base de dados: sem sobreposição de registos do mesmo trabalhador (*exclusion constraint*), no máximo um registo aberto, duração até 24 h, e **semanas aprovadas fechadas por trigger** (SQLSTATE próprio `AN001` → 409 `timesheet-locked`) até o gestor reabrir.
+- Ponto: entrada/pausa/retomar/saída com chave de idempotência (repetições não duplicam), hora do servidor (a do dispositivo fica guardada), obra por omissão a do planeamento do dia, lock por trabalhador; sair durante a pausa fecha a pausa; pausa automática da política laboral quando não houve pausa.
+- Registos manuais e correções (encarregado para a sua equipa, gestor para todos) sempre com motivo; o original fica numa revisão; anular em vez de apagar.
+- Confirmar presença: o encarregado cria de uma vez os registos com o horário planeado de hoje da sua equipa (ignora o que já está registado ou fora da equipa).
+- `HoursCalculator` (puro, com testes): normais até ao limite diário e extra acima; descanso e feriados todo extra; o limite semanal passa o excesso a extra; turnos noturnos no dia de início ou divididos à meia-noite local; mudança de hora conta as horas reais. Substitui as 8 h/9 h fixas do protótipo pela política da empresa (`labor_policies`, feriados da empresa e públicos).
+- Folhas semanais: DRAFT → SUBMITTED → APPROVED, ou REJECTED (com nota) para corrigir; submeter pelo próprio, encarregado ou gestor; aprovar/devolver/reabrir só gestor, com versão e auditoria; não se submete nem aprova com entradas sem saída.
+- Métricas de obra: realizadas = histórico importado + registos fechados; aprovadas = histórico aprovado + semanas aprovadas (`includesTimeEntries: true`). O limite de horas no planeamento usa também os registos.
+- Semente: semana passada com registos (com algumas horas extra), folhas aprovadas, submetidas e por submeter.
+
+Frontend (`src/saas/pages/timekeeping`):
+- App do trabalhador: ponto com a obra do dia, pausa/retomar, horas e extra da semana; escolha de obra quando não há planeamento.
+- Gestor `/horas`: folhas da semana (planeadas, trabalhadas, normais, extra, estado, alertas de entradas sem saída e dias planeados sem registo), aprovar em lote, ficha da semana por dia com registos, registo manual, corrigir/anular com motivo, histórico de correções, devolver e reabrir.
+- Encarregado `/encarregado/horas`: presenças de hoje para confirmar de uma vez e folhas da equipa para submeter.
+
+Verificação real:
+
+```text
+./mvnw verify → 51 testes, 0 falhas (HoursCalculatorTest 5 · TimekeepingIntegrationTest 3: ponto idempotente com pausa e saída,
+  workflow completo da folha com bloqueio na base de dados e reabertura, correção com revisões, sobreposição recusada, presença
+  confirmada pelo encarregado só para a sua equipa · IDOR com as rotas novas)
+npm run typecheck · npm run lint → sem erros · npm test → 182 testes
+npm run e2e:saas → 4 passed: + trabalhador convidado pica o ponto na app e o gestor aprova a semana, que fica fechada
+Semente: 200 registos, 29 folhas aprovadas e 5 submetidas
+```
+
+### Ainda não feito em F4
+
+- Ponto offline no telemóvel (fila local com as mesmas chaves de idempotência) — F7.
+- Escalões de horas extra com códigos ERP (`overtime_tiers`) — entram com os mapas e exportações (F6).
+- Edição da política laboral e dos feriados nas Definições (hoje: valores por omissão 8 h/40 h, pausa de 60 min acima de 6 h).
 
 ## Comandos
 

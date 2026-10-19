@@ -112,6 +112,25 @@ Todas sob `/api/orgs/{orgId}`. Horas locais da obra (`HH:mm`), durações em min
 
 Tipos de comando: `ASSIGN`, `SCHEDULE` (várias pessoas × dias da semana), `UPDATE`, `BULK_UPDATE`, `DUPLICATE`, `DELETE`, `TRANSFER`, `COPY_WEEK` (ignora dias passados, pessoas inativas e dias já planeados e devolve-os em `skipped`). Máximo de 500 atribuições por comando.
 
-## F4–F6 (planeado)
+## F4 — Horas e aprovações
+
+Todas sob `/api/orgs/{orgId}`. Instantes em ISO UTC; horas locais da obra; minutos.
+
+| Método | Caminho | Quem | Descrição |
+|---|---|---|---|
+| GET | `/me/clock` | trabalhador com ficha | `{open, today[], weekWorkedMin, weekOvertimeMin}`; 409 `no-employee` sem ficha ligada |
+| POST | `/me/clock/{in, break-start, break-end, out}` | trabalhador com ficha | `{idempotencyKey, deviceTime?, siteId?}`; repetir a chave não duplica; 409 `already-clocked-in`, `not-clocked-in`, `already-on-break`, `not-on-break`, `entry-too-long`; 400 `site-required` |
+| GET | `/time-entries?from&to&employeeId&siteId` | todos (âmbito) | Máximo 62 dias |
+| GET | `/time-entries/planned?date` | encarregado+ | Planeado do dia com `confirmed` |
+| POST | `/time-entries` | encarregado+ (âmbito) | Manual `{employeeId, siteId, date, start, end, breakMin?, note?, reason}`; 400 `future-date`; 409 `overlap`, `timesheet-locked` |
+| POST | `/time-entries/confirm-planned` | encarregado+ | `{assignmentIds[]}` → `{created, skippedAssignmentIds}` |
+| PATCH | `/time-entries/{id}` | encarregado+ (âmbito) | Correção `{siteId?, date?, start?, end?, breakMin?, note?, reason, version}`; 409 `stale`, `timesheet-locked` |
+| POST | `/time-entries/{id}/cancel` | encarregado+ (âmbito) | `{reason, version}` |
+| GET | `/time-entries/{id}/revisions` | encarregado+ (âmbito) | Original e correções com motivo |
+| GET | `/timesheets?week&status` | todos (âmbito) | Resumo por trabalhador: planeadas, trabalhadas, normais, extra, estado, alertas |
+| GET | `/timesheets/{employeeId}/{week}` | todos (âmbito) | Dias com registos |
+| POST | `/timesheets/{employeeId}/{week}/{submit, approve, reject, reopen}` | submit: o próprio, encarregado ou gestor; restantes: gestor | `{note?, version?}`; reject e reopen exigem nota; 409 `invalid-transition`, `open-entries`, `stale` |
+
+## F5–F6 (planeado)
 
 Ver `docs/backend/arquitetura.md` (Ecrã → API) e o plano aprovado. Cada fase acrescenta aqui a sua tabela quando é implementada.

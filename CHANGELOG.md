@@ -11,6 +11,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-PT/1.1.0/); 
 - Trabalhadores, equipas (composição datada), obras, clientes, mapa de obras e ocorrências ligados à API, com âmbito por papel e histórico auditado.
 - Empresa de demonstração no backend por comando explícito e idempotente.
 - Planeamento ligado ao servidor: quadro semanal com arrastar, escalas e cópia de semana com pré-visualização, conflitos verificados no servidor (sobreposições impossíveis de gravar), confirmação de avisos e "Anular" seguro.
+- Horas: ponto na app do trabalhador (à prova de repetições), registos e correções com histórico, presenças confirmadas pelo encarregado, horas normais e extra pela política da empresa, folhas semanais com submeter/aprovar/devolver/reabrir e semanas aprovadas fechadas.
 - Viaturas: frota com alertas de seguro, inspeção e manutenção, indisponibilidades e viatura por equipa aplicada ao planeamento.
 - Regra de proteção do `main` pronta a aplicar (`.github/protecao-main.json`).
 

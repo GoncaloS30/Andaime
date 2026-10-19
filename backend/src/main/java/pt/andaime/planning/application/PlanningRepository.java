@@ -218,7 +218,9 @@ class PlanningRepository {
 
         var sites = new HashMap<UUID, ConflictEngine.Site>();
         jdbcTemplate.query("""
-                SELECT site.id, site.code, site.name, site.status, site.hour_limit_min, site.baseline_realized_min,
+                SELECT site.id, site.code, site.name, site.status, site.hour_limit_min,
+                       site.baseline_realized_min + (SELECT coalesce(sum(entry.worked_min), 0) FROM time_entries entry
+                        WHERE entry.site_id = site.id AND entry.status = 'CLOSED') AS baseline_realized_min,
                        (SELECT coalesce(sum(planned.planned_min), 0) FROM assignments planned
                         WHERE planned.site_id = site.id AND planned.work_date >= ?) AS planned_from_today
                 FROM sites site

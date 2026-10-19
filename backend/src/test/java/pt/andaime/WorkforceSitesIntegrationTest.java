@@ -165,9 +165,9 @@ class WorkforceSitesIntegrationTest extends ApiTestSupport {
         assertThat((String) JsonPath.read(site, "$.code")).isEqualTo("OB-" + year + "-001");
         assertThat((String) JsonPath.read(site, "$.timezone")).isEqualTo("Europe/Paris");
         assertThat((String) JsonPath.read(site, "$.status")).isEqualTo("ACTIVE");
-        // 51 000 / 60 000 = 85 %: atenção. Sem registos de horas ainda, e a API diz isso.
+        // 51 000 / 60 000 = 85 %: atenção. Histórico importado + registos de horas (nenhum ainda).
         assertThat((String) JsonPath.read(site, "$.metrics.status")).isEqualTo("WARNING");
-        assertThat((Boolean) JsonPath.read(site, "$.metrics.includesTimeEntries")).isFalse();
+        assertThat((Boolean) JsonPath.read(site, "$.metrics.includesTimeEntries")).isTrue();
         assertThat((Integer) JsonPath.read(site, "$.metrics.balanceMin")).isEqualTo(9000);
 
         perform(owner, post("/api/orgs/{orgId}/sites", orgId).content("""

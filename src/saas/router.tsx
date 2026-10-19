@@ -13,6 +13,7 @@ import { WorkerDetailPage, WorkersPage } from './pages/workforce/WorkersPages'
 import { PlatformPage } from './pages/PlatformPage'
 import { VehicleDetailPage, VehiclesPage } from './pages/fleet/VehiclesPages'
 import { PlanningPage } from './pages/planning/PlanningPage'
+import { TimesheetsPage } from './pages/timekeeping/TimesheetsPage'
 import { ExperienceGate, RedirectIfAuthenticated, RequireAuth, RequireOrg } from './session'
 import { SaasShell } from './shell/SaasShell'
 
@@ -91,6 +92,8 @@ export const router = createBrowserRouter([
               { path: 'mapa', element: gestor(<GeoMapPage />) },
               { path: 'planeamento', element: gestor(<PlanningPage />) },
               { path: 'encarregado/semana', element: encarregado(<PlanningPage readOnlyView />) },
+              { path: 'horas', element: gestor(<TimesheetsPage />) },
+              { path: 'encarregado/horas', element: encarregado(<TimesheetsPage />) },
               { path: 'viaturas', element: both(<VehiclesPage />) },
               { path: 'viaturas/:id', element: both(<VehicleDetailPage />) },
               ...MODULES.map((m) => ({

@@ -57,7 +57,16 @@ public class SiteService {
                    (SELECT count(*) FROM site_issues issue WHERE issue.site_id = site.id AND issue.status = 'OPEN') AS open_issues,
                    (SELECT coalesce(sum(assignment.planned_min), 0) FROM assignments assignment
                     WHERE assignment.organization_id = site.organization_id AND assignment.site_id = site.id
-                      AND assignment.work_date >= ?) AS planned_future_min
+                      AND assignment.work_date >= ?) AS planned_future_min,
+                   (SELECT coalesce(sum(entry.worked_min), 0) FROM time_entries entry
+                    WHERE entry.organization_id = site.organization_id AND entry.site_id = site.id
+                      AND entry.status = 'CLOSED') AS entries_realized_min,
+                   (SELECT coalesce(sum(entry.worked_min), 0) FROM time_entries entry
+                    JOIN timesheets sheet ON sheet.organization_id = entry.organization_id AND sheet.employee_id = entry.employee_id
+                     AND sheet.week_start = entry.work_date - (extract(isodow FROM entry.work_date)::int - 1)
+                     AND sheet.status = 'APPROVED'
+                    WHERE entry.organization_id = site.organization_id AND entry.site_id = site.id
+                      AND entry.status = 'CLOSED') AS entries_approved_min
             FROM sites site
             LEFT JOIN clients client ON client.organization_id = site.organization_id AND client.id = site.client_id
             LEFT JOIN employees foreman ON foreman.organization_id = site.organization_id AND foreman.id = site.foreman_employee_id
@@ -376,16 +385,16 @@ public class SiteService {
     }
 
     /**
-     * Métricas a partir dos dados persistidos. Até existir registo de horas (F4), as realizadas e aprovadas vêm só
-     * do histórico importado; as planeadas são as atribuições de hoje em diante.
+     * Métricas a partir dos dados persistidos: realizadas = histórico importado + registos fechados; aprovadas =
+     * histórico aprovado + registos de semanas aprovadas; planeadas = atribuições de hoje em diante.
      */
     private static SiteMetrics metrics(ResultSet resultSet) throws SQLException {
         return SiteMetrics.of(
                 (Integer) resultSet.getObject("hour_limit_min"),
-                resultSet.getInt("baseline_realized_min"),
-                resultSet.getInt("baseline_approved_min"),
+                resultSet.getInt("baseline_realized_min") + resultSet.getInt("entries_realized_min"),
+                resultSet.getInt("baseline_approved_min") + resultSet.getInt("entries_approved_min"),
                 resultSet.getInt("planned_future_min"),
-                false);
+                true);
     }
 
     private static Ref ref(ResultSet resultSet, String idColumn, String nameColumn) throws SQLException {
