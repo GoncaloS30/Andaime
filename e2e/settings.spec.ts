@@ -1,4 +1,3 @@
-import { readFile } from 'node:fs/promises'
 import { expect, test } from '@playwright/test'
 import ExcelJS from 'exceljs'
 import { act, go, open, state } from './helpers'
@@ -21,7 +20,7 @@ test('fluxo 16: artigo novo a partir da ficha e folha de entrega em Excel', asyn
   const download = page.waitForEvent('download')
   await sheet.getByRole('button', { name: 'Descarregar Excel' }).click()
   const wb = new ExcelJS.Workbook()
-  await wb.xlsx.load(await readFile(await (await download).path()))
+  await wb.xlsx.readFile(await (await download).path())
   const values = wb.worksheets[0]!.getSheetValues().flat().filter((v) => typeof v === 'string')
   expect(values).toContain(w.name)
   expect(values).toContain('Joelheiras de gel')
