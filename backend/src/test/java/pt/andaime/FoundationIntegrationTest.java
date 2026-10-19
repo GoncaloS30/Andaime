@@ -86,7 +86,7 @@ class FoundationIntegrationTest extends IntegrationTestSupport {
                 versions.add(result.getString("version"));
             }
             assertThat(versions).containsExactlyElementsOf(
-                    List.of("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15"));
+                    List.of("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16"));
         }
     }
 
@@ -298,7 +298,7 @@ class FoundationIntegrationTest extends IntegrationTestSupport {
             assertThat(count(connection,
                     "SELECT count(*) FROM labor_policies WHERE organization_id = ?", organizationId)).isOne();
             assertThat(count(connection,
-                    "SELECT count(*) FROM conflict_rule_settings WHERE organization_id = ?", organizationId)).isEqualTo(9);
+                    "SELECT count(*) FROM conflict_rule_settings WHERE organization_id = ?", organizationId)).isEqualTo(11);
             assertThat(count(connection,
                     "SELECT count(*) FROM audit_event WHERE organization_id = ?", organizationId)).isOne();
         }

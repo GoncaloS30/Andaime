@@ -30,7 +30,9 @@ public class OrganizationService {
             "TEAM_MISMATCH",
             "VEHICLE_CAPACITY",
             "MISSING_FOREMAN",
-            "MULTIPLE_SITES_DAY");
+            "MULTIPLE_SITES_DAY",
+            "VEHICLE_UNAVAILABLE",
+            "SITE_HOUR_LIMIT");
 
     private final JdbcTemplate jdbcTemplate;
     private final Clock clock;
@@ -148,7 +150,7 @@ public class OrganizationService {
 
     private String defaultSeverity(String rule) {
         return switch (rule) {
-            case "EMPLOYEE_OVERLAP", "VEHICLE_OVERLAP", "ABSENCE", "UNAVAILABLE" -> "BLOCK";
+            case "EMPLOYEE_OVERLAP", "VEHICLE_OVERLAP", "ABSENCE", "UNAVAILABLE", "VEHICLE_UNAVAILABLE" -> "BLOCK";
             default -> "WARN";
         };
     }

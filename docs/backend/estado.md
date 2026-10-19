@@ -19,7 +19,7 @@ Plano completo: secções "Arquitetura", "Modelo", "Endpoints" e "Sequência" em
 | F0 — Auditoria e arquitetura | ✅ ADRs 0006–0011 e `docs/backend/*` |
 | F1 — Fundação SaaS | ✅ concluída em 2026-10-19 |
 | F2 — Trabalhadores, obras, equipas | ✅ concluída em 2026-10-19 |
-| F3 — Planeamento e viaturas | ⏳ |
+| F3 — Planeamento e viaturas | ✅ concluída em 2026-10-19 |
 | F4 — Horas e aprovações | ⏳ |
 | F5 — Documentos, ausências, equipamentos, notificações | ⏳ |
 | F6 — Mapas e relatórios | ⏳ |
@@ -167,6 +167,43 @@ Semente: 1.ª execução cria a empresa; 2.ª execução "a empresa já existe; 
 - Viaturas e equipa/viatura por obra (F3), horas e documentos na ficha (F4/F5).
 - Paginação da lista de obras (limite de 1000 por pedido; suficiente até F7).
 - Tipos TypeScript gerados do OpenAPI (adiado: os contratos estão em `src/saas/api/*.ts` e cobertos por E2E).
+
+## F3 — Planeamento e viaturas (concluída em 2026-10-19)
+
+Backend (`fleet`, `planning`):
+- **V16** viaturas (matrícula única por empresa, lotação, estado, seguro, inspeção, manutenção, km), indisponibilidades, ligação equipa ↔ viatura datada (uma viatura por equipa e uma equipa por viatura em cada dia), atribuições e change-sets.
+- Atribuições guardam data e horas **locais da obra**; um trigger calcula o período absoluto (`tstzrange`) com o fuso da obra; fim ≤ início = dia seguinte (turno noturno). Horas inexistentes na mudança para a hora de verão → 400.
+- Duas *exclusion constraints* diferidas garantem na base de dados que um trabalhador não está em dois sítios ao mesmo tempo e que uma viatura não está em duas obras ao mesmo tempo.
+- Motor de conflitos puro (`ConflictEngine`, porta de `src/domain/conflicts.ts`): sobreposição, capacidade diária, trabalhador inativo, viatura sobreposta/indisponível/sem inspeção ou seguro/lotação, obra sem responsável, limite de horas da obra. Severidade por empresa (bloquear/avisar/desligar); sobreposições bloqueiam sempre. Cada conflito traz correções executáveis.
+- Todas as alterações são **comandos** (`ASSIGN`, `SCHEDULE`, `UPDATE`, `BULK_UPDATE`, `DUPLICATE`, `DELETE`, `TRANSFER`, `COPY_WEEK`) com o mesmo pipeline numa transação: locks consultivos ordenados por trabalhador e viatura → conflitos antes → aplicar → conflitos depois → os novos decidem (bloqueante → 409 `planning-conflicts`; aviso não confirmado → 409 `confirmation-required` com os ids a confirmar) → verificação imediata das constraints.
+- Pré-visualização corre o mesmo pipeline num *savepoint* e volta atrás.
+- "Anular" por change-set: só desfaz se nenhuma das atribuições mudou entretanto (409 `stale`), e a anulação é ela própria auditada.
+- Equipa e viatura por omissão: a equipa do trabalhador nesse dia e a viatura dessa equipa; pausa da política laboral (60 min acima de 6 h).
+- Métricas de obra passam a incluir as horas planeadas de hoje em diante; o encarregado vê também as obras onde as suas equipas estão planeadas.
+- Semente de demonstração: uma carrinha por equipa (e uma na oficina) e esta semana e a próxima planeadas pelos mesmos comandos.
+
+Frontend (`src/saas/pages/planning`, `src/saas/pages/fleet`):
+- Planeamento semanal por trabalhador: arrastar blocos entre dias e pessoas, atribuir a partir da célula, ficha da atribuição (obra, horas, viatura, responsável, nota, retirar, copiar), "Nova escala" e "Copiar semana" com pré-visualização, painel de conflitos com correções, confirmação de avisos, "Anular" (botão e toast).
+- Encarregado: "Escala da semana" só de leitura.
+- Viaturas: lista com alertas de seguro/inspeção/manutenção, ficha com indisponibilidades e próximas saídas, criar/editar/arquivar; viatura da equipa na ficha da equipa.
+
+Verificação real:
+
+```text
+./mvnw verify → 43 testes, 0 falhas (ConflictEngineTest 12 · PlanningIntegrationTest 3: comandos, pré-visualização,
+  bloqueio, confirmação, anular, versões, turno noturno, DST, âmbito do trabalhador, auditoria; 2 pedidos simultâneos
+  incompatíveis → exatamente um vence; viaturas, equipa/viatura, indisponibilidade, copiar semana · IDOR com as rotas novas)
+npm run typecheck · npm run lint → sem erros · npm test → 182 testes
+npm run e2e:saas → 3 passed: onboarding · trabalhadores/equipas/obras · planeamento (atribuir, sobreposição bloqueada,
+  anular, viatura da equipa aplicada automaticamente)
+Semente: cria 9 viaturas e duas semanas de planeamento
+```
+
+### Ainda não feito em F3
+
+- Conflitos com ausências e documentos em falta (entram com F5, quando existirem esses dados).
+- Vista mensal, vistas por obra/equipa/viatura e planeamento no telemóvel (o protótipo tem-nas; ficam para F7).
+- Esticar uma atribuição arrastando a pega (fazer com "Nova escala" ou "Copiar").
 
 ## Comandos
 

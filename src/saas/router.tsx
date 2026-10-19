@@ -11,6 +11,8 @@ import { NewSitePage, SiteDetailPage, SitesPage } from './pages/sites/SitesPages
 import { TeamDetailPage, TeamsPage } from './pages/workforce/TeamsPages'
 import { WorkerDetailPage, WorkersPage } from './pages/workforce/WorkersPages'
 import { PlatformPage } from './pages/PlatformPage'
+import { VehicleDetailPage, VehiclesPage } from './pages/fleet/VehiclesPages'
+import { PlanningPage } from './pages/planning/PlanningPage'
 import { ExperienceGate, RedirectIfAuthenticated, RequireAuth, RequireOrg } from './session'
 import { SaasShell } from './shell/SaasShell'
 
@@ -87,6 +89,10 @@ export const router = createBrowserRouter([
               { path: 'obras/clientes', element: gestor(<ClientsPage />) },
               { path: 'obras/:id', element: both(<SiteDetailPage />) },
               { path: 'mapa', element: gestor(<GeoMapPage />) },
+              { path: 'planeamento', element: gestor(<PlanningPage />) },
+              { path: 'encarregado/semana', element: encarregado(<PlanningPage readOnlyView />) },
+              { path: 'viaturas', element: both(<VehiclesPage />) },
+              { path: 'viaturas/:id', element: both(<VehicleDetailPage />) },
               ...MODULES.map((m) => ({
                 path: m.path.slice(1),
                 element: (m.path.startsWith('/encarregado') ? encarregado : gestor)(<ModuleUnavailable label={m.label} phase={m.phase} />),

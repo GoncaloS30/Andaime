@@ -10,6 +10,8 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-PT/1.1.0/); 
 - E2E de ponta a ponta contra a API real (`npm run e2e:saas`).
 - Trabalhadores, equipas (composição datada), obras, clientes, mapa de obras e ocorrências ligados à API, com âmbito por papel e histórico auditado.
 - Empresa de demonstração no backend por comando explícito e idempotente.
+- Planeamento ligado ao servidor: quadro semanal com arrastar, escalas e cópia de semana com pré-visualização, conflitos verificados no servidor (sobreposições impossíveis de gravar), confirmação de avisos e "Anular" seguro.
+- Viaturas: frota com alertas de seguro, inspeção e manutenção, indisponibilidades e viatura por equipa aplicada ao planeamento.
 - Regra de proteção do `main` pronta a aplicar (`.github/protecao-main.json`).
 
 ### Alterado
