@@ -7,3 +7,6 @@ playwright-report
 .DS_Store
 dist-e2e
 fotos-originais/
+
+# Definições pessoais do Claude Code (permissões locais)
+.claude/settings.local.json
