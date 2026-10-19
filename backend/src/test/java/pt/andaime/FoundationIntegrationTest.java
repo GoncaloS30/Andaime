@@ -15,7 +15,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
@@ -26,37 +25,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.postgresql.PostgreSQLContainer;
 
-import pt.andaime.identity.application.IdentityMailGateway;
 import pt.andaime.shared.tenant.TenantContext;
 
-@Testcontainers
-@SpringBootTest
-@ActiveProfiles("test")
-@AutoConfigureMockMvc
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-class FoundationIntegrationTest {
-
-    @Container
-    static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18-alpine")
-            .withDatabaseName("andaime")
-            .withUsername("postgres")
-            .withPassword("postgres_local")
-            .withInitScript("postgres-init.sql");
+class FoundationIntegrationTest extends IntegrationTestSupport {
 
     static UUID userId;
     static UUID orgA;
@@ -70,19 +46,6 @@ class FoundationIntegrationTest {
 
     @Autowired
     MockMvc mockMvc;
-
-    @MockitoBean
-    IdentityMailGateway mailGateway;
-
-    @DynamicPropertySource
-    static void databaseProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-        registry.add("spring.datasource.username", () -> "andaime_app");
-        registry.add("spring.datasource.password", () -> "andaime_app_local");
-        registry.add("spring.flyway.url", POSTGRES::getJdbcUrl);
-        registry.add("spring.flyway.user", POSTGRES::getUsername);
-        registry.add("spring.flyway.password", POSTGRES::getPassword);
-    }
 
     static {
         userId = UUID.randomUUID();
@@ -123,7 +86,7 @@ class FoundationIntegrationTest {
                 versions.add(result.getString("version"));
             }
             assertThat(versions).containsExactlyElementsOf(
-                    List.of("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"));
+                    List.of("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"));
         }
     }
 
@@ -512,13 +475,7 @@ class FoundationIntegrationTest {
     private record CsrfExchange(String token, String headerName, Cookie cookie) {
     }
 
-    private static Connection ownerConnection() throws SQLException {
-        return DriverManager.getConnection(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
-    }
 
-    private static Connection appConnection() throws SQLException {
-        return DriverManager.getConnection(POSTGRES.getJdbcUrl(), "andaime_app", "andaime_app_local");
-    }
 
     private static void setContext(Connection connection, UUID organizationId, UUID currentUserId)
             throws SQLException {

@@ -39,4 +39,9 @@ public record UserPrincipal(
     public boolean isEnabled() {
         return active && emailVerified;
     }
+
+    /** Cópia sem o hash da palavra-passe, para guardar na sessão. */
+    public UserPrincipal withoutPassword() {
+        return new UserPrincipal(id, email, null, displayName, emailVerified, active);
+    }
 }

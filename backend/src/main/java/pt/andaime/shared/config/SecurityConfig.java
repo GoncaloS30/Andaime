@@ -5,6 +5,7 @@ import java.time.Clock;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
@@ -16,6 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.csrf.CsrfException;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.session.web.http.CookieSerializer;
 import org.springframework.session.web.http.DefaultCookieSerializer;
@@ -35,6 +37,7 @@ class SecurityConfig {
                         .requestMatchers("/api/auth/csrf", "/api/auth/signup",
                                 "/api/auth/verify-email", "/api/auth/login",
                                 "/api/auth/password/forgot", "/api/auth/password/reset").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/invitations/*").permitAll()
                         .anyRequest().authenticated())
                 .securityContext(context -> context
                         .securityContextRepository(securityContextRepository)
@@ -45,6 +48,14 @@ class SecurityConfig {
                             response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
                             response.getWriter().write("{\"title\":\"Sessão necessária\","
                                     + "\"status\":401,\"code\":\"unauthenticated\"}");
+                        })
+                        .accessDeniedHandler((request, response, exception) -> {
+                            var code = exception instanceof CsrfException ? "csrf" : "forbidden";
+                            response.setStatus(403);
+                            response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+                            response.setCharacterEncoding("UTF-8");
+                            response.getWriter().write("{\"title\":\"Sem acesso\",\"status\":403,"
+                                    + "\"code\":\"" + code + "\"}");
                         }))
                 .headers(headers -> headers
                         .contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'"))

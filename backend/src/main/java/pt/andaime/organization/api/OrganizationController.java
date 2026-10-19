@@ -3,9 +3,13 @@ package pt.andaime.organization.api;
 import java.time.DateTimeException;
 import java.time.ZoneId;
 import java.util.Locale;
+import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import pt.andaime.identity.UserPrincipal;
@@ -55,6 +60,17 @@ public class OrganizationController {
         }
     }
 
+    @GetMapping("/{orgId}")
+    OrganizationView get(@PathVariable UUID orgId) {
+        return organizationService.get(orgId);
+    }
+
+    @PatchMapping("/{orgId}")
+    OrganizationView update(@PathVariable UUID orgId, @Valid @RequestBody UpdateOrganizationRequest request) {
+        return organizationService.update(orgId, request.name(), request.legalName(), request.taxId(),
+                timezone(request.timezone()), request.version());
+    }
+
     private String timezone(String value) {
         var candidate = value == null || value.isBlank() ? "Europe/Lisbon" : value.strip();
         try {
@@ -70,5 +86,13 @@ public class OrganizationController {
             @Size(max = 40) String taxId,
             @NotBlank @Pattern(regexp = "^[A-Za-z]{2}$") String country,
             @Size(max = 80) String timezone) {
+    }
+
+    record UpdateOrganizationRequest(
+            @NotBlank @Size(max = 160) String name,
+            @Size(max = 200) String legalName,
+            @Size(max = 40) String taxId,
+            @Size(max = 80) String timezone,
+            @NotNull Integer version) {
     }
 }

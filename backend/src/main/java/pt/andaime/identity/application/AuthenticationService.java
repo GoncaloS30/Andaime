@@ -101,7 +101,9 @@ public class AuthenticationService {
             var authentication = authenticationManager.authenticate(
                     UsernamePasswordAuthenticationToken.unauthenticated(email, password));
             jdbcTemplate.update("DELETE FROM login_throttle WHERE email_key = ?", email);
-            return authentication;
+            // A sessão é persistida no PostgreSQL: nunca guardar lá o hash da palavra-passe.
+            var principal = ((pt.andaime.identity.UserPrincipal) authentication.getPrincipal()).withoutPassword();
+            return UsernamePasswordAuthenticationToken.authenticated(principal, null, principal.getAuthorities());
         } catch (AuthenticationException exception) {
             recordFailure(email);
             throw new ApiException(HttpStatus.UNAUTHORIZED, "unauthenticated", "Email ou palavra-passe inválidos.");

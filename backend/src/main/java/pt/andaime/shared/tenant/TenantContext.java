@@ -21,27 +21,36 @@ public final class TenantContext {
         return Optional.ofNullable(CURRENT.get()).map(State::userId);
     }
 
+    /** Papel da membership na organização corrente (OWNER, ADMIN, MANAGER, FOREMAN, WORKER). */
+    public static Optional<String> role() {
+        return Optional.ofNullable(CURRENT.get()).map(State::role);
+    }
+
     public static Scope open(UUID organizationId, UUID userId) {
+        return open(organizationId, userId, null);
+    }
+
+    public static Scope open(UUID organizationId, UUID userId, String role) {
         if (organizationId == null || userId == null) {
             throw new IllegalArgumentException("O contexto de tenant exige organização e utilizador");
         }
-        var previous = CURRENT.get();
-        CURRENT.set(new State(organizationId, userId));
-        return () -> {
-            if (previous == null) {
-                CURRENT.remove();
-            } else {
-                CURRENT.set(previous);
-            }
-        };
+        return push(new State(organizationId, userId, role));
     }
 
     public static Scope openForUser(UUID userId) {
         if (userId == null) {
             throw new IllegalArgumentException("O contexto exige um utilizador");
         }
+        return push(new State(null, userId, null));
+    }
+
+    public static void clear() {
+        CURRENT.remove();
+    }
+
+    private static Scope push(State state) {
         var previous = CURRENT.get();
-        CURRENT.set(new State(null, userId));
+        CURRENT.set(state);
         return () -> {
             if (previous == null) {
                 CURRENT.remove();
@@ -51,11 +60,7 @@ public final class TenantContext {
         };
     }
 
-    public static void clear() {
-        CURRENT.remove();
-    }
-
-    private record State(UUID organizationId, UUID userId) {
+    private record State(UUID organizationId, UUID userId, String role) {
     }
 
     @FunctionalInterface
