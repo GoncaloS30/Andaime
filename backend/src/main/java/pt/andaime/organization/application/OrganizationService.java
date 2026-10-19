@@ -32,7 +32,8 @@ public class OrganizationService {
             "MISSING_FOREMAN",
             "MULTIPLE_SITES_DAY",
             "VEHICLE_UNAVAILABLE",
-            "SITE_HOUR_LIMIT");
+            "SITE_HOUR_LIMIT",
+            "DOCUMENT_MISSING");
 
     private final JdbcTemplate jdbcTemplate;
     private final Clock clock;
@@ -74,6 +75,8 @@ public class OrganizationService {
                 INSERT INTO conflict_rule_settings (organization_id, rule, severity)
                 VALUES (?, ?, ?)
                 """, organizationId, rule, defaultSeverity(rule)));
+        // Catálogo inicial de tipos de documento e exigências (configurável depois pela empresa).
+        jdbcTemplate.query("SELECT app.seed_document_types(?)", resultSet -> { }, organizationId);
         jdbcTemplate.update("""
                 UPDATE users SET last_active_org_id = ?, version = version + 1 WHERE id = ?
                 """, organizationId, userId);

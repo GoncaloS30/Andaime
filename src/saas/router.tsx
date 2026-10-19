@@ -14,6 +14,9 @@ import { PlatformPage } from './pages/PlatformPage'
 import { VehicleDetailPage, VehiclesPage } from './pages/fleet/VehiclesPages'
 import { PlanningPage } from './pages/planning/PlanningPage'
 import { TimesheetsPage } from './pages/timekeeping/TimesheetsPage'
+import { AbsencesPage } from './pages/operations/AbsencesPage'
+import { DocumentsPage } from './pages/operations/DocumentsPage'
+import { EquipmentPage } from './pages/operations/EquipmentPage'
 import { ExperienceGate, RedirectIfAuthenticated, RequireAuth, RequireOrg } from './session'
 import { SaasShell } from './shell/SaasShell'
 
@@ -93,6 +96,10 @@ export const router = createBrowserRouter([
               { path: 'planeamento', element: gestor(<PlanningPage />) },
               { path: 'encarregado/semana', element: encarregado(<PlanningPage readOnlyView />) },
               { path: 'horas', element: gestor(<TimesheetsPage />) },
+              { path: 'ausencias', element: gestor(<AbsencesPage />) },
+              { path: 'documentos', element: gestor(<DocumentsPage />) },
+              { path: 'encarregado/documentos', element: encarregado(<DocumentsPage />) },
+              { path: 'equipamentos', element: gestor(<EquipmentPage />) },
               { path: 'encarregado/horas', element: encarregado(<TimesheetsPage />) },
               { path: 'viaturas', element: both(<VehiclesPage />) },
               { path: 'viaturas/:id', element: both(<VehicleDetailPage />) },

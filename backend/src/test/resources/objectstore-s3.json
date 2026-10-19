@@ -1,0 +1,9 @@
+{
+  "identities": [
+    {
+      "name": "andaime-local",
+      "credentials": [{ "accessKey": "andaime-local", "secretKey": "andaime-local-secret" }],
+      "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+    }
+  ]
+}

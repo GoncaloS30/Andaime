@@ -26,6 +26,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import pt.andaime.absences.application.AbsenceService;
+import pt.andaime.absences.application.AbsenceService.AbsenceInput;
+import pt.andaime.documents.application.DocumentService;
+import pt.andaime.equipment.application.EquipmentService;
+import pt.andaime.equipment.application.EquipmentService.ItemInput;
+import pt.andaime.equipment.application.EquipmentService.Movement;
 import pt.andaime.fleet.application.VehicleService;
 import pt.andaime.fleet.application.VehicleService.VehicleInput;
 import pt.andaime.organization.application.OrganizationService;
@@ -129,11 +135,15 @@ class DemoDataSeeder implements ApplicationRunner {
     private final PlanningService planning;
     private final TimeEntryService timeEntries;
     private final TimesheetService timesheets;
+    private final DocumentService documents;
+    private final EquipmentService equipment;
+    private final AbsenceService absences;
 
     DemoDataSeeder(Environment environment, JdbcTemplate jdbcTemplate, PasswordEncoder passwordEncoder,
             PlatformTransactionManager transactionManager, Ids ids, Clock clock, OrganizationService organizations,
             EmployeeService employees, TeamService teams, ClientService clients, SiteService sites,
-            VehicleService vehicles, PlanningService planning, TimeEntryService timeEntries, TimesheetService timesheets) {
+            VehicleService vehicles, PlanningService planning, TimeEntryService timeEntries, TimesheetService timesheets,
+            DocumentService documents, EquipmentService equipment, AbsenceService absences) {
         this.environment = environment;
         this.jdbcTemplate = jdbcTemplate;
         this.passwordEncoder = passwordEncoder;
@@ -149,6 +159,9 @@ class DemoDataSeeder implements ApplicationRunner {
         this.planning = planning;
         this.timeEntries = timeEntries;
         this.timesheets = timesheets;
+        this.documents = documents;
+        this.equipment = equipment;
+        this.absences = absences;
     }
 
     @Override
@@ -300,6 +313,33 @@ class DemoDataSeeder implements ApplicationRunner {
             }
             index++;
         }
+
+        // Documentos: o A1 é exigido nas obras em França, Bélgica e Alemanha (aparece como aviso no planeamento).
+        documents.types().stream().filter(t -> t.name().startsWith("Certificado A1")).findFirst()
+                .ifPresent(a1 -> documents.setRequirements(a1.id(), false, List.of("FR", "BE", "DE")));
+
+        // Fardamento e EPI com entregas à primeira equipa.
+        var boots = equipment.saveItem(null, new ItemInput("Botas de segurança S3", "PPE", "STOCK", "42", 10, null));
+        var vest = equipment.saveItem(null, new ItemInput("Colete refletor", "PPE", "STOCK", "L", 10, null));
+        var helmet = equipment.saveItem(null, new ItemInput("Capacete com francalete", "PPE", "SERIAL", null, 0, null));
+        equipment.receive(new Movement(boots.id(), null, 14, null, null, null, "Fornecedor — guia 2041"));
+        equipment.receive(new Movement(vest.id(), null, 30, null, null, null, "Fornecedor — guia 2041"));
+        equipment.receive(new Movement(helmet.id(), null, null, null,
+                java.util.stream.IntStream.rangeClosed(1, 8).mapToObj(n -> "CAP-%03d".formatted(n)).toList(), null, null));
+        var units = equipment.units(helmet.id());
+        var crew = teamMembers.get(TEAMS.getFirst().name());
+        for (int i = 0; i < crew.size(); i++) {
+            equipment.deliver(new Movement(boots.id(), crew.get(i), 1, null, null, null, null));
+            equipment.deliver(new Movement(vest.id(), crew.get(i), 1, null, null, null, null));
+            equipment.deliver(new Movement(helmet.id(), crew.get(i), null, units.get(i).id(), null, null, null));
+        }
+
+        // Ausências: uma aprovada (com as atribuições retiradas) e um pedido por decidir.
+        var second = teamMembers.get(TEAMS.get(1).name());
+        var vacation = absences.request(new AbsenceInput(second.get(2), "VACATION", monday.plusDays(10), monday.plusDays(11), null,
+                "Férias marcadas no início do ano"));
+        absences.approve(vacation.id(), "REMOVE", null);
+        absences.request(new AbsenceInput(second.get(3), "PERSONAL", monday.plusDays(9), monday.plusDays(9), null, "Consulta médica"));
     }
 
     private pt.andaime.workforce.application.WorkforceViews.EmployeeDetail employee(

@@ -40,7 +40,9 @@ public final class ConflictEngine {
             "VEHICLE_UNAVAILABLE", Severity.BLOCK,
             "VEHICLE_CAPACITY", Severity.WARN,
             "MISSING_FOREMAN", Severity.WARN,
-            "SITE_HOUR_LIMIT", Severity.WARN);
+            "SITE_HOUR_LIMIT", Severity.WARN,
+            "ABSENCE", Severity.BLOCK,
+            "DOCUMENT_MISSING", Severity.WARN);
 
     static final Set<String> LEADER_CATEGORIES = Set.of("Encarregado", "Chefe de equipa");
     private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("EEE dd/MM", Locale.forLanguageTag("pt-PT"));
@@ -63,11 +65,30 @@ public final class ConflictEngine {
     }
 
     public record Site(UUID id, String code, String name, String status, Integer limitMin, int baselineRealizedMin,
-            int plannedFromTodayMin) {
+            int plannedFromTodayMin, String country) {
+
+        public Site(UUID id, String code, String name, String status, Integer limitMin, int baselineRealizedMin,
+                int plannedFromTodayMin) {
+            this(id, code, name, status, limitMin, baselineRealizedMin, plannedFromTodayMin, null);
+        }
     }
 
+    /** Documento obrigatório para trabalhar em obras de um país ({@code country} nulo = em todas). */
+    public record Requirement(UUID typeId, String typeName, String country) {
+    }
+
+    /**
+     * @param absences  ausências aprovadas de dia inteiro, por trabalhador
+     * @param documents validade do documento atual por {@code trabalhador:tipo} ({@link LocalDate#MAX} sem validade)
+     */
     public record Snapshot(LocalDate today, List<Assignment> assignments, Map<UUID, Employee> employees,
-            Map<UUID, Vehicle> vehicles, Map<UUID, Site> sites, Map<String, Severity> rules) {
+            Map<UUID, Vehicle> vehicles, Map<UUID, Site> sites, Map<String, Severity> rules,
+            Map<UUID, List<DateRange>> absences, List<Requirement> requirements, Map<String, LocalDate> documents) {
+
+        public Snapshot(LocalDate today, List<Assignment> assignments, Map<UUID, Employee> employees,
+                Map<UUID, Vehicle> vehicles, Map<UUID, Site> sites, Map<String, Severity> rules) {
+            this(today, assignments, employees, vehicles, sites, rules, Map.of(), List.of(), Map.of());
+        }
     }
 
     public record Fix(String id, String label, String kind, Map<String, Object> params) {
@@ -117,6 +138,26 @@ public final class ConflictEngine {
                         name + " está inativo",
                         name + " está inativo ou arquivado mas tem trabalho planeado a " + day(date) + ".",
                         List.of(first.employeeId()), sites(group), List.of(), ids(group), removeFixes(s, group));
+            }
+
+            var absent = s.absences().getOrDefault(first.employeeId(), List.of()).stream().anyMatch(r -> r.contains(date));
+            if (absent) {
+                add(s, out, "ABSENCE", key("ABSENCE", first.employeeId(), date), date,
+                        name + " está ausente",
+                        name + " tem uma ausência aprovada a " + day(date) + " mas tem trabalho planeado.",
+                        List.of(first.employeeId()), sites(group), List.of(), ids(group), removeFixes(s, group));
+            }
+
+            var missing = missingDocuments(s, first.employeeId(), date, group);
+            if (!missing.isEmpty()) {
+                var fixes = new ArrayList<Fix>();
+                fixes.add(new Fix("OPEN_DOCUMENTS:" + first.employeeId(), "Ver documentos", "OPEN_DOCUMENTS",
+                        Map.of("employeeId", first.employeeId())));
+                fixes.addAll(removeFixes(s, group));
+                add(s, out, "DOCUMENT_MISSING", key("DOCUMENT_MISSING", first.employeeId(), date), date,
+                        name + " tem documentos em falta",
+                        name + " não tem válido a " + day(date) + ": " + String.join(", ", missing) + ".",
+                        List.of(first.employeeId()), sites(group), List.of(), ids(group), fixes);
             }
 
             // Sobreposição: compara períodos absolutos (inclui turnos que passam a meia-noite).
@@ -326,6 +367,25 @@ public final class ConflictEngine {
         }
         out.add(new Conflict(id, rule, severity, date, title, explanation, List.copyOf(employees), List.copyOf(sites),
                 List.copyOf(vehicles), List.copyOf(assignments), List.copyOf(fixes)));
+    }
+
+    private static List<String> missingDocuments(Snapshot s, UUID employeeId, LocalDate date, List<Assignment> group) {
+        if (s.requirements().isEmpty()) {
+            return List.of();
+        }
+        var countries = group.stream().map(a -> s.sites().get(a.siteId())).filter(java.util.Objects::nonNull)
+                .map(Site::country).filter(java.util.Objects::nonNull).collect(Collectors.toSet());
+        var missing = new ArrayList<String>();
+        for (var requirement : s.requirements()) {
+            if (requirement.country() != null && !countries.contains(requirement.country())) {
+                continue;
+            }
+            var expires = s.documents().get(employeeId + ":" + requirement.typeId());
+            if ((expires == null || expires.isBefore(date)) && !missing.contains(requirement.typeName())) {
+                missing.add(requirement.typeName());
+            }
+        }
+        return missing;
     }
 
     private static List<Fix> removeFixes(Snapshot s, List<Assignment> assignments) {

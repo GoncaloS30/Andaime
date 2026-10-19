@@ -10,7 +10,7 @@ Plano completo: secções "Arquitetura", "Modelo", "Endpoints" e "Sequência" em
 - Docker só existe no WSL Ubuntu → build e testes do backend correm no WSL com JDK 21 (o CI e a imagem Docker usam a mesma versão).
 - Autenticação por sessões Spring Security + Spring Session JDBC.
 - Modo demo removido da aplicação; o protótipo antigo só existe nos builds `e2e`/`prototipo` (testes), nunca em produção, e é apagado módulo a módulo.
-- Portas: Postgres **55442**, API **8088**, Mailpit **51035** (SMTP) / **58035** (UI), MinIO **59010/59011** (F5). Nunca tocar nos contentores do projeto Mesa (8081, 55432, 51025, 58025) nem nos volumes `infra_*`.
+- Portas: Postgres **55442**, API **8088**, Mailpit **51035** (SMTP) / **58035** (UI), armazenamento S3 **59010** (F5). Nunca tocar nos contentores do projeto Mesa (8081, 55432, 51025, 58025) nem nos volumes `infra_*`.
 
 ## Fases
 
@@ -21,7 +21,7 @@ Plano completo: secções "Arquitetura", "Modelo", "Endpoints" e "Sequência" em
 | F2 — Trabalhadores, obras, equipas | ✅ concluída em 2026-10-19 |
 | F3 — Planeamento e viaturas | ✅ concluída em 2026-10-19 |
 | F4 — Horas e aprovações | ✅ concluída em 2026-10-19 |
-| F5 — Documentos, ausências, equipamentos, notificações | ⏳ |
+| F5 — Documentos, ausências, equipamentos, notificações | ✅ concluída em 2026-10-19 |
 | F6 — Mapas e relatórios | ⏳ |
 | F7 — Hardening | ⏳ |
 
@@ -240,11 +240,63 @@ Semente: 200 registos, 29 folhas aprovadas e 5 submetidas
 - Escalões de horas extra com códigos ERP (`overtime_tiers`) — entram com os mapas e exportações (F6).
 - Edição da política laboral e dos feriados nas Definições (hoje: valores por omissão 8 h/40 h, pausa de 60 min acima de 6 h).
 
+## F5 — Documentos, ausências, equipamentos e notificações (concluída em 2026-10-19)
+
+Ajuste ao plano: **as imagens públicas do MinIO deixaram de ser publicadas** (Docker Hub e quay.io). O armazenamento de
+desenvolvimento e de testes passa a ser o **SeaweedFS** (open source, API S3), no serviço `objectstore` do Compose
+(porta 59010) e num contentor Testcontainers nos testes. O código fala S3 padrão (AWS SDK v2), por isso em produção
+serve qualquer S3 (AWS, Scaleway, OVH, MinIO próprio…). O download passa sempre pela API (com verificação de acesso e
+auditoria), em vez de URLs pré-assinados: os ficheiros nunca ficam acessíveis sem sessão.
+
+Backend:
+- **V18** tipos de documento (catálogo inicial por empresa, sem exigências à partida), exigências por país, documentos e
+  versões (chave no armazenamento, SHA-256, tamanho, tipo detetado, validade, verificação), ausências (sem sobreposição
+  de dias inteiros), artigos de EPI, saldo de stock (`CHECK on_hand >= 0`), unidades com número de série e titular,
+  registo de movimentos só de acrescento, notificações; funções `app.active_org_ids()` e `app.organization_owner()`
+  (SECURITY DEFINER) para as tarefas agendadas.
+- `documents`: upload multipart até 15 MB com o tipo real detetado pelo conteúdo (Apache Tika; só PDF, JPEG, PNG, WebP);
+  renovar = nova versão; verificação pelo gestor; conformidade por trabalhador (obrigatórios em todas as obras ou por
+  país); alerta diário de validade (06:00, por empresa, com lock e deduplicação) que notifica os gestores. O ficheiro
+  carregado numa transação que falha é apagado do armazenamento.
+- `absences`: pedido pelo próprio (só hoje em diante), encarregado ou escritório; aprovar com trabalho planeado exige
+  decidir **retirar** (change-set de planeamento, anulável) ou **manter** (fica conflito); recusar com motivo; cancelar
+  sem apagar.
+- Planeamento: novas regras `ABSENCE` (bloqueia por omissão) e `DOCUMENT_MISSING` (aviso, com correção "Ver documentos").
+- `equipment`: entradas, acertos com motivo, entregas e devoluções (bom estado, danificado, perdido); o stock nunca fica
+  negativo; uma unidade com número de série só tem um titular; o que cada pessoa tem calcula-se pelo registo.
+- `notifications`: gravadas na mesma transação da alteração (pedido e decisão de ausências, documentos carregados por
+  trabalhadores, validades) e sinal em tempo real por SSE depois do commit; o cliente tem consulta periódica de reserva.
+
+Frontend (`src/saas/pages/operations`, `src/saas/shell/NotificationBell.tsx`):
+- Documentos: conformidade (matriz por trabalhador e tipo, com país opcional), lista com situação, tipos e exigências,
+  upload e renovação, versões com download e verificação. O encarregado vê e carrega os da sua equipa.
+- Ausências: pedidos por decidir com o impacto no planeamento, registo do mês, registar em nome de alguém, cancelar.
+- Fardamento e EPI: artigos com stock e alerta de mínimo, entradas, acertos, entregas, devoluções e "com quem está".
+- App do trabalhador: pedir ausência e enviar os próprios documentos. Sino de notificações no cabeçalho.
+
+Verificação real:
+
+```text
+./mvnw verify → 54 testes, 0 falhas (OperationsIntegrationTest 3: upload real para S3 com tipo detetado pelo conteúdo,
+  download byte a byte, âmbito por papel, versões, verificação, conformidade, aviso no planeamento, alerta diário
+  deduplicado e notificações; ausência com impacto explícito, remoção como change-set, bloqueio no planeamento,
+  cancelar e recusar; stock nunca negativo, números de série únicos, devoluções e registo de movimentos)
+npm run typecheck · npm run lint → sem erros · npm test → 182 testes
+npm run e2e:saas → 5 passed: + documentos com ficheiro real, entregas de EPI e ausência aprovada
+```
+
+### Ainda não feito em F5
+
+- Fotos de trabalhadores e obras no armazenamento (continuam só no protótipo; F7).
+- Antivírus aos ficheiros carregados (`scan_status` existe; integração com ClamAV em F7).
+- Documentos de viaturas na interface (a API já os aceita; ecrã na ficha da viatura em F7).
+- Notificações por email (hoje só na aplicação).
+
 ## Comandos
 
 ```bash
 # Infra (no WSL; projeto Compose "andaime" — não toca nos contentores de outros projetos)
-wsl -d Ubuntu -- docker compose -f infra/compose.yaml up -d postgres mailpit
+wsl -d Ubuntu -- docker compose -f infra/compose.yaml up -d postgres mailpit objectstore
 # API (perfil local, porta 8088): imagem Docker…
 wsl -d Ubuntu -- docker compose -f infra/compose.yaml up -d --build backend
 # …ou diretamente no WSL (arranque mais rápido durante o desenvolvimento)

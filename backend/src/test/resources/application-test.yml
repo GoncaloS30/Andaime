@@ -12,6 +12,9 @@ andaime:
   # Todos os pedidos de teste chegam do mesmo IP; o limite por IP tem teste unitário próprio.
   rate-limit:
     auth-per-minute: 100000
+  # As tarefas agendadas são chamadas diretamente pelos testes.
+  jobs:
+    enabled: false
 
 springdoc:
   api-docs:

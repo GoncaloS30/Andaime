@@ -10,6 +10,7 @@ import { useLogout, useMembers } from '../api/hooks'
 import { atLeast, ORG_ROLE_LABEL } from '../api/types'
 import { useEmployees, useSites, useTeams } from '../api/workforce'
 import { useActiveOrg, useSession } from '../session'
+import { WorkerSections } from './operations/WorkerSections'
 import { WorkerClock } from './timekeeping/WorkerClock'
 
 /**
@@ -17,15 +18,11 @@ import { WorkerClock } from './timekeeping/WorkerClock'
  * o ecrã diz isso mesmo, em vez de mostrar dados fictícios.
  */
 export const MODULES: { path: string; label: string; phase: string }[] = [
-  { path: '/ausencias', label: 'Ausências', phase: 'F5' },
-  { path: '/agenda', label: 'Agenda', phase: 'F5' },
-  { path: '/documentos', label: 'Documentos', phase: 'F5' },
-  { path: '/equipamentos', label: 'Fardamento e EPI', phase: 'F5' },
+  { path: '/agenda', label: 'Agenda', phase: 'depois de F6' },
   { path: '/mapas', label: 'Mapas semanais', phase: 'F6' },
   { path: '/relatorios', label: 'Relatórios', phase: 'F6' },
   { path: '/dormidas', label: 'Dormidas', phase: 'depois de F6' },
   { path: '/encarregado/diario', label: 'Diário de obra', phase: 'depois de F6' },
-  { path: '/encarregado/documentos', label: 'Documentação', phase: 'F5' },
 ]
 
 const PHASE_TEXT: Record<string, string> = {
@@ -182,6 +179,7 @@ export function WorkerHome() {
           <h1 className="font-expanded text-xl font-semibold text-ink">Olá, {me.user.displayName.split(' ')[0]}</h1>
         </div>
         <WorkerClock />
+        <WorkerSections />
         <Link to="/definicoes/conta" className={buttonStyles('secondary')}>
           A minha conta
         </Link>

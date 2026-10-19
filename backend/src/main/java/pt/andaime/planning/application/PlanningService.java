@@ -452,6 +452,28 @@ public class PlanningService {
                 cleanNote, batchId, 0);
     }
 
+    // --- integração com ausências ----------------------------------------------------------------
+
+    /** Atribuições de um trabalhador num intervalo (impacto de uma ausência). */
+    @Transactional(readOnly = true)
+    public List<AssignmentView> assignmentsOf(UUID employeeId, LocalDate from, LocalDate to) {
+        return repository.forEmployeeBetween(employeeId, from, to);
+    }
+
+    /**
+     * Retira atribuições como consequência de outra decisão (ex.: ausência aprovada com "retirar do planeamento").
+     * É um change-set normal (pode ser anulado); os avisos que a remoção crie são aceites, porque a decisão já foi tomada.
+     */
+    @Transactional
+    public CommandResult removeAssignments(List<AssignmentView> assignments, String label) {
+        OrgRole.require(OrgRole.MANAGER);
+        var ops = assignments.stream().map(a -> new Op("DELETE", a, null)).toList();
+        var preview = apply("DELETE", new Plan(label, ops, List.of()), true, Set.of(), false);
+        var warnings = new HashSet<String>();
+        preview.newConflicts().stream().filter(c -> c.severity() == Severity.WARN).forEach(c -> warnings.add(c.id()));
+        return apply("DELETE", new Plan(label, ops, List.of()), false, warnings, false);
+    }
+
     // --- anular ---------------------------------------------------------------------------------
 
     @Transactional(readOnly = true)

@@ -218,7 +218,7 @@ class PlanningRepository {
 
         var sites = new HashMap<UUID, ConflictEngine.Site>();
         jdbcTemplate.query("""
-                SELECT site.id, site.code, site.name, site.status, site.hour_limit_min,
+                SELECT site.id, site.code, site.name, site.status, site.hour_limit_min, site.country,
                        site.baseline_realized_min + (SELECT coalesce(sum(entry.worked_min), 0) FROM time_entries entry
                         WHERE entry.site_id = site.id AND entry.status = 'CLOSED') AS baseline_realized_min,
                        (SELECT coalesce(sum(planned.planned_min), 0) FROM assignments planned
@@ -231,14 +231,42 @@ class PlanningRepository {
                     var id = resultSet.getObject("id", UUID.class);
                     sites.put(id, new ConflictEngine.Site(id, resultSet.getString("code"), resultSet.getString("name"),
                             resultSet.getString("status"), (Integer) resultSet.getObject("hour_limit_min"),
-                            resultSet.getInt("baseline_realized_min"), resultSet.getInt("planned_from_today")));
+                            resultSet.getInt("baseline_realized_min"), resultSet.getInt("planned_from_today"),
+                            resultSet.getString("country")));
                 }, today, from, to);
 
         var rules = new HashMap<String, Severity>();
         jdbcTemplate.query("SELECT rule, severity FROM conflict_rule_settings", resultSet -> {
             rules.put(resultSet.getString("rule"), Severity.valueOf(resultSet.getString("severity")));
         });
-        return new Snapshot(today, assignments, employees, vehicles, sites, rules);
+        // Ausências aprovadas de dia inteiro e documentos obrigatórios dos trabalhadores envolvidos.
+        var absences = new HashMap<UUID, List<ConflictEngine.DateRange>>();
+        var documents = new HashMap<String, LocalDate>();
+        if (!employeeIds.isEmpty()) {
+            var params = new java.util.ArrayList<Object>(employeeIds);
+            params.add(to.plusDays(1));
+            params.add(from.minusDays(1));
+            jdbcTemplate.query("SELECT employee_id, starts_on, ends_on FROM absences WHERE status = 'APPROVED' AND partial_minutes IS NULL"
+                    + " AND employee_id IN (" + placeholders(employeeIds.size()) + ") AND starts_on <= ? AND ends_on >= ?", resultSet -> {
+                        absences.computeIfAbsent(resultSet.getObject(1, UUID.class), k -> new java.util.ArrayList<>())
+                                .add(new ConflictEngine.DateRange(resultSet.getObject(2, LocalDate.class), resultSet.getObject(3, LocalDate.class)));
+                    }, params.toArray());
+            jdbcTemplate.query("SELECT document.employee_id, document.document_type_id, current.expires_on FROM documents document"
+                    + " JOIN document_versions current ON current.organization_id = document.organization_id"
+                    + " AND current.id = document.current_version_id"
+                    + " WHERE document.archived_at IS NULL AND document.employee_id IN (" + placeholders(employeeIds.size()) + ")",
+                    resultSet -> {
+                        var expires = resultSet.getObject(3, LocalDate.class);
+                        documents.put(resultSet.getObject(1, UUID.class) + ":" + resultSet.getObject(2, UUID.class),
+                                expires == null ? LocalDate.MAX : expires);
+                    }, employeeIds.toArray());
+        }
+        var requirements = jdbcTemplate.query("SELECT type.id, type.name, requirement.country FROM document_requirements requirement"
+                + " JOIN document_types type ON type.organization_id = requirement.organization_id AND type.id = requirement.document_type_id"
+                + " WHERE type.archived_at IS NULL AND type.subject = 'EMPLOYEE'",
+                (resultSet, rowNumber) -> new ConflictEngine.Requirement(resultSet.getObject(1, UUID.class), resultSet.getString(2),
+                        resultSet.getString(3)));
+        return new Snapshot(today, assignments, employees, vehicles, sites, rules, absences, requirements, documents);
     }
 
     private static String placeholders(int count) {

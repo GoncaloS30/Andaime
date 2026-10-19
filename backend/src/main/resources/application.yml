@@ -10,6 +10,10 @@ server:
       timeout: 8h
 
 spring:
+  servlet:
+    multipart:
+      max-file-size: 15MB
+      max-request-size: 16MB
   application:
     name: andaime-api
   autoconfigure:
@@ -41,6 +45,15 @@ spring:
   threads:
     virtual:
       enabled: true
+
+andaime:
+  storage:
+    endpoint: ${ANDAIME_STORAGE_ENDPOINT:http://localhost:59010}
+    region: ${ANDAIME_STORAGE_REGION:eu-west-1}
+    bucket: ${ANDAIME_STORAGE_BUCKET:andaime-documents}
+    access-key: ${ANDAIME_STORAGE_ACCESS_KEY:andaime-local}
+    secret-key: ${ANDAIME_STORAGE_SECRET_KEY:andaime-local-secret}
+    max-file-bytes: 15728640
 
 management:
   endpoints:
