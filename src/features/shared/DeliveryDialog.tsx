@@ -1,4 +1,4 @@
-import { PackageCheck } from 'lucide-react'
+import { PackageCheck, Shirt } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { BOOT_SIZES, CLOTHING_SIZES, GLOVE_SIZES, TROUSER_SIZES } from '@/domain/labels'
@@ -7,6 +7,7 @@ import { useDemo } from '@/store/store'
 import { Button } from '@/ui/Button'
 import { Field, Input, Select, Textarea } from '@/ui/Field'
 import { Dialog } from '@/ui/Overlay'
+import { Photo } from '@/ui/Photo'
 
 export const SIZE_OPTIONS: Record<Exclude<SizeKind, null>, string[]> = {
   roupa: CLOTHING_SIZES,
@@ -98,6 +99,15 @@ export function DeliveryDialog({ open, onOpenChange, workerId, itemId }: Props) 
             </Select>
           )}
         </Field>
+        {item && (
+          <div className="flex items-center gap-3 sm:col-span-2">
+            <Photo photo={item.photo} format="artigo" sizes="64px" rounded="sm" className="w-16" fallback={<Shirt className="size-5 text-ink-4" aria-hidden />} />
+            <p className="text-sm">
+              <span className="block font-semibold">{item.name}</span>
+              <span className="text-ink-3">{item.stock} em stock{item.serial ? ` · série ${item.serial}` : ''}</span>
+            </p>
+          </div>
+        )}
         {item?.sizeKind && (
           <Field label="Tamanho" hint={fromSheet ? `Da ficha do trabalhador: ${fromSheet}` : 'Sem tamanho na ficha.'}>
             {(p) => (

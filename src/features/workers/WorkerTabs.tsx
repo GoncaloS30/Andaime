@@ -1,4 +1,4 @@
-import { ArrowRightLeft, FileUp, PackageCheck, Pencil, Plus } from 'lucide-react'
+import { ArrowRightLeft, FileUp, PackageCheck, Pencil, Plus, Shirt } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { toast } from 'sonner'
@@ -21,6 +21,7 @@ import { DocumentDialog } from '../shared/DocumentDialog'
 import { runs } from '../planning/model'
 import { SizesFields } from './WorkerForm'
 import { plural } from '@/lib/plural'
+import { Photo } from '@/ui/Photo'
 
 const tone = (st: string) => (st === 'valido' || st === 'aprovado' || st === 'verificado' ? 'ok' : st === 'a_expirar' || st === 'por_verificar' || st === 'pedido' || st === 'revisto' || st === 'submetido' ? 'warn' : st === 'aberto' ? 'info' : 'danger')
 
@@ -337,8 +338,13 @@ function DeliveriesList({ id, kinds }: { id: ID; kinds: string[] }) {
           {list.map((d) => (
             <tr key={d.id}>
               <td>
-                {db.equipment[d.itemId]?.name}
-                {d.note && <span className="block text-xs text-ink-3">{d.note}</span>}
+                <span className="flex items-center gap-2">
+                  <Photo photo={db.equipment[d.itemId]?.photo} format="artigo" alt="" sizes="32px" rounded="sm" className="w-8" fallback={<Shirt className="size-3.5 text-ink-4" aria-hidden />} />
+                  <span>
+                    {db.equipment[d.itemId]?.name}
+                    {d.note && <span className="block text-xs text-ink-3">{d.note}</span>}
+                  </span>
+                </span>
               </td>
               <td className="font-mono text-xs">{d.size || '—'}</td>
               <td className="num tabular">{d.qty}</td>

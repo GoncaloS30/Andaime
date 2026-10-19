@@ -96,7 +96,12 @@ export function EquipmentPage() {
                     <tr key={d.id}>
                       <td className="text-xs whitespace-nowrap">{dateNumeric(d.date)}</td>
                       <td><Link to={`/trabalhadores/${d.workerId}?tab=equipamentos`} className="hover:underline">{db.workers[d.workerId]?.name}</Link></td>
-                      <td>{db.equipment[d.itemId]?.name}{d.note && <span className="block text-xs text-ink-3">{d.note}</span>}</td>
+                      <td>
+                        <span className="flex items-center gap-2">
+                          <Photo photo={db.equipment[d.itemId]?.photo} format="artigo" alt="" sizes="32px" rounded="sm" className="w-8" fallback={<Shirt className="size-3.5 text-ink-4" aria-hidden />} />
+                          <span>{db.equipment[d.itemId]?.name}{d.note && <span className="block text-xs text-ink-3">{d.note}</span>}</span>
+                        </span>
+                      </td>
                       <td className="font-mono text-xs">{d.size || '—'}</td>
                       <td className="num tabular">{d.qty}</td>
                       <td><Badge tone={d.status === 'entregue' ? 'info' : d.status === 'devolvido' ? 'neutral' : 'danger'} dot>{DELIVERY_STATUS[d.status]}</Badge></td>
