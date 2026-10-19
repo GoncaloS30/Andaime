@@ -4,6 +4,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-PT/1.1.0/); 
 
 ## [Por publicar]
 
+### Acrescentado
+- Regra de proteção do `main` pronta a aplicar (`.github/protecao-main.json`).
+
 ## [3.1.0] — 2026-10-19
 
 Funcionalidades do Lyrical Design e fotos (spec `docs/superpowers/specs/2026-10-16-andaime-lyrical-fotos-design.md`).

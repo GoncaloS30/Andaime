@@ -27,7 +27,11 @@ Trabalhamos em **trunk-based development**: o ramo `main` está sempre pronto a 
    | `chore/` | Configuração e dependências | `chore/ci-cache` |
 
 2. Abra um **pull request** cedo (pode ser rascunho). O modelo de PR tem a lista de verificação.
-3. O `main` está protegido. Para fazer merge, a CI tem de estar verde (tipos, lint, testes unitários, build, E2E e auditoria) e as conversas resolvidas.
+3. O `main` é protegido por convenção. Para fazer merge, a CI tem de estar verde (tipos, lint, testes unitários, build, E2E e auditoria) e as conversas resolvidas. A regra técnica está pronta em `.github/protecao-main.json`: o GitHub só a aplica a repositórios privados com o plano Pro ou Team. Quando houver, aplica-se com:
+
+   ```bash
+   gh api -X PUT repos/GoncaloS30/Andaime/branches/main/protection --input .github/protecao-main.json
+   ```
 4. O merge faz-se sempre por **squash**. O título do PR passa a ser a mensagem do commit no `main`.
 
 ## Mensagens de commit
