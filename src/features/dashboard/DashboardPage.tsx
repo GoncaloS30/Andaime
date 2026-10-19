@@ -16,6 +16,7 @@ import { FieldWeek } from './FieldWeek'
 import { PendingPanel } from './PendingPanel'
 import { SitesHours } from './SitesHours'
 import { LatestDiary } from './LatestDiary'
+import { LateSitesPanel } from './LateSitesPanel'
 import { LodgingPanel } from './LodgingPanel'
 
 export function DashboardPage() {
@@ -94,6 +95,7 @@ export function DashboardPage() {
               )}
             </Panel>
             <PendingPanel />
+            <LateSitesPanel />
             <LodgingPanel />
             <LatestDiary />
             <Panel title="Atividade recente" id="atividade">

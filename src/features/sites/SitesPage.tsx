@@ -4,6 +4,7 @@ import { useDerived } from '@/app/hooks'
 import { ModuleGuard } from '@/app/ModuleGuard'
 import { formatHours } from '@/domain/hours'
 import { COUNTRY_NAME, SITE_STATUS } from '@/domain/labels'
+import { delayWorkdays } from '@/domain/planning'
 import { selectAllSiteMetrics } from '@/store/selectors'
 import { Badge, SiteCode } from '@/ui/Badge'
 import { buttonStyles } from '@/ui/Button'
@@ -116,7 +117,10 @@ export function SitesPage() {
                       </td>
                       <td className="max-w-48 truncate text-ink-2">{client?.name}</td>
                       <td><CountryTag country={s.country} /> <span className="text-xs text-ink-2">{s.city}</span></td>
-                      <td><Badge tone={s.status === 'em_curso' ? 'ok' : s.status === 'planeada' ? 'info' : 'neutral'} dot>{SITE_STATUS[s.status]}</Badge></td>
+                      <td>
+                        <Badge tone={s.status === 'em_curso' ? 'ok' : s.status === 'planeada' ? 'info' : 'neutral'} dot>{SITE_STATUS[s.status]}</Badge>
+                        {delayWorkdays(s) > 0 && <Badge tone="warn" className="ml-1">Atraso {delayWorkdays(s)} d</Badge>}
+                      </td>
                       <td className="text-xs">
                         {teams.map((t) => t.name).join(', ') || <span className="text-ink-3">Sem equipa</span>}
                         <span className="block text-ink-3">{foreman?.name ?? 'Sem encarregado'}</span>
