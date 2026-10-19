@@ -49,7 +49,10 @@ export interface Site {
   timezone: string
   status: SiteStatus
   startDate: ISODate
+  /** Previsão de fim (a data que se vai atualizando). */
   endDate: ISODate
+  /** Fim contratual (o que está no contrato). Previsão depois dele = aviso. */
+  contractEnd: ISODate
   /** Limite de horas contratado ou configurado. null = sem limite definido. */
   hourLimit: number | null
   /** Horas realizadas antes da janela de dados da demonstração (histórico importado). */
@@ -193,6 +196,8 @@ export type AbsenceType =
   | 'baixa'
   | 'formacao'
   | 'parcial'
+  | 'licenca'
+  | 'outra'
 
 export type AbsenceStatus = 'pedido' | 'aprovado' | 'rejeitado'
 
@@ -332,6 +337,26 @@ export interface Stay {
   createdAt: string
 }
 
+/** Evento da agenda: próprio da app ou vindo do Google Calendar (simulado). */
+export interface CalendarEvent {
+  id: ID
+  title: string
+  date: ISODate
+  /** Igual a date para eventos de um dia. */
+  endDate: ISODate
+  time: HHMM | null
+  location: string
+  source: 'andaime' | 'google'
+  /** Para eventos sincronizados a partir da app (ex.: "ferias:<id da ausência>"). */
+  syncKey?: string
+}
+
+/** Integrações simuladas: nunca pedem credenciais nem saem do navegador. */
+export interface Integrations {
+  google: { connected: boolean; lastSync: string | null; syncedKeys: string[] }
+  onedrive: { connected: boolean; books: Record<string, string> }
+}
+
 export interface WeekNote {
   weekStart: ISODate
   text: string
@@ -389,6 +414,8 @@ export interface DB {
   diary: Record<ID, DiaryEntry>
   hotels: Record<ID, Hotel>
   stays: Record<ID, Stay>
+  events: Record<ID, CalendarEvent>
+  integrations: Integrations
   activity: ActivityEvent[]
   notifications: Notification[]
 }

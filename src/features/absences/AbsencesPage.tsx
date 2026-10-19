@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 import { useDerived } from '@/app/hooks'
 import { ModuleGuard } from '@/app/ModuleGuard'
 import { detectConflicts } from '@/domain/conflicts'
-import { ABSENCE_STATUS, ABSENCE_TYPE } from '@/domain/labels'
+import { ABSENCE_COLOR, ABSENCE_STATUS, ABSENCE_TYPE } from '@/domain/labels'
 import { newConflicts } from '@/domain/planning'
 import type { Absence, AbsenceType, ID } from '@/domain/types'
 import { addDays, dateShort, eachDay, isWeekend, monthLabel, weekStart, weekday } from '@/domain/weeks'
@@ -24,14 +24,7 @@ import { AbsenceDialog } from '../shared/AbsenceDialog'
 import { ConflictCard } from '../shared/ConflictCard'
 import { plural } from '@/lib/plural'
 
-const TYPE_COLOR: Record<AbsenceType, string> = {
-  ferias: '#1a9e72',
-  falta_justificada: '#2a78d6',
-  falta_injustificada: '#b03a2e',
-  baixa: '#8a4fc7',
-  formacao: '#d4652f',
-  parcial: '#8f8a14',
-}
+const TYPE_COLOR = ABSENCE_COLOR
 
 function Impact({ a }: { a: Absence }) {
   const db = useDemo((s) => s.db)
