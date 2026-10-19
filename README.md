@@ -8,7 +8,13 @@ Centro de operações para empresas de construção: **planeamento → execuçã
 
 ## Arrancar
 
-Infraestrutura e API (Docker no WSL; portas próprias, não interfere com outros projetos):
+No Windows, `scripts/arrancar.ps1` faz tudo de uma vez: confirma a versão do Node, corre `npm ci` quando faltam dependências ou o `package-lock.json` mudou, arranca PostgreSQL, Mailpit e API no Docker do WSL, espera pela API e abre o frontend (`-Porta 5174` muda a porta, `-Abrir` abre o navegador, `-Reconstruir` reconstrói a API depois de mudar o backend, `-Prototipo` arranca só o protótipo antigo):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/arrancar.ps1
+```
+
+Passo a passo — infraestrutura e API (Docker no WSL; portas próprias, não interfere com outros projetos):
 
 ```bash
 wsl -d Ubuntu -- docker compose -f infra/compose.yaml up -d --build

@@ -12,3 +12,6 @@ infra/.env
 
 # Definições pessoais do Claude Code (permissões locais)
 .claude/settings.local.json
+
+# Definições pessoais do IntelliJ
+.idea/
