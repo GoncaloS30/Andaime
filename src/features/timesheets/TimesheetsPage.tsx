@@ -7,11 +7,14 @@ import type { EntryStatus } from '@/domain/types'
 import { sheets } from '@/store/selectors'
 import { useDemo } from '@/store/store'
 import { Button } from '@/ui/Button'
-import { Select } from '@/ui/Field'
+import { Segmented, Select } from '@/ui/Field'
 import { PageHeader } from '@/ui/Layout'
 import { TabPanel, Tabs } from '@/ui/Tabs'
 import { ManualEntryDialog } from './EntryDialogs'
+import { HoursTotals } from './HoursTotals'
+import { HrBookPanel } from './HrBookPanel'
 import { SheetList } from './SheetList'
+import { WeekGrid } from './WeekGrid'
 
 const TABS: { value: EntryStatus | 'todas'; label: string }[] = [
   { value: 'revisto', label: 'Por aprovar' },
@@ -31,6 +34,7 @@ export function TimesheetsPage() {
   const set = (k: string, v: string | null) => setSp((p) => { const n = new URLSearchParams(p); if (v) n.set(k, v); else n.delete(k); return n }, { replace: true })
   const db = useDemo((s) => s.db)
   const [manual, setManual] = useState(false)
+  const view = (['folhas', 'totais', 'grelha', 'rh'] as const).find((v) => v === sp.get('vista')) ?? 'folhas'
   const counts = useDerived(({ db: d }) => {
     const e = Object.values(d.entries)
     return Object.fromEntries(TABS.map((t) => [t.value, t.value === 'todas' ? 0 : sheets(e, t.value)]))
@@ -44,7 +48,22 @@ export function TimesheetsPage() {
         actions={<Button icon={<ClipboardPen className="size-4" />} onClick={() => setManual(true)}>Registo manual</Button>}
       />
       <ModuleGuard empty={{ icon: <ClipboardCheck />, title: 'Ainda não há horas registadas', text: 'As entradas e saídas registadas pelos trabalhadores ou pelos encarregados aparecem aqui para revisão e aprovação.' }}>
-        <Tabs
+        <Segmented
+          className="mb-4"
+          label="Vista"
+          value={view}
+          onChange={(v) => setSp(v === 'folhas' ? {} : { vista: v }, { replace: true })}
+          options={[
+            { value: 'folhas', label: 'Folhas' },
+            { value: 'totais', label: 'Totais' },
+            { value: 'grelha', label: 'Grelha da semana' },
+            { value: 'rh', label: 'Livro do RH' },
+          ]}
+        />
+        {view === 'totais' && <HoursTotals />}
+        {view === 'grelha' && <WeekGrid scope="gestor" />}
+        {view === 'rh' && <HrBookPanel />}
+        {view === 'folhas' && <Tabs
           value={status}
           onValueChange={(v) => set('estado', v === 'revisto' ? null : v)}
           label="Estado das folhas"
@@ -65,7 +84,7 @@ export function TimesheetsPage() {
           <TabPanel value={status} className="pt-0">
             <SheetList mode="gestor" status={status} teamId={team} siteId={site} />
           </TabPanel>
-        </Tabs>
+        </Tabs>}
       </ModuleGuard>
       {manual && <ManualEntryDialog onClose={() => setManual(false)} />}
     </div>

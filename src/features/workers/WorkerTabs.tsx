@@ -13,12 +13,14 @@ import { cn } from '@/lib/cn'
 import { useDemo } from '@/store/store'
 import { Badge, Plate, SiteCode } from '@/ui/Badge'
 import { Button } from '@/ui/Button'
+import { Select } from '@/ui/Field'
 import { Detail, Panel } from '@/ui/Layout'
 import { Menu } from '@/ui/Menu'
 import { EmptyState } from '@/ui/States'
 import { ActivityList } from '../shared/ActivityList'
 import { DocumentDialog } from '../shared/DocumentDialog'
 import { runs } from '../planning/model'
+import { SiteDonut } from './SiteDonut'
 import { SizesFields } from './WorkerForm'
 import { plural } from '@/lib/plural'
 import { Photo } from '@/ui/Photo'
@@ -176,6 +178,16 @@ export function SitesTab({ id, onTransfer }: { id: ID; onTransfer: () => void })
 
 export function HoursTab({ id }: { id: ID }) {
   const settings = useDemo((s) => s.session.settings)
+  const [siteFilter, setSiteFilter] = useState('')
+  const share = useDerived(({ db, session }) => {
+    const bySite = new Map<string, number>()
+    for (const e of Object.values(db.entries)) {
+      if (e.workerId !== id || !['submetido', 'revisto', 'aprovado'].includes(e.status) || !e.clockOut) continue
+      bySite.set(e.siteId, (bySite.get(e.siteId) ?? 0) + entryHours(e, session.settings).worked)
+    }
+    const parts = [...bySite.entries()].map(([sid, hours]) => ({ site: db.sites[sid]!, hours })).filter((p) => p.site).sort((a, b) => b.hours - a.hours)
+    return { parts, total: parts.reduce((t, p) => t + p.hours, 0) }
+  }, [id])
   const d = useDerived(({ db, session }) => {
     const ws = weekStart(session.today)
     const weeks = [0, -7, -14, -21, -28].map((o) => addDays(ws, o))
@@ -188,7 +200,25 @@ export function HoursTab({ id }: { id: ID }) {
   }, [id])
   return (
     <div className="flex flex-col gap-4">
-      {d.map(({ w, entries, planned, db }) => {
+      {share.total > 0 && (
+        <Panel
+          title="Horas por obra"
+          description="Parte de cada obra nas horas realizadas"
+          actions={
+            <>
+              <label className="sr-only" htmlFor={`hf-${id}`}>Filtrar registos por obra</label>
+              <Select id={`hf-${id}`} value={siteFilter} onChange={(e) => setSiteFilter(e.target.value)} className="w-52">
+                <option value="">Registos de todas as obras</option>
+                {share.parts.map((p) => <option key={p.site.id} value={p.site.id}>{p.site.code} · {p.site.name}</option>)}
+              </Select>
+            </>
+          }
+        >
+          <SiteDonut parts={share.parts} total={share.total} />
+        </Panel>
+      )}
+      {d.map(({ w, entries: all, planned, db }) => {
+        const entries = siteFilter ? all.filter((e) => e.siteId === siteFilter) : all
         const valid = entries.filter((e) => e.status !== 'rejeitado' && e.clockOut)
         const sum = valid.reduce((s, e) => s + entryHours(e, settings).worked, 0)
         const extra = valid.reduce((s, e) => s + entryHours(e, settings).extra, 0)

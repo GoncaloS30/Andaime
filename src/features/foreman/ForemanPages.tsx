@@ -15,13 +15,14 @@ import { useDemo } from '@/store/store'
 import { Avatar } from '@/ui/Avatar'
 import { Badge, Plate, SiteCode } from '@/ui/Badge'
 import { Button, buttonStyles } from '@/ui/Button'
-import { Field, Select, Textarea } from '@/ui/Field'
+import { Field, Segmented, Select, Textarea } from '@/ui/Field'
 import { PageHeader, Panel } from '@/ui/Layout'
 import { EmptyState } from '@/ui/States'
 import { TabPanel, Tabs } from '@/ui/Tabs'
 import { ConflictCard } from '../shared/ConflictCard'
 import { ManualEntryDialog } from '../timesheets/EntryDialogs'
 import { SheetList } from '../timesheets/SheetList'
+import { WeekGrid } from '../timesheets/WeekGrid'
 
 function useScope() {
   return useDerived((s) => selectForemanScope(s), [])
@@ -205,9 +206,14 @@ export function ForemanHours() {
   return (
     <div className="mx-auto max-w-[1200px]">
       <PageHeader title="Horas da equipa" description="Reveja os registos de ponto. Os validados seguem para aprovação do gestor." actions={<Button variant="primary" icon={<ClipboardPen className="size-4" />} onClick={() => setManual(true)}>Registar horas</Button>} />
-      <Tabs value={status} onValueChange={(v) => setSp(v === 'submetido' ? {} : { estado: v }, { replace: true })} label="Estado" tabs={[{ value: 'submetido', label: 'Por rever', count: counts.submetido, tone: 'warn' }, { value: 'revisto', label: 'Enviadas ao gestor' }, { value: 'rejeitado', label: 'Devolvidas', count: counts.rejeitado, tone: 'danger' }, { value: 'aprovado', label: 'Aprovadas' }]}>
-        <TabPanel value={status} className="mt-3 pt-0"><SheetList mode="encarregado" status={status} workerIds={scope.workerIds} /></TabPanel>
-      </Tabs>
+      <Segmented className="mb-4" label="Vista" value={sp.get('vista') === 'grelha' ? 'grelha' : 'folhas'} onChange={(v) => setSp(v === 'grelha' ? { vista: 'grelha' } : {}, { replace: true })} options={[{ value: 'folhas', label: 'Folhas' }, { value: 'grelha', label: 'Grelha da semana' }]} />
+      {sp.get('vista') === 'grelha' ? (
+        <WeekGrid scope="encarregado" />
+      ) : (
+        <Tabs value={status} onValueChange={(v) => setSp(v === 'submetido' ? {} : { estado: v }, { replace: true })} label="Estado" tabs={[{ value: 'submetido', label: 'Por rever', count: counts.submetido, tone: 'warn' }, { value: 'revisto', label: 'Enviadas ao gestor' }, { value: 'rejeitado', label: 'Devolvidas', count: counts.rejeitado, tone: 'danger' }, { value: 'aprovado', label: 'Aprovadas' }]}>
+          <TabPanel value={status} className="mt-3 pt-0"><SheetList mode="encarregado" status={status} workerIds={scope.workerIds} /></TabPanel>
+        </Tabs>
+      )}
       {manual && <ManualEntryDialog onClose={() => setManual(false)} workerIds={scope.workerIds} />}
     </div>
   )
