@@ -15,6 +15,7 @@ import pt.andaime.audit.AuditLog;
 import pt.andaime.organization.MemberView;
 import pt.andaime.shared.api.ApiException;
 import pt.andaime.shared.tenant.OrgRole;
+import pt.andaime.workforce.EmployeeDirectory;
 
 /**
  * Gestão de memberships da organização corrente. Regras:
@@ -36,21 +37,56 @@ public class MembershipService {
             resultSet.getString("role"),
             resultSet.getString("status"),
             resultSet.getObject("created_at", OffsetDateTime.class).toInstant(),
+            resultSet.getObject("employee_id", UUID.class),
+            resultSet.getString("employee_name"),
             resultSet.getInt("version"));
 
     private static final String SELECT_MEMBER = """
             SELECT membership.id, membership.user_id, account.email::text AS email, account.display_name,
-                   membership.role, membership.status, membership.created_at, membership.version
+                   membership.role, membership.status, membership.created_at, membership.version,
+                   membership.employee_id, employee.full_name AS employee_name
             FROM memberships membership
             JOIN users account ON account.id = membership.user_id
+            LEFT JOIN employees employee
+                   ON employee.organization_id = membership.organization_id AND employee.id = membership.employee_id
             """;
 
     private final JdbcTemplate jdbcTemplate;
     private final AuditLog auditLog;
+    private final EmployeeDirectory employees;
 
-    public MembershipService(JdbcTemplate jdbcTemplate, AuditLog auditLog) {
+    public MembershipService(JdbcTemplate jdbcTemplate, AuditLog auditLog, EmployeeDirectory employees) {
         this.jdbcTemplate = jdbcTemplate;
         this.auditLog = auditLog;
+        this.employees = employees;
+    }
+
+    /**
+     * Liga (ou desliga, com {@code null}) a conta à ficha de trabalhador. É o que dá ao encarregado o âmbito
+     * das suas equipas e ao trabalhador acesso aos próprios dados. Uma ficha só pode estar ligada a uma conta.
+     */
+    @Transactional
+    public MemberView linkEmployee(UUID organizationId, UUID membershipId, UUID employeeId) {
+        OrgRole.require(OrgRole.ADMIN);
+        var member = find(organizationId, membershipId);
+        if (employeeId != null) {
+            employees.requireActive(employeeId, "employee");
+            var taken = Boolean.TRUE.equals(jdbcTemplate.queryForObject("""
+                    SELECT EXISTS (SELECT 1 FROM memberships WHERE organization_id = ? AND employee_id = ? AND id <> ?)
+                    """, Boolean.class, organizationId, employeeId, membershipId));
+            if (taken) {
+                throw new ApiException(HttpStatus.CONFLICT, "employee-linked",
+                        "Esta ficha de trabalhador já está ligada a outra conta.");
+            }
+        }
+        jdbcTemplate.update("""
+                UPDATE memberships SET employee_id = ?, version = version + 1 WHERE id = ? AND organization_id = ?
+                """, employeeId, membershipId, organizationId);
+        var changes = new java.util.LinkedHashMap<String, Object>();
+        changes.put("from", member.employeeId());
+        changes.put("to", employeeId);
+        auditLog.record("membership.employee-linked", "membership", membershipId, Map.of("employeeId", changes));
+        return find(organizationId, membershipId);
     }
 
     @Transactional(readOnly = true)

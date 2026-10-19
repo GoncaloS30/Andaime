@@ -48,8 +48,8 @@ abstract class IntegrationTestSupport {
         registry.add("spring.datasource.username", () -> "andaime_app");
         registry.add("spring.datasource.password", () -> "andaime_app_local");
         registry.add("spring.flyway.url", POSTGRES::getJdbcUrl);
-        registry.add("spring.flyway.user", POSTGRES::getUsername);
-        registry.add("spring.flyway.password", POSTGRES::getPassword);
+        registry.add("spring.flyway.user", () -> "andaime_owner");
+        registry.add("spring.flyway.password", () -> "andaime_owner_local");
     }
 
     static Connection ownerConnection() throws SQLException {

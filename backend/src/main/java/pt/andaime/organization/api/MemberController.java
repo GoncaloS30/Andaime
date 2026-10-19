@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -53,6 +54,14 @@ public class MemberController {
         return membershipService.changeRole(orgId, membershipId, request.role(), request.version());
     }
 
+    @PutMapping("/members/{membershipId}/employee")
+    MemberView linkEmployee(
+            @PathVariable UUID orgId,
+            @PathVariable UUID membershipId,
+            @RequestBody LinkEmployeeRequest request) {
+        return membershipService.linkEmployee(orgId, membershipId, request.employeeId());
+    }
+
     @DeleteMapping("/members/{membershipId}")
     ResponseEntity<Void> deactivate(@PathVariable UUID orgId, @PathVariable UUID membershipId) {
         membershipService.deactivate(orgId, membershipId);
@@ -83,6 +92,9 @@ public class MemberController {
     ResponseEntity<Void> resend(@PathVariable UUID orgId, @PathVariable UUID invitationId) {
         invitationService.resend(orgId, invitationId);
         return ResponseEntity.noContent().build();
+    }
+
+    record LinkEmployeeRequest(UUID employeeId) {
     }
 
     record ChangeRoleRequest(@NotNull OrgRole role, @NotNull Integer version) {

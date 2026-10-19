@@ -18,22 +18,15 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpMethod;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 import com.jayway.jsonpath.JsonPath;
-
-import jakarta.servlet.http.Cookie;
 
 /**
  * Organizações, membros, convites, auditoria, plataforma e isolamento entre empresas,
  * sempre por HTTP com sessão e CSRF reais.
  */
-class OrganizationIntegrationTest extends IntegrationTestSupport {
-
-    @Autowired
-    MockMvc mockMvc;
+class OrganizationIntegrationTest extends ApiTestSupport {
 
     @Autowired
     @Qualifier("requestMappingHandlerMapping")
@@ -186,63 +179,5 @@ class OrganizationIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.code").value("organization-suspended"));
         perform(admin, post("/api/platform/orgs/{orgId}/reactivate", orgId)).andExpect(status().isNoContent());
         perform(owner, get("/api/orgs/{orgId}", orgId)).andExpect(status().isOk());
-    }
-
-    // --- utilitários -------------------------------------------------------------------
-
-    record Session(String email, Cookie session, Cookie csrfCookie, String csrfToken) {
-    }
-
-    private org.springframework.test.web.servlet.ResultActions perform(
-            Session user, MockHttpServletRequestBuilder builder) throws Exception {
-        return mockMvc.perform(builder
-                .cookie(user.session(), user.csrfCookie())
-                .header("X-XSRF-TOKEN", user.csrfToken())
-                .contentType("application/json"));
-    }
-
-    private Session newUser(String prefixOrEmail) throws Exception {
-        var email = prefixOrEmail.contains("@") ? prefixOrEmail : uniqueEmail(prefixOrEmail);
-        var password = "Palavra-passe-" + UUID.randomUUID();
-        var csrf = csrf(null);
-        mockMvc.perform(post("/api/auth/signup").cookie(csrf.csrfCookie()).header("X-XSRF-TOKEN", csrf.csrfToken())
-                        .contentType("application/json")
-                        .content("{\"email\":\"%s\",\"password\":\"%s\",\"displayName\":\"Pessoa %s\"}"
-                                .formatted(email, password, email.substring(0, 4))))
-                .andExpect(status().isAccepted());
-        var token = ArgumentCaptor.forClass(String.class);
-        verify(mailGateway).sendVerification(eq(email), anyString(), token.capture());
-        mockMvc.perform(post("/api/auth/verify-email").cookie(csrf.csrfCookie()).header("X-XSRF-TOKEN", csrf.csrfToken())
-                        .contentType("application/json").content("{\"token\":\"" + token.getValue() + "\"}"))
-                .andExpect(status().isNoContent());
-        var login = mockMvc.perform(post("/api/auth/login").cookie(csrf.csrfCookie())
-                        .header("X-XSRF-TOKEN", csrf.csrfToken()).contentType("application/json")
-                        .content("{\"email\":\"%s\",\"password\":\"%s\"}".formatted(email, password)))
-                .andExpect(status().isOk())
-                .andReturn();
-        var session = login.getResponse().getCookie("ANDAIME_SESSION");
-        var authenticated = csrf(session);
-        return new Session(email, session, authenticated.csrfCookie(), authenticated.csrfToken());
-    }
-
-    private Session csrf(Cookie session) throws Exception {
-        var builder = get("/api/auth/csrf");
-        if (session != null) {
-            builder.cookie(session);
-        }
-        var response = mockMvc.perform(builder).andReturn().getResponse();
-        return new Session(null, session, response.getCookie("XSRF-TOKEN"),
-                JsonPath.read(response.getContentAsString(), "$.token"));
-    }
-
-    private UUID createOrganization(Session owner, String name) throws Exception {
-        var body = perform(owner, post("/api/orgs").content("{\"name\":\"" + name + "\",\"country\":\"PT\"}"))
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
-        return UUID.fromString(JsonPath.read(body, "$.id"));
-    }
-
-    private static String uniqueEmail(String prefix) {
-        return prefix + "-" + UUID.randomUUID().toString().substring(0, 8) + "@andaime.local";
     }
 }

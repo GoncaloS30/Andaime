@@ -11,5 +11,7 @@ public record MemberView(
         String role,
         String status,
         Instant joinedAt,
+        UUID employeeId,
+        String employeeName,
         int version) {
 }

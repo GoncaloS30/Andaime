@@ -1,6 +1,7 @@
 package pt.andaime.organization;
 
 import java.io.IOException;
+import java.time.ZoneId;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Pattern;
@@ -74,7 +75,8 @@ public final class OrganizationAccessFilter extends OncePerRequestFilter {
             return;
         }
 
-        try (var ignored = TenantContext.open(organizationId.get(), userId, access.get().role())) {
+        try (var ignored = TenantContext.open(
+                organizationId.get(), userId, access.get().role(), access.get().employeeId(), access.get().zone())) {
             chain.doFilter(request, response);
         }
     }
@@ -82,14 +84,15 @@ public final class OrganizationAccessFilter extends OncePerRequestFilter {
     private Optional<Access> membership(UUID organizationId, UUID userId) {
         try (var ignored = TenantContext.openForUser(userId)) {
             return readOnly.execute(status -> jdbcTemplate.query("""
-                    SELECT membership.role, organization.status
+                    SELECT membership.role, membership.employee_id, organization.status, organization.default_timezone
                     FROM memberships membership
                     JOIN organizations organization ON organization.id = membership.organization_id
                     WHERE membership.organization_id = ?
                       AND membership.user_id = ?
                       AND membership.status = 'ACTIVE'
                     """, (resultSet, rowNumber) -> new Access(
-                    resultSet.getString("role"), resultSet.getString("status")),
+                    resultSet.getString("role"), resultSet.getObject("employee_id", UUID.class),
+                    resultSet.getString("status"), ZoneId.of(resultSet.getString("default_timezone"))),
                     organizationId, userId).stream().findFirst());
         }
     }
@@ -121,7 +124,7 @@ public final class OrganizationAccessFilter extends OncePerRequestFilter {
                 + (requestId == null ? "" : ",\"requestId\":\"" + requestId + "\"") + "}");
     }
 
-    private record Access(String role, String organizationStatus) {
+    private record Access(String role, UUID employeeId, String organizationStatus, ZoneId zone) {
     }
 
     @Configuration(proxyBeanMethods = false)
