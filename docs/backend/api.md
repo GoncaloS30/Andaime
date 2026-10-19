@@ -21,15 +21,15 @@ O contrato vivo é o OpenAPI gerado pelo backend: `http://localhost:8088/api/doc
 | Status | `code` |
 |---|---|
 | 400 | `validation`, `bad-request` |
-| 401 | `unauthenticated` |
-| 403 | `forbidden`, `csrf` |
+| 401 | `unauthenticated`, `session-expired` |
+| 403 | `forbidden`, `csrf`, `organization-suspended`, `invitation-email-mismatch` |
 | 404 | `not-found` (inclui recursos de outra empresa) |
 | 409 | `stale`, `conflict`, `planning-conflicts`, `confirmation-required`, `last-owner`, `already-member`, `insufficient-stock` |
 | 429 | `rate-limited` (com `Retry-After`) |
 
 ## F1 — Identidade e organizações
 
-Implementado: todos os endpoints de autenticação e `/api/me` desta tabela, incluindo recuperação/alteração de palavra-passe e gestão de sessões, mais o onboarding com `POST /api/orgs`. Os restantes endpoints de organizações, membros, convites, auditoria e plataforma continuam a ser o contrato-alvo de F1.
+Implementado na íntegra (F1 concluída). Todas as rotas `/api/orgs/{orgId}/…` passam pelo filtro de membership: quem não é membro recebe 404; empresa suspensa → 403 `organization-suspended`.
 
 | Método | Caminho | Quem | Descrição |
 |---|---|---|---|
@@ -56,8 +56,8 @@ Implementado: todos os endpoints de autenticação e `/api/me` desta tabela, inc
 | POST | `/api/orgs/{orgId}/invitations` | ADMIN+ | `{email, role}` → envia email |
 | DELETE | `/api/orgs/{orgId}/invitations/{id}` | ADMIN+ | Revoga |
 | POST | `/api/orgs/{orgId}/invitations/{id}/resend` | ADMIN+ | Novo token, reenvia |
-| GET | `/api/invitations/{token}` | público | `{orgName, role, emailMasked, expiresAt}` |
-| POST | `/api/invitations/{token}/accept` | sessão | O email da sessão tem de coincidir com o do convite |
+| GET | `/api/invitations/{token}` | público | `{organizationName, role, emailMasked, expiresAt, status}` (`VALID`, `EXPIRED`, `ACCEPTED`, `REVOKED`, `SUSPENDED`) |
+| POST | `/api/invitations/{token}/accept` | sessão | O email da sessão tem de coincidir com o do convite (403 `invitation-email-mismatch`); convite já usado ou expirado → 409 `invitation-invalid` |
 | GET | `/api/orgs/{orgId}/audit` | ADMIN+ | Eventos de auditoria paginados |
 | GET | `/api/platform/orgs` | PLATFORM_ADMIN | Lista de organizações |
 | POST | `/api/platform/orgs/{id}/suspend` · `/reactivate` | PLATFORM_ADMIN | Suspende/reativa |

@@ -5,7 +5,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-PT/1.1.0/); 
 ## [Por publicar]
 
 ### Acrescentado
+- Backend SaaS (`backend/`, Spring Boot 4.1, PostgreSQL 18, Flyway): contas com sessões seguras, verificação de email, recuperação de palavra-passe, empresas com isolamento por RLS, papéis (proprietário, administrador, gestor, encarregado, trabalhador), convites, auditoria e administração da plataforma.
+- Aplicação real ligada à API (`src/saas/`): entrar, registar, convites, criar empresa, troca de empresa, definições da empresa, equipa e acessos, sessões e auditoria.
+- E2E de ponta a ponta contra a API real (`npm run e2e:saas`).
 - Regra de proteção do `main` pronta a aplicar (`.github/protecao-main.json`).
+
+### Alterado
+- O modo demonstração (guião, palco, menu Demonstração, troca livre de papel) deixa de fazer parte da aplicação; o protótipo só arranca com `npm run dev:prototipo` e nos testes E2E antigos.
 
 ## [3.1.0] — 2026-10-19
 

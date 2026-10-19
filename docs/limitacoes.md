@@ -1,5 +1,7 @@
 # Limitações conhecidas
 
+> **Atualização (2026-10-19):** a aplicação real já não tem estas limitações em contas, empresas, papéis, convites, sessões e auditoria — são servidas pela API com PostgreSQL. A lista abaixo descreve o **protótipo antigo** (`npm run dev:prototipo`), que continua a servir de referência para os módulos ainda por migrar. Estado atual: [backend/estado.md](backend/estado.md).
+
 ## Natureza do protótipo
 - **Sem backend, autenticação nem segurança.** Papéis e âmbitos (gestor, encarregado, trabalhador) são simulados na interface; qualquer pessoa pode mudar de papel.
 - **Dados só neste navegador** (`localStorage`, com interruptor). Não há sincronização entre dispositivos nem pessoas. Mudar a forma dos dados repõe a semente (versão da store).
