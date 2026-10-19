@@ -49,7 +49,7 @@ export function TimesheetsPage() {
       />
       <ModuleGuard empty={{ icon: <ClipboardCheck />, title: 'Ainda não há horas registadas', text: 'As entradas e saídas registadas pelos trabalhadores ou pelos encarregados aparecem aqui para revisão e aprovação.' }}>
         <Segmented
-          className="mb-4"
+          className="mb-4 max-w-full overflow-x-auto"
           label="Vista"
           value={view}
           onChange={(v) => setSp(v === 'folhas' ? {} : { vista: v }, { replace: true })}
