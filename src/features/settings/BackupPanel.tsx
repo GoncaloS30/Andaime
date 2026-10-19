@@ -85,7 +85,7 @@ export function BackupPanel() {
         <div className="flex flex-col gap-3">
           <h3 className="text-sm font-medium">Importar</h3>
           <p className="text-xs text-ink-3">Substitui todos os dados desta demonstração. Pede confirmação antes.</p>
-          <input ref={input} type="file" accept="application/json,.json" className="sr-only" id="import-backup" onChange={(e) => void pick(e.target.files?.[0])} />
+          <input ref={input} type="file" accept="application/json,.json" className="sr-only" id="import-backup" aria-label="Ficheiro da cópia a importar" tabIndex={-1} onChange={(e) => void pick(e.target.files?.[0])} />
           <Button className="w-fit" icon={<Upload className="size-4" />} onClick={() => input.current?.click()}>
             Escolher ficheiro…
           </Button>
