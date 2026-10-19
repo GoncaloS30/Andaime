@@ -5,13 +5,16 @@ import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-lea
 import type { ID, Site } from '@/domain/types'
 import { cn } from '@/lib/cn'
 
+/** Só o que o mapa precisa: serve tanto o protótipo como os dados da API. */
+export type MapSite = Pick<Site, 'id' | 'code' | 'name' | 'color' | 'lat' | 'lng'> & { photo?: Site['photo'] }
+
 export interface MapPin {
-  site: Site
+  site: MapSite
   /** Estado de risco para o contorno do pino. */
   risk?: 'normal' | 'atencao' | 'excede' | 'sem_limite'
 }
 
-function pinIcon(site: Site, selected: boolean, risk?: MapPin['risk']) {
+function pinIcon(site: MapSite, selected: boolean, risk?: MapPin['risk']) {
   const ring = risk === 'excede' ? '#b03a2e' : risk === 'atencao' ? '#c98a12' : '#ffffff'
   // Miniatura só com fotos de banco: o HTML do pino não passa pelo React, e as carregadas vivem no IndexedDB.
   const thumb = site.photo?.kind === 'banco'

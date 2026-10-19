@@ -1,0 +1,20 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  session:
+    jdbc:
+      initialize-schema: never
+  mail:
+    test-connection: false
+
+andaime:
+  # Todos os pedidos de teste chegam do mesmo IP; o limite por IP tem teste unitário próprio.
+  rate-limit:
+    auth-per-minute: 100000
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

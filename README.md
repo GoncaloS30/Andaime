@@ -1,17 +1,35 @@
-# Andaime V3.1 — protótipo demonstrativo
+# Andaime — gestão operacional para empresas de construção
 
 [![CI](https://github.com/GoncaloS30/Andaime/actions/workflows/ci.yml/badge.svg)](https://github.com/GoncaloS30/Andaime/actions/workflows/ci.yml)
 
 Centro de operações para empresas de construção: **planeamento → execução → controlo → análise** de trabalhadores, equipas, viaturas e obras em Portugal e no estrangeiro.
 
-> **Protótipo de alta fidelidade.** Corre inteiramente no navegador com **dados fictícios** ("Construções Ribeira Alta, S.A."). Não há servidor, autenticação nem envio de dados. As permissões e o modo offline são **simulados**. Ver [docs/limitacoes.md](docs/limitacoes.md).
+> **Em migração de protótipo para SaaS.** Contas, empresas (multiempresa), papéis, convites, sessões e auditoria já são reais: API Spring Boot + PostgreSQL com isolamento por empresa (RLS). Os módulos operacionais são ligados ao servidor por fases e, até lá, a aplicação diz que ainda não estão ligados — sem dados fictícios. Estado e próximos passos: [docs/backend/estado.md](docs/backend/estado.md). Arquitetura: [docs/backend/arquitetura.md](docs/backend/arquitetura.md).
 
 ## Arrancar
+
+No Windows, `scripts/arrancar.ps1` faz tudo de uma vez: confirma a versão do Node, corre `npm ci` quando faltam dependências ou o `package-lock.json` mudou, arranca PostgreSQL, Mailpit e API no Docker do WSL, espera pela API e abre o frontend (`-Porta 5174` muda a porta, `-Abrir` abre o navegador, `-Reconstruir` reconstrói a API depois de mudar o backend, `-Prototipo` arranca só o protótipo antigo):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/arrancar.ps1
+```
+
+Passo a passo — infraestrutura e API (Docker no WSL; portas próprias, não interfere com outros projetos):
+
+```bash
+wsl -d Ubuntu -- docker compose -f infra/compose.yaml up -d --build
+```
+
+Frontend (o Vite encaminha `/api` para a API em `localhost:8088`):
 
 ```bash
 npm ci
 npm run dev        # http://localhost:5173
 ```
+
+Emails de desenvolvimento (confirmação de conta, convites, recuperação): http://localhost:58035.
+
+O protótipo antigo, com dados fictícios locais, continua disponível só para referência e testes dos módulos por migrar: `npm run dev:prototipo`. Não entra no build de produção.
 
 Para contribuir (ramos, commits, pull requests e versões), ver [CONTRIBUTING.md](CONTRIBUTING.md). Alterações por versão em [CHANGELOG.md](CHANGELOG.md). Software proprietário: ver [LICENSE](LICENSE).
 
