@@ -1,4 +1,3 @@
-import { readFile } from 'node:fs/promises'
 import { expect, test } from '@playwright/test'
 import ExcelJS from 'exceljs'
 import { go, open, state } from './helpers'
@@ -32,7 +31,7 @@ test('fluxo 13: livro do RH em Excel com ausências a 0 h; OneDrive simulado atu
   const download = page.waitForEvent('download')
   await page.getByRole('button', { name: 'Descarregar Excel' }).click()
   const wb = new ExcelJS.Workbook()
-  await wb.xlsx.load(await readFile(await (await download).path()))
+  await wb.xlsx.readFile(await (await download).path())
   expect(wb.worksheets[0]!.name).toBe('Tabelas')
   expect(wb.worksheets.length).toBeGreaterThan(5)
   const header = (wb.worksheets[1]!.getRow(1).values as unknown[]).slice(1)
