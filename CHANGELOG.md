@@ -36,6 +36,14 @@ Funcionalidades do Lyrical Design e fotos (spec `docs/superpowers/specs/2026-10-
   - Google Calendar simulado: ligar, desligar e sincronizar férias sem duplicar;
   - obra com fim contratual e previsão de fim, com aviso de atraso na ficha e nos cartões;
   - fluxo 12 com testes de domínio, store e E2E.
+- **Horas: totais, grelha e livro do RH** (bloco 5):
+  - vista Totais por semana, mês e ano: horas por colaborador (fim de semana só se houver horas) e por obra;
+  - grelha da semana (gestor e encarregado): horas por célula, extra calculado, motivo obrigatório guardado como correção, aprovados fechados;
+  - livro de horas do RH mensal em Excel: uma folha por pessoa, fórmula de atividade, coluna Ausência com 0 h e o motivo;
+  - OneDrive simulado: criar e atualizar o livro do mês sem duplicar;
+  - "Como correu a semana" nos mapas semanais (por dia, obra e pessoa, com tabela);
+  - donut por obra e filtro por obra nas horas da ficha do trabalhador;
+  - fluxos 13 e 14 com testes de domínio, store, Excel lido de volta e E2E.
 - Repositório configurado para trabalho em equipa: CI, Dependabot, CODEOWNERS, modelos de issue e PR, licença e guia de contribuição.
 
 ### Alterado

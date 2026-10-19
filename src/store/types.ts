@@ -24,6 +24,7 @@ import type {
 import type { Personas } from '@/data/seed'
 import type { PhotoRef } from '@/domain/photos'
 import type { EventInput } from './actions/calendar'
+import type { DayHoursInput } from './actions/timesheetGrid'
 import type { DiaryInput } from './actions/diary'
 import type { HotelInput, StayInput } from './actions/lodging'
 import type { PhotoTarget } from './actions/photos'
@@ -184,6 +185,10 @@ export interface DemoActions {
   removeEvent(id: ID): void
   connectGoogle(connected: boolean): void
   syncVacationsToGoogle(): { created: number; existing: number }
+  // grelha da semana e livro do RH
+  setDayHours(input: DayHoursInput): void
+  connectOneDrive(connected: boolean): void
+  syncHrBook(month: string): { sheets: number; rows: number }
   // planeamento
   previewSchedule(input: ScheduleInput): Conflict[]
   createSchedule(input: ScheduleInput): { batchId: ID; created: number }

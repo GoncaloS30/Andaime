@@ -64,3 +64,9 @@ export function formatHours(h: number, unit = 'h'): string {
 export function formatNumber(n: number): string {
   return formatHours(n, '')
 }
+
+/** Hora de saída para um total de horas trabalhadas a partir da entrada (a pausa só conta acima de 6 h). */
+export function clockOutFor(clockIn: HHMM, hours: number, breakMinutes: number): HHMM {
+  const work = Math.round(hours * 60)
+  return fromMinutes(toMinutes(clockIn) + work + (work > BREAK_THRESHOLD_MIN ? breakMinutes : 0))
+}

@@ -387,3 +387,49 @@ describe('Fluxo 12 — férias no mapa do ano, na agenda e no Google (simulado)'
     expect(store.getState().db.absences[id]!.type).toBe('licenca')
   })
 })
+
+describe('Fluxo 14 — grelha de horas da semana', () => {
+  it('pôr 10 h numa célula ajusta o registo, calcula 2 h extra, guarda a correção e sobe as Realizadas da obra', async () => {
+    const { entryHours } = await import('@/domain/hours')
+    const store = make()
+    const st = () => store.getState()
+    const e = Object.values(st().db.entries).find((x) => x.date < TODAY && x.status === 'submetido' && x.clockOut)!
+    const before = selectSiteMetrics(st(), e.siteId).realized
+    const hBefore = entryHours(e, st().session.settings).worked
+    st().setDayHours({ workerId: e.workerId, date: e.date, siteId: e.siteId, hours: 10, reason: 'Ficou até mais tarde na betonagem' })
+    const after = st().db.entries[e.id]!
+    expect(entryHours(after, st().session.settings)).toMatchObject({ worked: 10, extra: 2 })
+    expect(after.corrections.at(-1)!.reason).toBe('Ficou até mais tarde na betonagem')
+    expect(selectSiteMetrics(st(), e.siteId).realized).toBeCloseTo(before + (10 - hBefore), 1)
+    expect(() => st().setDayHours({ workerId: e.workerId, date: e.date, siteId: e.siteId, hours: 9, reason: ' ' })).toThrow('motivo')
+  })
+  it('numa célula vazia cria o registo; registos aprovados não se mexem', () => {
+    const store = make()
+    const st = () => store.getState()
+    const wid = st().session.personas.trabalhador
+    const day = addDays(WS, -3) // sexta da semana anterior? qualquer dia sem registo
+    for (const x of Object.values(st().db.entries)) if (x.workerId === wid && x.date === day) delete st().db.entries[x.id]
+    st().setDayHours({ workerId: wid, date: day, siteId: 's1', hours: 6, reason: 'Esqueceu-se de picar o ponto' })
+    const created = Object.values(st().db.entries).find((x) => x.workerId === wid && x.date === day)!
+    expect(created).toMatchObject({ source: 'encarregado', siteId: 's1' })
+    const approved = Object.values(st().db.entries).find((x) => x.status === 'aprovado')!
+    expect(() => st().setDayHours({ workerId: approved.workerId, date: approved.date, siteId: approved.siteId, hours: 9, reason: 'x' })).toThrow('aprovado')
+  })
+})
+
+describe('Fluxo 13 — livro de horas do RH (OneDrive simulado)', () => {
+  it('atualizar o livro do mês regista a data; repetir não muda o conteúdo', async () => {
+    const { hrBookSheets } = await import('@/domain/hrBook')
+    const store = make()
+    const st = () => store.getState()
+    expect(() => st().syncHrBook('2026-10')).toThrow('Ligue')
+    st().connectOneDrive(true)
+    const r1 = st().syncHrBook('2026-10')
+    expect(r1.sheets).toBeGreaterThan(5)
+    expect(st().db.integrations.onedrive.books['2026-10']).toBeTruthy()
+    const before = JSON.stringify(hrBookSheets(st().db, st().session.settings, '2026-10'))
+    const r2 = st().syncHrBook('2026-10')
+    expect(r2).toMatchObject({ sheets: r1.sheets, rows: r1.rows })
+    expect(JSON.stringify(hrBookSheets(st().db, st().session.settings, '2026-10'))).toBe(before)
+  })
+})
