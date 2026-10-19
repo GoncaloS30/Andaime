@@ -14,10 +14,10 @@ export const PHOTO_FORMATS: Record<PhotoFormat, { ratio: number }> = {
 
 /**
  * Larguras de cada tamanho, iguais às do pipeline (scripts/fotos.mjs): pequeno ("-s"), médio ("-m") e,
- * só nas capas de obra, um intermédio ("-c") para telemóvel — sem ele o telemóvel descarregava a de 1280 px.
+ * só nas capas de obra e nas fotos do diário, um intermédio ("-c") para telemóvel — sem ele o telemóvel descarregava a de 1280 px.
  */
 export function sizeWidths(ref: Extract<PhotoRef, { kind: 'banco' }>): { s: number; c?: number; m: number } {
-  return ref.src.startsWith('obras/') ? { s: 320, c: 640, m: 1280 } : { s: 200, m: 800 }
+  return ref.src.startsWith('obras/') || ref.src.startsWith('diario/') ? { s: 320, c: 640, m: 1280 } : { s: 200, m: 800 }
 }
 
 export function photoUrl(ref: PhotoRef, size: 's' | 'c' | 'm'): string | null {

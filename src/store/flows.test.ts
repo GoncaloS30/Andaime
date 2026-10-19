@@ -277,3 +277,188 @@ describe('Fluxo 15 — fotos', () => {
     expect(() => store.getState().setPhoto({ type: 'viatura', id: 'nao-existe' }, null)).toThrow('Registo não encontrado')
   })
 })
+
+describe('Fluxo 11 — diário de obra', () => {
+  it('o encarregado regista o dia com fotos; o gestor é notificado e pode anular', () => {
+    const store = make()
+    const st = () => store.getState()
+    st().setRole('encarregado')
+    const foreman = st().db.workers[st().session.personas.encarregado]!
+    const site = Object.values(st().db.sites).find((s) => s.foremanId === foreman.id) ?? Object.values(st().db.sites)[0]!
+    const before = Object.keys(st().db.diary).length
+    const photos = [1, 2].map((i) => ({ kind: 'carregada' as const, id: `ph-${i}`, alt: `Foto ${i}`, w: 1600, h: 1200 }))
+    const id = st().createDiaryEntry({ siteId: site.id, date: TODAY, title: 'Betonagem do piso 3', text: 'Correu bem.', photos })
+    const e = st().db.diary[id]!
+    expect(e).toMatchObject({ siteId: site.id, authorId: foreman.id, authorRole: 'encarregado', title: 'Betonagem do piso 3' })
+    expect(e.photos).toHaveLength(2)
+    expect(st().db.activity[0]).toMatchObject({ kind: 'diario', refs: { siteId: site.id } })
+    expect(st().db.notifications.some((n) => n.role === 'gestor' && n.body.includes('Betonagem do piso 3'))).toBe(true)
+    st().undo()
+    expect(Object.keys(st().db.diary)).toHaveLength(before)
+  })
+  it('recusa título vazio e mais de 20 fotos', () => {
+    const store = make()
+    const st = () => store.getState()
+    expect(() => st().createDiaryEntry({ siteId: 's1', date: TODAY, title: ' ', text: '', photos: [] })).toThrow('título')
+    const many = Array.from({ length: 21 }, (_, i) => ({ kind: 'carregada' as const, id: `p${i}`, alt: '', w: 1, h: 1 }))
+    expect(() => st().createDiaryEntry({ siteId: 's1', date: TODAY, title: 'X', text: '', photos: many })).toThrow('20 fotos')
+  })
+  it('editar e apagar', () => {
+    const store = make()
+    const st = () => store.getState()
+    const id = st().createDiaryEntry({ siteId: 's1', date: TODAY, title: 'A', text: '', photos: [] })
+    st().updateDiaryEntry(id, { title: 'B', text: 'Mais texto' })
+    expect(st().db.diary[id]).toMatchObject({ title: 'B', text: 'Mais texto' })
+    st().removeDiaryEntry(id)
+    expect(st().db.diary[id]).toBeUndefined()
+  })
+  it('o seed tem diário nas obras em curso', () => {
+    const store = make()
+    const sites = new Set(Object.values(store.getState().db.diary).map((e) => e.siteId))
+    expect(sites.size).toBeGreaterThan(3)
+  })
+})
+
+describe('Fluxo 10 — dormidas e hotéis', () => {
+  it('marca o hotel para quem está escalado longe; o trabalhador é notificado; tirar o hotel deixa a estadia por definir', () => {
+    const store = make()
+    const st = () => store.getState()
+    const hotelId = st().createHotel({ siteId: 's8', name: 'Hotel Isartor', address: 'Isartorplatz 3, München', contact: '+49 89 000 000', notes: '' })
+    expect(() => st().createHotel({ siteId: 's8', name: 'hotel isartor', address: '', contact: '', notes: '' })).toThrow('Já existe')
+    const wid = Object.values(st().db.assignments).find((a) => a.siteId === 's8' && a.date >= WS)!.workerId
+    const id = st().markStay({ workerId: wid, siteId: 's8', week: WS, hotelId, checkIn: WS, checkOut: addDays(WS, 4), notes: '' })
+    expect(st().db.stays[id]).toMatchObject({ hotelId, workerId: wid })
+    expect(st().db.notifications.some((n) => n.role === 'trabalhador' && n.personaId === wid && n.body.includes('Hotel Isartor'))).toBe(true)
+    // Marcar de novo a mesma pessoa, semana e obra atualiza em vez de duplicar
+    const again = st().markStay({ workerId: wid, siteId: 's8', week: WS, hotelId, checkIn: addDays(WS, 1), checkOut: addDays(WS, 4), notes: 'Chega na terça' })
+    expect(again).toBe(id)
+    expect(Object.values(st().db.stays).filter((s) => s.workerId === wid && s.week === WS && s.siteId === 's8')).toHaveLength(1)
+    st().removeHotel(hotelId)
+    expect(st().db.stays[id]!.hotelId).toBeNull()
+    expect(() => st().markStay({ workerId: wid, siteId: 's8', week: WS, hotelId: null, checkIn: WS, checkOut: WS, notes: '' })).toThrow('saída')
+  })
+  it('o seed tem hotéis nas obras longe e estadias nesta semana, uma por definir', () => {
+    const store = make()
+    const { db } = store.getState()
+    expect(Object.values(db.hotels).length).toBeGreaterThanOrEqual(5)
+    const week = Object.values(db.stays).filter((s) => s.week === WS)
+    expect(week.length).toBeGreaterThan(3)
+    expect(week.some((s) => s.hotelId === null)).toBe(true)
+  })
+})
+
+describe('Fluxo 12 — férias no mapa do ano, na agenda e no Google (simulado)', () => {
+  it('férias aprovadas aparecem no mapa do ano e na agenda; sincronizar duas vezes não duplica', async () => {
+    const { yearMap } = await import('@/domain/vacationMap')
+    const { agendaItems } = await import('@/domain/agenda')
+    const store = make()
+    const st = () => store.getState()
+    const wid = st().session.personas.trabalhador
+    const id = st().createAbsence({ workerId: wid, type: 'ferias', start: '2026-11-02', end: '2026-11-06', hours: null, reason: 'Férias de outono' })
+    st().decideAbsence(id, 'aprovado', '')
+    const row = yearMap(st().db, 2026).find((r) => r.worker.id === wid)!
+    expect(row.periods.some((p) => p.id === id)).toBe(true)
+    expect(row.vacationDays).toBeGreaterThanOrEqual(5)
+    const items = agendaItems(st().db, '2026-11-01', '2026-11-30', { ausencias: true, obras: false, validades: false, eventos: false, google: false })
+    expect(items.some((i) => i.id === `aus-${id}`)).toBe(true)
+
+    expect(() => st().syncVacationsToGoogle()).toThrow('Ligue')
+    st().connectGoogle(true)
+    const first = st().syncVacationsToGoogle()
+    expect(first.created).toBeGreaterThan(0)
+    const second = st().syncVacationsToGoogle()
+    expect(second).toMatchObject({ created: 0, existing: first.created + first.existing })
+    expect(Object.values(st().db.events).filter((e) => e.syncKey === `ferias:${id}`)).toHaveLength(1)
+    st().connectGoogle(false)
+    expect(Object.values(st().db.events).some((e) => e.source === 'google')).toBe(false)
+  })
+  it('eventos próprios: criar e apagar', () => {
+    const store = make()
+    const st = () => store.getState()
+    const id = st().createEvent({ title: 'Visita da fiscalização', date: '2026-10-22', endDate: '2026-10-22', time: '10:30', location: 'OB-24-031' })
+    expect(st().db.events[id]).toMatchObject({ source: 'andaime', time: '10:30' })
+    expect(() => st().createEvent({ title: ' ', date: '2026-10-22', endDate: '2026-10-22', time: null, location: '' })).toThrow('título')
+    st().removeEvent(id)
+    expect(st().db.events[id]).toBeUndefined()
+  })
+  it('licença e outra ausência são tipos válidos', () => {
+    const store = make()
+    const id = store.getState().createAbsence({ workerId: store.getState().session.personas.trabalhador, type: 'licenca', start: '2026-11-10', end: '2026-11-10', hours: null, reason: 'Casamento' })
+    expect(store.getState().db.absences[id]!.type).toBe('licenca')
+  })
+})
+
+describe('Fluxo 14 — grelha de horas da semana', () => {
+  it('pôr 10 h numa célula ajusta o registo, calcula 2 h extra, guarda a correção e sobe as Realizadas da obra', async () => {
+    const { entryHours } = await import('@/domain/hours')
+    const store = make()
+    const st = () => store.getState()
+    const e = Object.values(st().db.entries).find((x) => x.date < TODAY && x.status === 'submetido' && x.clockOut)!
+    const before = selectSiteMetrics(st(), e.siteId).realized
+    const hBefore = entryHours(e, st().session.settings).worked
+    st().setDayHours({ workerId: e.workerId, date: e.date, siteId: e.siteId, hours: 10, reason: 'Ficou até mais tarde na betonagem' })
+    const after = st().db.entries[e.id]!
+    expect(entryHours(after, st().session.settings)).toMatchObject({ worked: 10, extra: 2 })
+    expect(after.corrections.at(-1)!.reason).toBe('Ficou até mais tarde na betonagem')
+    expect(selectSiteMetrics(st(), e.siteId).realized).toBeCloseTo(before + (10 - hBefore), 1)
+    expect(() => st().setDayHours({ workerId: e.workerId, date: e.date, siteId: e.siteId, hours: 9, reason: ' ' })).toThrow('motivo')
+  })
+  it('numa célula vazia cria o registo; registos aprovados não se mexem', () => {
+    const store = make()
+    const st = () => store.getState()
+    const wid = st().session.personas.trabalhador
+    const day = addDays(WS, -3) // sexta da semana anterior? qualquer dia sem registo
+    for (const x of Object.values(st().db.entries)) if (x.workerId === wid && x.date === day) delete st().db.entries[x.id]
+    st().setDayHours({ workerId: wid, date: day, siteId: 's1', hours: 6, reason: 'Esqueceu-se de picar o ponto' })
+    const created = Object.values(st().db.entries).find((x) => x.workerId === wid && x.date === day)!
+    expect(created).toMatchObject({ source: 'encarregado', siteId: 's1' })
+    const approved = Object.values(st().db.entries).find((x) => x.status === 'aprovado')!
+    expect(() => st().setDayHours({ workerId: approved.workerId, date: approved.date, siteId: approved.siteId, hours: 9, reason: 'x' })).toThrow('aprovado')
+  })
+})
+
+describe('Fluxo 13 — livro de horas do RH (OneDrive simulado)', () => {
+  it('atualizar o livro do mês regista a data; repetir não muda o conteúdo', async () => {
+    const { hrBookSheets } = await import('@/domain/hrBook')
+    const store = make()
+    const st = () => store.getState()
+    expect(() => st().syncHrBook('2026-10')).toThrow('Ligue')
+    st().connectOneDrive(true)
+    const r1 = st().syncHrBook('2026-10')
+    expect(r1.sheets).toBeGreaterThan(5)
+    expect(st().db.integrations.onedrive.books['2026-10']).toBeTruthy()
+    const before = JSON.stringify(hrBookSheets(st().db, st().session.settings, '2026-10'))
+    const r2 = st().syncHrBook('2026-10')
+    expect(r2).toMatchObject({ sheets: r1.sheets, rows: r1.rows })
+    expect(JSON.stringify(hrBookSheets(st().db, st().session.settings, '2026-10'))).toBe(before)
+  })
+})
+
+describe('Bloco 6 — catálogo de EPI e cópia da demonstração', () => {
+  it('acrescenta um artigo novo e reaproveita um que já existe com outro nome escrito', () => {
+    const store = make()
+    const r = store.getState().addEquipmentItem({ name: 'Joelheiras de gel', kind: 'epi', sizeKind: null, stock: 4 })
+    expect(r.existed).toBe(false)
+    expect(store.getState().db.equipment[r.id]?.stock).toBe(4)
+    const again = store.getState().addEquipmentItem({ name: '  JOELHEIRAS de gél', kind: 'epi', sizeKind: null, stock: 9 })
+    expect(again).toEqual({ id: r.id, existed: true })
+    expect(Object.values(store.getState().db.equipment).filter((i) => i.name === 'Joelheiras de gel')).toHaveLength(1)
+  })
+
+  it('recusa um artigo sem nome', () => {
+    expect(() => make().getState().addEquipmentItem({ name: '  ', kind: 'epi', sizeKind: null, stock: 1 })).toThrow('Indique o nome do artigo')
+  })
+
+  it('importa uma cópia: substitui os dados, mantém o papel e limpa o anular', () => {
+    const a = make()
+    a.getState().addEquipmentItem({ name: 'Joelheiras de gel', kind: 'epi', sizeKind: null, stock: 4 })
+    const copy = { db: a.getState().db, session: a.getState().session }
+    const b = make()
+    b.getState().setRole('encarregado')
+    b.getState().createEvent({ title: 'X', date: TODAY, endDate: TODAY, time: null, location: '' })
+    b.getState().importDemo(copy)
+    expect(Object.values(b.getState().db.equipment).some((i) => i.name === 'Joelheiras de gel')).toBe(true)
+    expect(b.getState().session.role).toBe('encarregado')
+    expect(b.getState().undoStack).toHaveLength(0)
+  })
+})

@@ -218,6 +218,22 @@
     width: auto !important;
     margin: 0 !important;
   }
+  /* Folha de entrega de EPI: só a folha, em A4 vertical (o resto da app e o diálogo ficam de fora). */
+  @page folha {
+    size: A4 portrait;
+    margin: 16mm;
+  }
+  body.printing-sheet > :not(.print-portal) {
+    display: none !important;
+  }
+  body.printing-sheet > .print-portal {
+    display: block;
+    page: folha;
+  }
+}
+
+.print-portal {
+  display: none;
 }
 
 /* Fotos: tratamento comum para fotos de origens diferentes ficarem da mesma família (spec 3.2). */

@@ -63,6 +63,32 @@ export const ABSENCE_TYPE: Record<AbsenceType, string> = {
   baixa: 'Baixa médica',
   formacao: 'Formação',
   parcial: 'Ausência parcial',
+  licenca: 'Licença',
+  outra: 'Outra ausência',
+}
+
+/** Cor de cada tipo (mapa do ano, agenda, calendário). Nunca é o único sinal: vai sempre com o nome. */
+export const ABSENCE_COLOR: Record<AbsenceType, string> = {
+  ferias: '#1a9e72',
+  falta_justificada: '#2a78d6',
+  falta_injustificada: '#b03a2e',
+  baixa: '#8a4fc7',
+  formacao: '#d4652f',
+  parcial: '#8f8a14',
+  licenca: '#c0457f',
+  outra: '#5c635e',
+}
+
+/** Ajuda no formulário: o que cabe em cada tipo. */
+export const ABSENCE_NOTE: Record<AbsenceType, string> = {
+  ferias: 'Entra também no mapa de férias do ano.',
+  falta_justificada: 'Falta com justificação entregue.',
+  falta_injustificada: 'Falta sem justificação.',
+  baixa: 'Doença ou acidente, com baixa.',
+  formacao: 'Dia passado em formação, fora da obra.',
+  parcial: 'Só algumas horas do dia.',
+  licenca: 'Parental, casamento, luto: as licenças previstas na lei.',
+  outra: 'O que não encaixa nos motivos de cima.',
 }
 
 export const ABSENCE_STATUS: Record<AbsenceStatus, string> = {

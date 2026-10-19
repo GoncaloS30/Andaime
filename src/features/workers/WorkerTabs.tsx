@@ -1,4 +1,4 @@
-import { ArrowRightLeft, FileUp, PackageCheck, Pencil, Plus } from 'lucide-react'
+import { ArrowRightLeft, FileSignature, FileUp, PackageCheck, Pencil, Plus, Shirt } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { toast } from 'sonner'
@@ -13,14 +13,17 @@ import { cn } from '@/lib/cn'
 import { useDemo } from '@/store/store'
 import { Badge, Plate, SiteCode } from '@/ui/Badge'
 import { Button } from '@/ui/Button'
+import { Select } from '@/ui/Field'
 import { Detail, Panel } from '@/ui/Layout'
 import { Menu } from '@/ui/Menu'
 import { EmptyState } from '@/ui/States'
 import { ActivityList } from '../shared/ActivityList'
 import { DocumentDialog } from '../shared/DocumentDialog'
 import { runs } from '../planning/model'
+import { SiteDonut } from './SiteDonut'
 import { SizesFields } from './WorkerForm'
 import { plural } from '@/lib/plural'
+import { Photo } from '@/ui/Photo'
 
 const tone = (st: string) => (st === 'valido' || st === 'aprovado' || st === 'verificado' ? 'ok' : st === 'a_expirar' || st === 'por_verificar' || st === 'pedido' || st === 'revisto' || st === 'submetido' ? 'warn' : st === 'aberto' ? 'info' : 'danger')
 
@@ -175,6 +178,16 @@ export function SitesTab({ id, onTransfer }: { id: ID; onTransfer: () => void })
 
 export function HoursTab({ id }: { id: ID }) {
   const settings = useDemo((s) => s.session.settings)
+  const [siteFilter, setSiteFilter] = useState('')
+  const share = useDerived(({ db, session }) => {
+    const bySite = new Map<string, number>()
+    for (const e of Object.values(db.entries)) {
+      if (e.workerId !== id || !['submetido', 'revisto', 'aprovado'].includes(e.status) || !e.clockOut) continue
+      bySite.set(e.siteId, (bySite.get(e.siteId) ?? 0) + entryHours(e, session.settings).worked)
+    }
+    const parts = [...bySite.entries()].map(([sid, hours]) => ({ site: db.sites[sid]!, hours })).filter((p) => p.site).sort((a, b) => b.hours - a.hours)
+    return { parts, total: parts.reduce((t, p) => t + p.hours, 0) }
+  }, [id])
   const d = useDerived(({ db, session }) => {
     const ws = weekStart(session.today)
     const weeks = [0, -7, -14, -21, -28].map((o) => addDays(ws, o))
@@ -187,7 +200,25 @@ export function HoursTab({ id }: { id: ID }) {
   }, [id])
   return (
     <div className="flex flex-col gap-4">
-      {d.map(({ w, entries, planned, db }) => {
+      {share.total > 0 && (
+        <Panel
+          title="Horas por obra"
+          description="Parte de cada obra nas horas realizadas"
+          actions={
+            <>
+              <label className="sr-only" htmlFor={`hf-${id}`}>Filtrar registos por obra</label>
+              <Select id={`hf-${id}`} value={siteFilter} onChange={(e) => setSiteFilter(e.target.value)} className="w-52">
+                <option value="">Registos de todas as obras</option>
+                {share.parts.map((p) => <option key={p.site.id} value={p.site.id}>{p.site.code} · {p.site.name}</option>)}
+              </Select>
+            </>
+          }
+        >
+          <SiteDonut parts={share.parts} total={share.total} />
+        </Panel>
+      )}
+      {d.map(({ w, entries: all, planned, db }) => {
+        const entries = siteFilter ? all.filter((e) => e.siteId === siteFilter) : all
         const valid = entries.filter((e) => e.status !== 'rejeitado' && e.clockOut)
         const sum = valid.reduce((s, e) => s + entryHours(e, settings).worked, 0)
         const extra = valid.reduce((s, e) => s + entryHours(e, settings).extra, 0)
@@ -337,8 +368,13 @@ function DeliveriesList({ id, kinds }: { id: ID; kinds: string[] }) {
           {list.map((d) => (
             <tr key={d.id}>
               <td>
-                {db.equipment[d.itemId]?.name}
-                {d.note && <span className="block text-xs text-ink-3">{d.note}</span>}
+                <span className="flex items-center gap-2">
+                  <Photo photo={db.equipment[d.itemId]?.photo} format="artigo" alt="" sizes="32px" rounded="sm" className="w-8" fallback={<Shirt className="size-3.5 text-ink-4" aria-hidden />} />
+                  <span>
+                    {db.equipment[d.itemId]?.name}
+                    {d.note && <span className="block text-xs text-ink-3">{d.note}</span>}
+                  </span>
+                </span>
               </td>
               <td className="font-mono text-xs">{d.size || '—'}</td>
               <td className="num tabular">{d.qty}</td>
@@ -367,7 +403,17 @@ function DeliveriesList({ id, kinds }: { id: ID; kinds: string[] }) {
   )
 }
 
-export function UniformTab({ id, onDeliver }: { id: ID; onDeliver: () => void }) {
+/** Ações do painel de entregas: a folha para assinar e registar uma entrega. */
+function DeliveryActions({ onDeliver, onSheet, tour }: { onDeliver: () => void; onSheet: () => void; tour?: string }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      <Button size="sm" icon={<FileSignature className="size-3.5" />} onClick={onSheet}>Folha de entrega</Button>
+      <Button size="sm" variant="primary" icon={<PackageCheck className="size-3.5" />} onClick={onDeliver} data-tour={tour}>Registar entrega</Button>
+    </div>
+  )
+}
+
+export function UniformTab({ id, onDeliver, onSheet }: { id: ID; onDeliver: () => void; onSheet: () => void }) {
   const w = useDemo((s) => s.db.workers[id]!)
   const updateSizes = useDemo((s) => s.updateSizes)
   const [sizes, setSizes] = useState(w.sizes)
@@ -380,16 +426,16 @@ export function UniformTab({ id, onDeliver }: { id: ID; onDeliver: () => void })
           Guardar tamanhos
         </Button>
       </Panel>
-      <Panel title="Fardamento entregue" actions={<Button size="sm" variant="primary" icon={<PackageCheck className="size-3.5" />} onClick={onDeliver} data-tour="deliver">Registar entrega</Button>} flush>
+      <Panel title="Fardamento entregue" actions={<DeliveryActions onDeliver={onDeliver} onSheet={onSheet} tour="deliver" />} flush>
         <DeliveriesList id={id} kinds={['fardamento']} />
       </Panel>
     </div>
   )
 }
 
-export function EquipmentTab({ id, onDeliver }: { id: ID; onDeliver: () => void }) {
+export function EquipmentTab({ id, onDeliver, onSheet }: { id: ID; onDeliver: () => void; onSheet: () => void }) {
   return (
-    <Panel title="EPI e ferramentas" actions={<Button size="sm" variant="primary" icon={<PackageCheck className="size-3.5" />} onClick={onDeliver}>Registar entrega</Button>} flush>
+    <Panel title="EPI e ferramentas" actions={<DeliveryActions onDeliver={onDeliver} onSheet={onSheet} />} flush>
       <DeliveriesList id={id} kinds={['epi', 'ferramenta']} />
     </Panel>
   )

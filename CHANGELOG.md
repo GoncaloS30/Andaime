@@ -2,7 +2,12 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-PT/1.1.0/); versões em [SemVer](https://semver.org/lang/pt-BR/).
 
-## [Por publicar] — V3.1
+## [Por publicar]
+
+### Acrescentado
+- Regra de proteção do `main` pronta a aplicar (`.github/protecao-main.json`).
+
+## [3.1.0] — 2026-10-19
 
 Funcionalidades do Lyrical Design e fotos (spec `docs/superpowers/specs/2026-10-16-andaime-lyrical-fotos-design.md`).
 
@@ -15,12 +20,52 @@ Funcionalidades do Lyrical Design e fotos (spec `docs/superpowers/specs/2026-10-
   - miniaturas no mapa.
 - Carregar e remover fotos (reduzidas no navegador e guardadas no IndexedDB). "Repor demonstração" apaga-as.
 - Fluxo 15 (fotos) com testes de store e E2E.
+- **Diário de obra** (bloco 2):
+  - separador na ficha da obra com linha do tempo por dia, atalhos por mês e pesquisa sem acentos;
+  - registos com até 20 fotos, galeria acessível, editar e apagar com anular;
+  - encarregado com câmara no telemóvel; o gestor é notificado;
+  - exportação Word (A4, fotos de 7 cm sem deformar) e Excel;
+  - dashboard com os últimos registos;
+  - fluxo 11 com testes de store, do Word e E2E.
+- **Dormidas e hotéis** (bloco 3):
+  - página Dormidas por semana: quem dorme fora a partir da escala (sem dias de ausência), datas propostas, noites e resumo;
+  - sugestão "longe de casa" (outro país ou mais de 100 km da residência);
+  - estadias sem escala; exportação Excel;
+  - separador Alojamento na obra (hotéis com foto, morada, contacto e uso) e na ficha do trabalhador;
+  - "Onde durmo esta semana" na app do trabalhador, com notificação; painel no dashboard;
+  - fluxo 10 com testes de domínio, store e E2E.
+- **Ausências, mapa de férias e agenda** (bloco 4):
+  - tipos de ausência Licença e Outra, com nota de ajuda por tipo;
+  - separador Mapa do ano nas ausências: uma linha por pessoa, períodos aprovados (cheios) e pedidos (tracejados), dias úteis por ano;
+  - página Agenda: grelha do mês com camadas (ausências, datas das obras, validades, eventos, Google), eventos próprios, lista por dia no telemóvel;
+  - Google Calendar simulado: ligar, desligar e sincronizar férias sem duplicar;
+  - obra com fim contratual e previsão de fim, com aviso de atraso na ficha e nos cartões;
+  - fluxo 12 com testes de domínio, store e E2E.
+- **Horas: totais, grelha e livro do RH** (bloco 5):
+  - vista Totais por semana, mês e ano: horas por colaborador (fim de semana só se houver horas) e por obra;
+  - grelha da semana (gestor e encarregado): horas por célula, extra calculado, motivo obrigatório guardado como correção, aprovados fechados;
+  - livro de horas do RH mensal em Excel: uma folha por pessoa, fórmula de atividade, coluna Ausência com 0 h e o motivo;
+  - OneDrive simulado: criar e atualizar o livro do mês sem duplicar;
+  - "Como correu a semana" nos mapas semanais (por dia, obra e pessoa, com tabela);
+  - donut por obra e filtro por obra nas horas da ficha do trabalhador;
+  - fluxos 13 e 14 com testes de domínio, store, Excel lido de volta e E2E.
+- **EPI e Definições** (bloco 6):
+  - folha de entrega para assinar na ficha do trabalhador: o que tem em seu poder, declaração e linhas de assinatura; impressão em A4 vertical e Excel;
+  - "Novo artigo no catálogo" ao registar uma entrega; se o nome já existir (sem acentos nem maiúsculas), usa o artigo que existe;
+  - Definições → Integrações: Google Calendar e OneDrive (simulados) com estado, ligar/desligar e última sincronização;
+  - Definições → Cópia da demonstração: exportar para JSON (com as fotos carregadas, opcional, com o tamanho estimado) e importar com validação da versão e confirmação;
+  - página "Créditos das fotos" com autor, licença e ligação ao original de cada foto;
+  - fluxos 16 e 17 com testes de domínio, store, Excel lido de volta e E2E.
+- **Modo apresentação** (bloco 7): capítulos "10 · Dormidas da semana" (hotel marcado e "Onde durmo" no telemóvel do trabalhador) e "11 · Diário de obra com fotos" (palco dividido com o telemóvel do encarregado e a ficha da obra ao lado).
+- Auditoria de acessibilidade (axe) e quality gate alargados às rotas novas: diário, alojamento, dormidas, agenda, mapa do ano, totais, grelha, livro do RH, definições e créditos.
 - Repositório configurado para trabalho em equipa: CI, Dependabot, CODEOWNERS, modelos de issue e PR, licença e guia de contribuição.
 
 ### Alterado
 - Lista de obras em cartões (a tabela continua disponível). No telemóvel, linha compacta com miniatura.
 
 ### Corrigido
+- Guião: realçar um painel mais alto do que o ecrã deslocava a página inteira.
+- Ficha da obra: os números da caixa Horas sobrepunham-se quando o palco dividido estreitava o conteúdo.
 - CLS no planeamento: os filtros saltavam de linha com a troca de fonte.
 - Scroll horizontal na ficha da viatura em ecrãs estreitos.
 - Horas sobrepostas na tira da semana da ficha do trabalhador (360–390 px).

@@ -15,6 +15,9 @@ import { ConflictCard } from '../shared/ConflictCard'
 import { FieldWeek } from './FieldWeek'
 import { PendingPanel } from './PendingPanel'
 import { SitesHours } from './SitesHours'
+import { LatestDiary } from './LatestDiary'
+import { LateSitesPanel } from './LateSitesPanel'
+import { LodgingPanel } from './LodgingPanel'
 
 export function DashboardPage() {
   const today = useDemo((s) => s.session.today)
@@ -92,6 +95,9 @@ export function DashboardPage() {
               )}
             </Panel>
             <PendingPanel />
+            <LateSitesPanel />
+            <LodgingPanel />
+            <LatestDiary />
             <Panel title="Atividade recente" id="atividade">
               <ActivityList events={activity} limit={8} />
             </Panel>

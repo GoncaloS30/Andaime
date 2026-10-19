@@ -1,6 +1,6 @@
 // Gerado por scripts/fotos.mjs a partir de scripts/fotos.manifest.json. Não editar à mão.
 export interface ManifestPhoto { id: string; src: string; w: number; h: number; alt: string; credit: string; look?: 'a' | 'b' }
-export const PHOTOS: Record<'trabalhadores' | 'gestores' | 'obras' | 'viaturas' | 'epi', ManifestPhoto[]> = {
+export const PHOTOS: Record<'trabalhadores' | 'gestores' | 'obras' | 'viaturas' | 'epi' | 'diario' | 'hoteis', ManifestPhoto[]> = {
   "trabalhadores": [
     {
       "id": "t01",
@@ -684,6 +684,178 @@ export const PHOTOS: Record<'trabalhadores' | 'gestores' | 'obras' | 'viaturas' 
       "h": 800,
       "alt": "Artigo de EPI ou ferramenta",
       "credit": "Foto: Tima Miroshnichenko / Pexels"
+    }
+  ],
+  "diario": [
+    {
+      "id": "d01",
+      "src": "diario/d01",
+      "w": 1280,
+      "h": 960,
+      "alt": "Betonagem de laje",
+      "credit": "Foto: SÀI GÒN CÔNG TY CP SẢN XUẤT - THƯƠNG MẠI / Pexels"
+    },
+    {
+      "id": "d02",
+      "src": "diario/d02",
+      "w": 1280,
+      "h": 960,
+      "alt": "Equipa a betonar na cobertura",
+      "credit": "Foto: yajna S R / Pexels"
+    },
+    {
+      "id": "d03",
+      "src": "diario/d03",
+      "w": 1280,
+      "h": 960,
+      "alt": "Trabalhadores sobre a armadura da laje",
+      "credit": "Foto: Mehmet Turgut Kirkgoz / Pexels"
+    },
+    {
+      "id": "d04",
+      "src": "diario/d04",
+      "w": 1280,
+      "h": 960,
+      "alt": "Cofragem metálica montada",
+      "credit": "Foto: Unal POLAT / Pexels"
+    },
+    {
+      "id": "d05",
+      "src": "diario/d05",
+      "w": 1280,
+      "h": 960,
+      "alt": "Montagem de cofragem",
+      "credit": "Foto: Davide Locatelli / Pexels"
+    },
+    {
+      "id": "d06",
+      "src": "diario/d06",
+      "w": 1280,
+      "h": 960,
+      "alt": "Malha de armadura",
+      "credit": "Foto: wal_ 172619 / Pexels"
+    },
+    {
+      "id": "d07",
+      "src": "diario/d07",
+      "w": 1280,
+      "h": 960,
+      "alt": "Varões de aço nos pilares",
+      "credit": "Foto: Vadym Alyekseyenko / Pexels"
+    },
+    {
+      "id": "d08",
+      "src": "diario/d08",
+      "w": 1280,
+      "h": 960,
+      "alt": "Estaleiro com água da chuva",
+      "credit": "Foto: FOX / Pexels"
+    },
+    {
+      "id": "d09",
+      "src": "diario/d09",
+      "w": 1280,
+      "h": 960,
+      "alt": "Assentamento de tijolo",
+      "credit": "Foto: GOWTHAM AGM / Pexels"
+    },
+    {
+      "id": "d10",
+      "src": "diario/d10",
+      "w": 1280,
+      "h": 960,
+      "alt": "Parede de alvenaria",
+      "credit": "Foto: Ünzile Aslan / Pexels"
+    },
+    {
+      "id": "d11",
+      "src": "diario/d11",
+      "w": 1280,
+      "h": 960,
+      "alt": "Andaime na fachada",
+      "credit": "Foto: Jan van der Wolf / Pexels"
+    },
+    {
+      "id": "d12",
+      "src": "diario/d12",
+      "w": 1280,
+      "h": 960,
+      "alt": "Sacos de cimento em palete",
+      "credit": "Foto: Aliaksei Smalenski / Pexels"
+    },
+    {
+      "id": "d13",
+      "src": "diario/d13",
+      "w": 1280,
+      "h": 960,
+      "alt": "Membrana de impermeabilização na cobertura",
+      "credit": "Foto: Bulat843 / Pexels"
+    },
+    {
+      "id": "d14",
+      "src": "diario/d14",
+      "w": 1280,
+      "h": 960,
+      "alt": "Trabalho na cobertura",
+      "credit": "Foto: Gundula Vogel / Pexels"
+    }
+  ],
+  "hoteis": [
+    {
+      "id": "ht1",
+      "src": "hoteis/ht1",
+      "w": 800,
+      "h": 600,
+      "alt": "Edifício branco com varandas",
+      "credit": "Foto: Stephen Leonardi / Pexels"
+    },
+    {
+      "id": "ht2",
+      "src": "hoteis/ht2",
+      "w": 800,
+      "h": 600,
+      "alt": "Fachada com hera",
+      "credit": "Foto: Denisa Susca / Pexels"
+    },
+    {
+      "id": "ht3",
+      "src": "hoteis/ht3",
+      "w": 800,
+      "h": 600,
+      "alt": "Fachada de hotel urbano",
+      "credit": "Foto: George Frewat / Pexels"
+    },
+    {
+      "id": "ht4",
+      "src": "hoteis/ht4",
+      "w": 800,
+      "h": 600,
+      "alt": "Fachada parisiense",
+      "credit": "Foto: Liisbet Luup / Pexels"
+    },
+    {
+      "id": "ht5",
+      "src": "hoteis/ht5",
+      "w": 800,
+      "h": 600,
+      "alt": "Fachadas históricas",
+      "credit": "Foto: Nadtochiy Photography / Pexels"
+    },
+    {
+      "id": "ht6",
+      "src": "hoteis/ht6",
+      "w": 800,
+      "h": 600,
+      "alt": "Pensão com fachada tradicional",
+      "credit": "Foto: Ryszard Zaleski / Pexels"
+    },
+    {
+      "id": "ht7",
+      "src": "hoteis/ht7",
+      "w": 800,
+      "h": 600,
+      "alt": "Fachadas históricas em Munique",
+      "credit": "Foto: Isa Bödi / Pexels"
     }
   ]
 }

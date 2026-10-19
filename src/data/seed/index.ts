@@ -40,6 +40,10 @@ import {
   TEAMS,
   VEHICLES,
 } from './catalog'
+import { seedDiary } from './diary'
+import { seedEvents } from './events'
+import { seedVacations } from './vacations'
+import { seedLodging } from './lodging'
 import { assignSeedPhotos } from './photos'
 
 export interface Personas {
@@ -235,7 +239,9 @@ export function createSeed({ today, seed = 20261015 }: { today: ISODate; seed?: 
       timezone: s.timezone,
       status: s.planned ? 'planeada' : 'em_curso',
       startDate: start,
-      endDate: addDays(start, s.durationDays),
+      // Duas obras com atraso: a previsão de fim já passou o fim contratual (aviso na ficha, na lista e no dashboard).
+      endDate: addDays(start, s.durationDays + (s.id === 's8' ? 24 : s.id === 's6' ? 12 : 0)),
+      contractEnd: addDays(start, s.durationDays),
       hourLimit: s.limit,
       baselineRealized: 0,
       baselineApproved: 0,
@@ -583,9 +589,18 @@ export function createSeed({ today, seed = 20261015 }: { today: ISODate; seed?: 
     deliveries,
     issues,
     weekNotes,
+    diary: {},
+    hotels: {},
+    stays: {},
+    events: {},
+    integrations: { google: { connected: false, lastSync: null, syncedKeys: [] }, onedrive: { connected: false, books: {} } },
     activity,
     notifications,
   }
   assignSeedPhotos(db)
+  db.diary = seedDiary(db, today)
+  Object.assign(db, seedLodging(db, today))
+  db.events = seedEvents(today)
+  Object.assign(db.absences, seedVacations(db, today))
   return { db, personas }
 }

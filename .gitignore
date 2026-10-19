@@ -9,3 +9,6 @@ dist-e2e
 fotos-originais/
 backend/target/
 infra/.env
+
+# Definições pessoais do Claude Code (permissões locais)
+.claude/settings.local.json

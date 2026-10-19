@@ -1,6 +1,9 @@
 import {
   BarChart3,
+  BedDouble,
+  BookOpen,
   Building2,
+  CalendarDays,
   CalendarRange,
   ClipboardCheck,
   FileCheck2,
@@ -41,6 +44,8 @@ export const GESTOR_NAV: NavGroup[] = [
       { to: '/trabalhadores', label: 'Trabalhadores', icon: Users },
       { to: '/obras', label: 'Obras', icon: Building2 },
       { to: '/viaturas', label: 'Viaturas', icon: Truck },
+      { to: '/dormidas', label: 'Dormidas', icon: BedDouble },
+      { to: '/agenda', label: 'Agenda', icon: CalendarDays },
     ],
   },
   {
@@ -69,6 +74,7 @@ export const ENCARREGADO_NAV: NavGroup[] = [
       { to: '/encarregado', label: 'Hoje', icon: HardHat, end: true },
       { to: '/encarregado/semana', label: 'Escala da semana', icon: CalendarRange },
       { to: '/encarregado/horas', label: 'Horas da equipa', icon: ClipboardCheck, badge: 'approvals' },
+      { to: '/encarregado/diario', label: 'Diário de obra', icon: BookOpen },
       { to: '/encarregado/documentos', label: 'Documentação', icon: FileCheck2 },
       { to: '/encarregado/problemas', label: 'Problemas', icon: MessageSquareWarning },
     ],

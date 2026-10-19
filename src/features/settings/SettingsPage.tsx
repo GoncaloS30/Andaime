@@ -1,4 +1,4 @@
-import { RotateCcw, Settings2 } from 'lucide-react'
+import { Images, RotateCcw, Settings2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { DEMO_LABEL } from '@/copy'
@@ -9,6 +9,8 @@ import { Link } from 'react-router'
 import { Field, Input, Switch } from '@/ui/Field'
 import { PageHeader, Panel } from '@/ui/Layout'
 import { Dialog } from '@/ui/Overlay'
+import { BackupPanel } from './BackupPanel'
+import { IntegrationsPanel } from './IntegrationsPanel'
 
 /** Definições da demonstração: regras de horas, códigos ERP, persistência e estados simulados. */
 export function SettingsPage() {
@@ -50,6 +52,10 @@ export function SettingsPage() {
           </Button>
         </Panel>
 
+        <IntegrationsPanel />
+
+        <BackupPanel />
+
         <Panel title="Dados da demonstração">
           <div className="flex flex-col gap-4">
             <Switch
@@ -65,6 +71,7 @@ export function SettingsPage() {
             </p>
             <div className="flex flex-wrap gap-2">
               <Link to="/design" className={buttonStyles('secondary')}>Ver o design system</Link>
+              <Link to="/definicoes/creditos" className={buttonStyles('secondary')}><Images className="size-4" aria-hidden /> Créditos das fotos</Link>
               <Button variant="danger" icon={<RotateCcw className="size-4" />} onClick={() => setConfirm(true)}>Repor demonstração</Button>
             </div>
           </div>

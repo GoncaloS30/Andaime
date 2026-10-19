@@ -12,6 +12,7 @@ import { useDemo } from '@/store/store'
 import { Button, IconButton } from '@/ui/Button'
 import { Field, Segmented, Select, Textarea } from '@/ui/Field'
 import { PageHeader } from '@/ui/Layout'
+import { WeekCharts } from './WeekCharts'
 
 /** Fluxo 8 — semana e obra → pré-visualizar equipa, horários e viaturas → exportar Excel ou imprimir. */
 export function WeeklyMapsPage() {
@@ -177,6 +178,7 @@ export function WeeklyMapsPage() {
             </div>
           </section>
         </div>
+        <WeekCharts week={week} />
       </ModuleGuard>
     </div>
   )

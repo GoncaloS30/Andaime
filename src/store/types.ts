@@ -8,12 +8,14 @@ import type {
   DB,
   DeliveryStatus,
   DocumentRec,
+  EquipmentKind,
   HHMM,
   ID,
   ISODate,
   IssueCategory,
   Role,
   Settings,
+  SizeKind,
   Site,
   Sizes,
   Team,
@@ -23,6 +25,10 @@ import type {
 } from '@/domain/types'
 import type { Personas } from '@/data/seed'
 import type { PhotoRef } from '@/domain/photos'
+import type { EventInput } from './actions/calendar'
+import type { DayHoursInput } from './actions/timesheetGrid'
+import type { DiaryInput } from './actions/diary'
+import type { HotelInput, StayInput } from './actions/lodging'
 import type { PhotoTarget } from './actions/photos'
 
 export type { Personas }
@@ -113,6 +119,8 @@ export interface SiteInput {
   hourLimit: number | null
   startDate: ISODate
   endDate: ISODate
+  /** Por defeito, igual à previsão de fim. */
+  contractEnd?: ISODate
   directorId: ID
   description: string
   teamId?: ID | null
@@ -162,8 +170,29 @@ export interface DemoActions {
   setFlag(flag: keyof Session['flags'], value: boolean): void
   setSettings(patch: Partial<Settings>): void
   resetDemo(): void
+  /** Substitui os dados por uma cópia importada (o papel atual mantém-se). */
+  importDemo(copy: { db: DB; session: Session }): void
   // fotos
   setPhoto(target: PhotoTarget, photo: PhotoRef | null): void
+  // diário de obra
+  createDiaryEntry(input: DiaryInput): ID
+  updateDiaryEntry(id: ID, patch: Partial<Omit<DiaryInput, 'siteId'>>): void
+  removeDiaryEntry(id: ID): void
+  // dormidas e hotéis
+  createHotel(input: HotelInput): ID
+  updateHotel(id: ID, patch: Partial<Omit<HotelInput, 'siteId'>>): void
+  removeHotel(id: ID): void
+  markStay(input: StayInput): ID
+  removeStay(id: ID): void
+  // agenda e integrações (simulado)
+  createEvent(input: EventInput): ID
+  removeEvent(id: ID): void
+  connectGoogle(connected: boolean): void
+  syncVacationsToGoogle(): { created: number; existing: number }
+  // grelha da semana e livro do RH
+  setDayHours(input: DayHoursInput): void
+  connectOneDrive(connected: boolean): void
+  syncHrBook(month: string): { sheets: number; rows: number }
   // planeamento
   previewSchedule(input: ScheduleInput): Conflict[]
   createSchedule(input: ScheduleInput): { batchId: ID; created: number }
@@ -220,6 +249,8 @@ export interface DemoActions {
   verifyDocument(id: ID, verification: 'verificado' | 'rejeitado'): void
   // equipamento
   recordDelivery(input: { workerId: ID; itemId: ID; size: string; qty: number; date: ISODate; note: string }): ID
+  /** Novo artigo no catálogo; se já existir um com o mesmo nome (sem acentos nem maiúsculas), devolve esse. */
+  addEquipmentItem(input: { name: string; kind: EquipmentKind; sizeKind: SizeKind; stock: number }): { id: ID; existed: boolean }
   recordReturn(deliveryId: ID, status: Exclude<DeliveryStatus, 'entregue'>, note: string): void
   // ocorrências e notificações
   reportIssue(input: { siteId: ID; category: IssueCategory; text: string }): ID

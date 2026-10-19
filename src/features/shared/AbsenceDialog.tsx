@@ -1,7 +1,7 @@
 import { Palmtree } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { ABSENCE_TYPE } from '@/domain/labels'
+import { ABSENCE_NOTE, ABSENCE_TYPE } from '@/domain/labels'
 import type { AbsenceType, ID } from '@/domain/types'
 import { addDays, dateShort } from '@/domain/weeks'
 import { useDemo } from '@/store/store'
@@ -67,7 +67,7 @@ export function AbsenceDialog({ open, onOpenChange, workerId }: Props) {
             )}
           </Field>
         )}
-        <Field label="Tipo" className="sm:col-span-2">
+        <Field label="Tipo" hint={ABSENCE_NOTE[type]} className="sm:col-span-2">
           {(p) => (
             <Select {...p} value={type} onChange={(e) => setType(e.target.value as AbsenceType)}>
               {Object.entries(ABSENCE_TYPE).map(([k, v]) => (

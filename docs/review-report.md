@@ -79,6 +79,50 @@ Regressão de "Anular" verificada em ciclo vermelho-verde (sem a correção o te
 - Tira da semana na ficha do trabalhador sobrepunha as horas a 360–390 px.
 - Recortes de retratos com a cabeça cortada: recorte a partir de cima e recorte manual em 4 fotos.
 
+## 3c. V3.1 completa — blocos 2 a 7 (19/10/2026)
+
+Funcionalidades do Lyrical Design e fotos (spec `docs/superpowers/specs/2026-10-16-andaime-lyrical-fotos-design.md`). Cada bloco ficou num PR empilhado: #14 (diário), #16 (dormidas), #17 (ausências e agenda), #18 (horas), #19 (EPI e definições) e o PR do bloco 7 (fecho).
+
+| Verificação | Comando | Resultado |
+|---|---|---|
+| TypeScript strict | `npm run build` (`tsc -b` + Vite) | exit 0. Bundle inicial de 615 KB (194 KB gzip); os módulos novos carregam à parte |
+| Lint | `npx eslint src e2e` | 0 erros |
+| Testes unitários e de store | `npx vitest run` | **182/182** em 34 ficheiros |
+| Dependências | `npm audit` | **0 vulnerabilidades** |
+| E2E, acessibilidade e quality gate | `npx playwright test` (Edge) | **47/47** numa só execução (5,7 min), com os 17 fluxos |
+| axe WCAG 2.1 AA | `e2e/a11y.spec.ts` | 0 violações sérias ou críticas em 30 rotas do gestor, 6 separadores da ficha, 6 rotas do encarregado e 5 ecrãs da app |
+| Quality gate | `-g @quality` | 16 ecrãs × 5 larguras sem overflow; capturas em `docs/review/screens` |
+| Lighthouse desktop | `lighthouse@12 --preset=desktop` | Dormidas 94 · Diário 93 · Totais de horas 95; **100** em acessibilidade e boas práticas; CLS ≤ 0,001 |
+| Lighthouse telemóvel (4G lento + CPU 4×) | `lighthouse@12` | Dormidas 61 · Diário 58 · Totais de horas 60; **100** em acessibilidade e boas práticas. O LCP é a capa da obra, que já carrega com prioridade alta; o atraso vem do arranque do JavaScript, a limitação já conhecida. Relatórios em `docs/review/lighthouse/v31-*.json` |
+
+Os novos testes E2E cobrem:
+- fluxo 10, dormidas: o hotel marcado aparece na ficha e na app;
+- fluxo 11, diário: 2 fotos, linha do tempo e um Word lido de volta com as imagens;
+- fluxo 12, férias: mapa do ano, Agenda e Google simulado sem duplicar;
+- fluxo 13, livro do RH: Excel lido de volta e OneDrive sem duplicar;
+- fluxo 14, grelha da semana: 10 h numa célula, extra recalculado e correção com motivo;
+- fluxo 15, fotos;
+- fluxo 16, folha de entrega: artigo novo e Excel;
+- fluxo 17, cópia da demonstração: exportar, importar e recusar um ficheiro inválido;
+- capítulos 10 e 11 do guião, com o efeito visível no telemóvel ao lado.
+
+**Corrigido durante os blocos 2 a 7:**
+
+| Origem | Problema | Correção |
+|---|---|---|
+| E2E | Os testes dependiam do dia em que corriam (ao fim de semana não havia trabalho atribuído) | Relógio fixo em `open()` |
+| E2E | Grelha: o teste escolhia um registo da semana errada e assumia que todos entravam às 08:00 | Registo da semana anterior; afirma 600 minutos trabalhados |
+| Build | `tsc -b` falhava nos E2E que liam Excel com `xlsx.load(Buffer)` (vinha do bloco 5) | `xlsx.readFile(caminho)`, como nos restantes |
+| axe | Seletor de ficheiro escondido da cópia sem nome acessível | `aria-label` e fora da ordem de tabulação (abre pelo botão visível) |
+| axe | Agenda: dias de outros meses e horas dentro dos eventos com contraste abaixo de 4,5:1 | Tons de texto mais escuros |
+| Quality gate | Horas a 360 px: o seletor de vistas (4 opções) saía 8 px da página | O seletor desliza na horizontal dentro da sua largura |
+| Guião | Realçar um painel mais alto do que o ecrã deslocava a página inteira | Alvos altos com `block: 'nearest'` |
+| Crítica visual | Palco dividido: os números da caixa Horas da obra sobrepunham-se e as linhas das dormidas ficavam espremidas | Grelha `auto-fit` na caixa Horas; o passo com telemóvel mostra a ficha (Alojamento) em vez da lista |
+| E2E | O grupo axe do planeamento (5 rotas pesadas) excedia os 150 s com a suite toda em paralelo | Grupos de 3 rotas: a suite passou a correr em 5,7 min, em vez de 9,6 |
+| Revisão | Importar uma cópia: as fotos eram repostas depois dos dados e os ecrãs não as encontravam logo | Repor primeiro as fotos e só depois substituir os dados |
+| Bundle | Os créditos das fotos (URL e autor de cada uma) iam entrar no bundle inicial pelo manifesto | Módulo gerado à parte, carregado só pela página de créditos |
+| Build | Importação dinâmica sem efeito (constantes da folha de entrega vinham do módulo do Excel) | Constantes passaram para `src/domain/equipment.ts` |
+
 ## 4. Avaliação visual final
 
 - **Gestor:** centro de operações com hierarquia clara (faixa de indicadores ligáveis → horas por obra → no terreno → alertas e decisões). A assinatura tracejado/sólido/limite é consistente no medidor, no quadro, no gráfico semanal e nas legendas. O quadro de planeamento é denso mas legível; conflitos explicados com correções de um clique e "Anular".

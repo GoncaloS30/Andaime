@@ -36,12 +36,14 @@ interface SectionProps {
   description?: ReactNode
   id?: string
   flush?: boolean
+  /** Alvo do modo apresentação (data-tour). */
+  tour?: string
 }
 
 /** Superfície branca com título numa régua fina (sem sombras). */
-export function Panel({ title, actions, children, className, bodyClassName, description, id, flush }: SectionProps) {
+export function Panel({ title, actions, children, className, bodyClassName, description, id, flush, tour }: SectionProps) {
   return (
-    <section id={id} className={cn('rounded-lg border border-line bg-surface', className)} aria-labelledby={title && id ? `${id}-t` : undefined}>
+    <section id={id} data-tour={tour} className={cn('rounded-lg border border-line bg-surface', className)} aria-labelledby={title && id ? `${id}-t` : undefined}>
       {(title || actions) && (
         <div className="flex min-h-11 items-center justify-between gap-3 border-b border-line-2 px-4 py-2">
           <div className="min-w-0">

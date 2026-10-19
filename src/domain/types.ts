@@ -49,7 +49,10 @@ export interface Site {
   timezone: string
   status: SiteStatus
   startDate: ISODate
+  /** Previsão de fim (a data que se vai atualizando). */
   endDate: ISODate
+  /** Fim contratual (o que está no contrato). Previsão depois dele = aviso. */
+  contractEnd: ISODate
   /** Limite de horas contratado ou configurado. null = sem limite definido. */
   hourLimit: number | null
   /** Horas realizadas antes da janela de dados da demonstração (histórico importado). */
@@ -193,6 +196,8 @@ export type AbsenceType =
   | 'baixa'
   | 'formacao'
   | 'parcial'
+  | 'licenca'
+  | 'outra'
 
 export type AbsenceStatus = 'pedido' | 'aprovado' | 'rejeitado'
 
@@ -290,6 +295,68 @@ export interface Issue {
   status: 'aberto' | 'resolvido'
 }
 
+/** Diário de obra: o que se fez num dia, com fotos. Pode haver mais de um registo por dia. */
+export interface DiaryEntry {
+  id: ID
+  siteId: ID
+  date: ISODate
+  title: string
+  text: string
+  authorId: ID
+  authorName: string
+  authorRole: Role
+  createdAt: string
+  updatedAt: string
+  photos: PhotoRef[]
+}
+
+/** Hotel de uma obra: uma opção onde a equipa pode ficar, não uma reserva. */
+export interface Hotel {
+  id: ID
+  siteId: ID
+  name: string
+  address: string
+  contact: string
+  notes: string
+  photo?: PhotoRef
+  createdAt: string
+}
+
+/** Estadia: quem dorme fora, em que obra, em que hotel (ou por definir) e de quando a quando. */
+export interface Stay {
+  id: ID
+  workerId: ID
+  siteId: ID
+  /** null = por definir (marca-se a necessidade primeiro, reserva-se depois). */
+  hotelId: ID | null
+  /** Segunda-feira da semana a que pertence. Única por (trabalhador, semana, obra). */
+  week: ISODate
+  checkIn: ISODate
+  checkOut: ISODate
+  notes: string
+  createdAt: string
+}
+
+/** Evento da agenda: próprio da app ou vindo do Google Calendar (simulado). */
+export interface CalendarEvent {
+  id: ID
+  title: string
+  date: ISODate
+  /** Igual a date para eventos de um dia. */
+  endDate: ISODate
+  time: HHMM | null
+  location: string
+  source: 'andaime' | 'google'
+  /** Para eventos sincronizados a partir da app (ex.: "ferias:<id da ausência>"). */
+  syncKey?: string
+}
+
+/** Integrações simuladas: nunca pedem credenciais nem saem do navegador. */
+export interface Integrations {
+  google: { connected: boolean; lastSync: string | null; syncedKeys: string[] }
+  onedrive: { connected: boolean; books: Record<string, string> }
+}
+
 export interface WeekNote {
   weekStart: ISODate
   text: string
@@ -344,6 +411,11 @@ export interface DB {
   deliveries: Record<ID, Delivery>
   issues: Record<ID, Issue>
   weekNotes: Record<ISODate, WeekNote>
+  diary: Record<ID, DiaryEntry>
+  hotels: Record<ID, Hotel>
+  stays: Record<ID, Stay>
+  events: Record<ID, CalendarEvent>
+  integrations: Integrations
   activity: ActivityEvent[]
   notifications: Notification[]
 }

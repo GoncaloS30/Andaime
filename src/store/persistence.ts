@@ -2,7 +2,7 @@ import type { DB } from '@/domain/types'
 import type { Session } from './types'
 
 /** Aumentar quando a forma do DB ou da semente mudar: dados antigos são substituídos por uma nova semente. */
-export const STORE_VERSION = 4
+export const STORE_VERSION = 7
 export const STORAGE_KEY = 'andaime:demo'
 const PREF_KEY = 'andaime:guardar-localmente'
 

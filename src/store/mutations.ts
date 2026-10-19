@@ -258,6 +258,7 @@ export function mCreateSite(db: DB, input: SiteInput, ctx: MCtx): ID {
     status: input.startDate > ctx.today ? 'planeada' : 'em_curso',
     startDate: input.startDate,
     endDate: input.endDate,
+    contractEnd: input.contractEnd ?? input.endDate,
     hourLimit: input.hourLimit,
     baselineRealized: 0,
     baselineApproved: 0,

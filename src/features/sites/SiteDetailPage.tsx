@@ -7,6 +7,7 @@ import { GLOSSARY } from '@/copy'
 import { DOC_STATE_LABEL, docState, latestDoc, requiredSiteDocTypes } from '@/domain/documents'
 import { entryHours, formatHours } from '@/domain/hours'
 import { COUNTRY_NAME, ISSUE_CATEGORY, SITE_STATUS } from '@/domain/labels'
+import { delayWorkdays } from '@/domain/planning'
 import type { SiteStatus } from '@/domain/types'
 import { addDays, dateNumeric, dateShort, dayShort, weekDays, weekStart } from '@/domain/weeks'
 import { selectSiteMetrics } from '@/store/selectors'
@@ -26,11 +27,13 @@ import { ActivityList } from '../shared/ActivityList'
 import { CountryTag } from '../shared/Country'
 import { DocumentDialog } from '../shared/DocumentDialog'
 import { SiteMap } from '../shared/SiteMap'
+import { SiteLodging } from '../lodging/SiteLodging'
+import { SiteDiary } from './diary/SiteDiary'
 import { WeeklyBars } from './WeeklyBars'
 
-const TABS = ['resumo', 'cliente', 'localizacao', 'responsaveis', 'equipa', 'planeamento', 'viaturas', 'horas', 'documentos', 'historico'] as const
+const TABS = ['resumo', 'diario', 'alojamento', 'cliente', 'localizacao', 'responsaveis', 'equipa', 'planeamento', 'viaturas', 'horas', 'documentos', 'historico'] as const
 const LABEL: Record<(typeof TABS)[number], string> = {
-  resumo: 'Resumo', cliente: 'Cliente', localizacao: 'Localização', responsaveis: 'Responsáveis', equipa: 'Equipa',
+  resumo: 'Resumo', diario: 'Diário', alojamento: 'Alojamento', cliente: 'Cliente', localizacao: 'Localização', responsaveis: 'Responsáveis', equipa: 'Equipa',
   planeamento: 'Planeamento', viaturas: 'Viaturas', horas: 'Horas', documentos: 'Documentos', historico: 'Histórico',
 }
 
@@ -51,7 +54,7 @@ function MetricsGrid({ siteId }: { siteId: string }) {
   )
   return (
     <div>
-      <dl className="grid grid-cols-2 gap-y-4 sm:grid-cols-3 lg:grid-cols-6">
+      <dl className="grid grid-cols-[repeat(auto-fit,minmax(7.5rem,1fr))] gap-x-4 gap-y-4">
         {item('Limite', m.limit ? formatHours(m.limit) : 'Sem limite', GLOSSARY.limite, true)}
         {item('Realizadas', formatHours(Math.round(m.realized)), GLOSSARY.realizadas, true)}
         {item('Aprovadas', formatHours(Math.round(m.approved)), GLOSSARY.aprovadas)}
@@ -141,7 +144,11 @@ export function SiteDetailPage() {
               <p className="mb-4 text-sm text-ink-2">{s.description}</p>
               <dl className="grid grid-cols-2 gap-4">
                 <Detail label="Início">{dateNumeric(s.startDate)}</Detail>
-                <Detail label="Fim previsto">{dateNumeric(s.endDate)}</Detail>
+                <Detail label="Fim contratual">{dateNumeric(s.contractEnd)}</Detail>
+                <Detail label="Previsão de fim">
+                  {dateNumeric(s.endDate)}
+                  {delayWorkdays(s) > 0 && <Badge tone="warn" className="ml-1.5">+{delayWorkdays(s)} dias úteis face ao contrato</Badge>}
+                </Detail>
                 <Detail label="Fuso horário">{s.timezone}</Detail>
                 <Detail label="Ordem ERP">{s.erpOrder}</Detail>
               </dl>
@@ -305,6 +312,12 @@ export function SiteDetailPage() {
             </ul>
           </Panel>
           {docType && <DocumentDialog open onOpenChange={() => setDocType(null)} ownerType="obra" ownerId={id} typeId={docType} />}
+        </TabPanel>
+        <TabPanel value="alojamento">
+          <SiteLodging site={s} />
+        </TabPanel>
+        <TabPanel value="diario">
+          <SiteDiary site={s} />
         </TabPanel>
         <TabPanel value="historico">
           <div className="grid gap-4 lg:grid-cols-2">

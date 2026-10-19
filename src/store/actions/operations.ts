@@ -1,3 +1,4 @@
+import { findItemByName } from '@/domain/equipment'
 import { ABSENCE_TYPE } from '@/domain/labels'
 import type { ID, TimeEntry, WorkerCategory } from '@/domain/types'
 import { dateShort } from '@/domain/weeks'
@@ -20,9 +21,9 @@ export function operationActions(api: StoreApi): Pick<
   DemoActions,
   | 'clockIn' | 'startBreak' | 'endBreak' | 'clockOut' | 'createManualEntry' | 'reviewEntries' | 'returnEntries'
   | 'approveEntries' | 'rejectEntries' | 'correctEntry' | 'confirmPresence' | 'requestAbsence' | 'createAbsence'
-  | 'decideAbsence' | 'cancelAbsence' | 'updateDocument' | 'addDocument' | 'verifyDocument' | 'recordDelivery'
+  | 'decideAbsence' | 'cancelAbsence' | 'updateDocument' | 'addDocument' | 'verifyDocument' | 'recordDelivery' | 'addEquipmentItem'
   | 'recordReturn' | 'reportIssue' | 'resolveIssue' | 'markNotificationsRead' | 'markNotificationRead'
-  | 'setRole' | 'setPersona' | 'setOnline' | 'syncOutbox' | 'setFlag' | 'setSettings' | 'resetDemo'
+  | 'setRole' | 'setPersona' | 'setOnline' | 'syncOutbox' | 'setFlag' | 'setSettings' | 'resetDemo' | 'importDemo'
 > {
   const { set, get, clock, mctx } = api
 
@@ -357,6 +358,20 @@ export function operationActions(api: StoreApi): Pick<
       return id
     },
 
+    addEquipmentItem(input) {
+      const name = input.name.trim().replace(/\s+/g, ' ')
+      if (!name) throw new Error('Indique o nome do artigo')
+      const existing = findItemByName(get().db.equipment, name)
+      if (existing) return { id: existing.id, existed: true }
+      const id = mctx().uid('eq')
+      const stock = Math.max(0, Math.round(input.stock))
+      set((s) => {
+        s.db.equipment[id] = { id, name, kind: input.kind, sizeKind: input.sizeKind, stock, serial: '' }
+        log(s, clock(), 'equipamento', `Acrescentou ao catálogo: ${name} (stock ${stock}).`)
+      })
+      return { id, existed: false }
+    },
+
     recordReturn(deliveryId, status, note) {
       set((s) => {
         const d = s.db.deliveries[deliveryId]
@@ -471,6 +486,15 @@ export function operationActions(api: StoreApi): Pick<
         const role = s.session.role
         s.db = fresh.db
         s.session = { ...fresh.session, role }
+        s.undoStack = []
+      })
+    },
+
+    importDemo(copy) {
+      set((s) => {
+        const role = s.session.role
+        s.db = copy.db
+        s.session = { ...copy.session, role, syncing: false }
         s.undoStack = []
       })
     },
