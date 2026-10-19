@@ -433,3 +433,32 @@ describe('Fluxo 13 — livro de horas do RH (OneDrive simulado)', () => {
     expect(JSON.stringify(hrBookSheets(st().db, st().session.settings, '2026-10'))).toBe(before)
   })
 })
+
+describe('Bloco 6 — catálogo de EPI e cópia da demonstração', () => {
+  it('acrescenta um artigo novo e reaproveita um que já existe com outro nome escrito', () => {
+    const store = make()
+    const r = store.getState().addEquipmentItem({ name: 'Joelheiras de gel', kind: 'epi', sizeKind: null, stock: 4 })
+    expect(r.existed).toBe(false)
+    expect(store.getState().db.equipment[r.id]?.stock).toBe(4)
+    const again = store.getState().addEquipmentItem({ name: '  JOELHEIRAS de gél', kind: 'epi', sizeKind: null, stock: 9 })
+    expect(again).toEqual({ id: r.id, existed: true })
+    expect(Object.values(store.getState().db.equipment).filter((i) => i.name === 'Joelheiras de gel')).toHaveLength(1)
+  })
+
+  it('recusa um artigo sem nome', () => {
+    expect(() => make().getState().addEquipmentItem({ name: '  ', kind: 'epi', sizeKind: null, stock: 1 })).toThrow('Indique o nome do artigo')
+  })
+
+  it('importa uma cópia: substitui os dados, mantém o papel e limpa o anular', () => {
+    const a = make()
+    a.getState().addEquipmentItem({ name: 'Joelheiras de gel', kind: 'epi', sizeKind: null, stock: 4 })
+    const copy = { db: a.getState().db, session: a.getState().session }
+    const b = make()
+    b.getState().setRole('encarregado')
+    b.getState().createEvent({ title: 'X', date: TODAY, endDate: TODAY, time: null, location: '' })
+    b.getState().importDemo(copy)
+    expect(Object.values(b.getState().db.equipment).some((i) => i.name === 'Joelheiras de gel')).toBe(true)
+    expect(b.getState().session.role).toBe('encarregado')
+    expect(b.getState().undoStack).toHaveLength(0)
+  })
+})

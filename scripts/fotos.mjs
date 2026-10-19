@@ -60,4 +60,14 @@ const credits = [
   ...manifest.map((f) => `| ${f.categoria}/${f.id} | ${f.autor} | ${f.licenca} | ${f.url} |`),
 ]
 await writeFile('public/fotos/CREDITOS.md', credits.join('\n') + '\n')
+
+// Créditos para a página das Definições (ficheiro à parte: só essa página o carrega).
+const creditList = manifest.map((f) => ({ src: `${f.categoria}/${f.id}`, author: f.autor, license: f.licenca, url: f.url }))
+await writeFile(
+  'src/data/photoCredits.ts',
+  `// Gerado por scripts/fotos.mjs a partir de scripts/fotos.manifest.json. Não editar à mão.
+export interface PhotoCredit { src: string; author: string; license: string; url: string }
+export const PHOTO_CREDITS: PhotoCredit[] = ${JSON.stringify(creditList, null, 2)}
+`,
+)
 console.log(`${manifest.length} fotos processadas.`)

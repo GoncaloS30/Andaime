@@ -74,6 +74,7 @@ export const router = createBrowserRouter([
       { path: 'mapa', ...lazyPage(() => import('@/features/geo-map/GeoMapPage'), 'GeoMapPage', G) },
       { path: 'relatorios', ...lazyPage(() => import('@/features/reports/ReportsPage'), 'ReportsPage', G) },
       { path: 'definicoes', ...lazyPage(() => import('@/features/settings/SettingsPage'), 'SettingsPage') },
+      { path: 'definicoes/creditos', ...lazyPage(() => import('@/features/settings/PhotoCreditsPage'), 'PhotoCreditsPage') },
       { path: 'design', ...lazyPage(() => import('@/features/design/DesignPage'), 'DesignPage') },
       { path: 'encarregado', ...lazyPage(() => import('@/features/foreman/ForemanPages'), 'ForemanToday', E) },
       { path: 'encarregado/semana', ...lazyPage(() => import('@/features/foreman/ForemanPages'), 'ForemanWeek', E) },

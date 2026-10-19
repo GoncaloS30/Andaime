@@ -12,6 +12,7 @@ import { TabPanel, Tabs } from '@/ui/Tabs'
 import { EmptyState } from '@/ui/States'
 import { AbsenceDialog } from '../shared/AbsenceDialog'
 import { DeliveryDialog } from '../shared/DeliveryDialog'
+import { DeliverySheetDialog } from './DeliverySheetDialog'
 import { TransferDialog } from '../shared/TransferDialog'
 import { WorkerForm } from './WorkerForm'
 import { WorkerStays } from '../lodging/WorkerStays'
@@ -50,7 +51,7 @@ export function WorkerDetailPage() {
   const vehicle = useDemo((s) => (w?.usualVehicleId ? s.db.vehicles[w.usualVehicleId] : undefined))
   const docIssues = useDerived(({ db, session }) => workerCompliance(db, id, session.today).filter((r) => r.state !== 'valido').length, [id])
   const pendingAbs = useDemo((s) => Object.values(s.db.absences).filter((a) => a.workerId === id && a.status === 'pedido').length)
-  const [dialog, setDialog] = useState<null | 'edit' | 'transfer' | 'absence' | 'delivery'>(null)
+  const [dialog, setDialog] = useState<null | 'edit' | 'transfer' | 'absence' | 'delivery' | 'sheet'>(null)
 
   if (!w) {
     return (
@@ -132,8 +133,8 @@ export function WorkerDetailPage() {
         <TabPanel value="horas"><HoursTab id={id} /></TabPanel>
         <TabPanel value="documentos"><DocumentsTab id={id} openDoc={sp.get('doc')} /></TabPanel>
         <TabPanel value="ausencias"><AbsencesTab id={id} onNew={() => setDialog('absence')} /></TabPanel>
-        <TabPanel value="fardamento"><UniformTab id={id} onDeliver={() => setDialog('delivery')} /></TabPanel>
-        <TabPanel value="equipamentos"><EquipmentTab id={id} onDeliver={() => setDialog('delivery')} /></TabPanel>
+        <TabPanel value="fardamento"><UniformTab id={id} onDeliver={() => setDialog('delivery')} onSheet={() => setDialog('sheet')} /></TabPanel>
+        <TabPanel value="equipamentos"><EquipmentTab id={id} onDeliver={() => setDialog('delivery')} onSheet={() => setDialog('sheet')} /></TabPanel>
         <TabPanel value="alojamento"><WorkerStays id={id} /></TabPanel>
         <TabPanel value="historico"><HistoryTab id={id} /></TabPanel>
       </Tabs>
@@ -142,6 +143,7 @@ export function WorkerDetailPage() {
       {dialog === 'transfer' && <TransferDialog open onOpenChange={() => setDialog(null)} workerId={id} />}
       {dialog === 'absence' && <AbsenceDialog open onOpenChange={() => setDialog(null)} workerId={id} />}
       {dialog === 'delivery' && <DeliveryDialog open onOpenChange={() => setDialog(null)} workerId={id} />}
+      {dialog === 'sheet' && <DeliverySheetDialog workerId={id} onClose={() => setDialog(null)} />}
     </div>
   )
 }
