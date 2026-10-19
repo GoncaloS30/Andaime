@@ -1,4 +1,4 @@
-import { ArrowRightLeft, FileUp, PackageCheck, Pencil, Plus, Shirt } from 'lucide-react'
+import { ArrowRightLeft, FileSignature, FileUp, PackageCheck, Pencil, Plus, Shirt } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { toast } from 'sonner'
@@ -403,7 +403,17 @@ function DeliveriesList({ id, kinds }: { id: ID; kinds: string[] }) {
   )
 }
 
-export function UniformTab({ id, onDeliver }: { id: ID; onDeliver: () => void }) {
+/** Ações do painel de entregas: a folha para assinar e registar uma entrega. */
+function DeliveryActions({ onDeliver, onSheet, tour }: { onDeliver: () => void; onSheet: () => void; tour?: string }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      <Button size="sm" icon={<FileSignature className="size-3.5" />} onClick={onSheet}>Folha de entrega</Button>
+      <Button size="sm" variant="primary" icon={<PackageCheck className="size-3.5" />} onClick={onDeliver} data-tour={tour}>Registar entrega</Button>
+    </div>
+  )
+}
+
+export function UniformTab({ id, onDeliver, onSheet }: { id: ID; onDeliver: () => void; onSheet: () => void }) {
   const w = useDemo((s) => s.db.workers[id]!)
   const updateSizes = useDemo((s) => s.updateSizes)
   const [sizes, setSizes] = useState(w.sizes)
@@ -416,16 +426,16 @@ export function UniformTab({ id, onDeliver }: { id: ID; onDeliver: () => void })
           Guardar tamanhos
         </Button>
       </Panel>
-      <Panel title="Fardamento entregue" actions={<Button size="sm" variant="primary" icon={<PackageCheck className="size-3.5" />} onClick={onDeliver} data-tour="deliver">Registar entrega</Button>} flush>
+      <Panel title="Fardamento entregue" actions={<DeliveryActions onDeliver={onDeliver} onSheet={onSheet} tour="deliver" />} flush>
         <DeliveriesList id={id} kinds={['fardamento']} />
       </Panel>
     </div>
   )
 }
 
-export function EquipmentTab({ id, onDeliver }: { id: ID; onDeliver: () => void }) {
+export function EquipmentTab({ id, onDeliver, onSheet }: { id: ID; onDeliver: () => void; onSheet: () => void }) {
   return (
-    <Panel title="EPI e ferramentas" actions={<Button size="sm" variant="primary" icon={<PackageCheck className="size-3.5" />} onClick={onDeliver}>Registar entrega</Button>} flush>
+    <Panel title="EPI e ferramentas" actions={<DeliveryActions onDeliver={onDeliver} onSheet={onSheet} />} flush>
       <DeliveriesList id={id} kinds={['epi', 'ferramenta']} />
     </Panel>
   )

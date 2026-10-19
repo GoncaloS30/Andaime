@@ -44,6 +44,13 @@ Funcionalidades do Lyrical Design e fotos (spec `docs/superpowers/specs/2026-10-
   - "Como correu a semana" nos mapas semanais (por dia, obra e pessoa, com tabela);
   - donut por obra e filtro por obra nas horas da ficha do trabalhador;
   - fluxos 13 e 14 com testes de domínio, store, Excel lido de volta e E2E.
+- **EPI e Definições** (bloco 6):
+  - folha de entrega para assinar na ficha do trabalhador: o que tem em seu poder, declaração e linhas de assinatura; impressão em A4 vertical e Excel;
+  - "Novo artigo no catálogo" ao registar uma entrega; se o nome já existir (sem acentos nem maiúsculas), usa o artigo que existe;
+  - Definições → Integrações: Google Calendar e OneDrive (simulados) com estado, ligar/desligar e última sincronização;
+  - Definições → Cópia da demonstração: exportar para JSON (com as fotos carregadas, opcional, com o tamanho estimado) e importar com validação da versão e confirmação;
+  - página "Créditos das fotos" com autor, licença e ligação ao original de cada foto;
+  - fluxos 16 e 17 com testes de domínio, store, Excel lido de volta e E2E.
 - Repositório configurado para trabalho em equipa: CI, Dependabot, CODEOWNERS, modelos de issue e PR, licença e guia de contribuição.
 
 ### Alterado

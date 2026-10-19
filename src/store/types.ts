@@ -8,12 +8,14 @@ import type {
   DB,
   DeliveryStatus,
   DocumentRec,
+  EquipmentKind,
   HHMM,
   ID,
   ISODate,
   IssueCategory,
   Role,
   Settings,
+  SizeKind,
   Site,
   Sizes,
   Team,
@@ -168,6 +170,8 @@ export interface DemoActions {
   setFlag(flag: keyof Session['flags'], value: boolean): void
   setSettings(patch: Partial<Settings>): void
   resetDemo(): void
+  /** Substitui os dados por uma cópia importada (o papel atual mantém-se). */
+  importDemo(copy: { db: DB; session: Session }): void
   // fotos
   setPhoto(target: PhotoTarget, photo: PhotoRef | null): void
   // diário de obra
@@ -245,6 +249,8 @@ export interface DemoActions {
   verifyDocument(id: ID, verification: 'verificado' | 'rejeitado'): void
   // equipamento
   recordDelivery(input: { workerId: ID; itemId: ID; size: string; qty: number; date: ISODate; note: string }): ID
+  /** Novo artigo no catálogo; se já existir um com o mesmo nome (sem acentos nem maiúsculas), devolve esse. */
+  addEquipmentItem(input: { name: string; kind: EquipmentKind; sizeKind: SizeKind; stock: number }): { id: ID; existed: boolean }
   recordReturn(deliveryId: ID, status: Exclude<DeliveryStatus, 'entregue'>, note: string): void
   // ocorrências e notificações
   reportIssue(input: { siteId: ID; category: IssueCategory; text: string }): ID
