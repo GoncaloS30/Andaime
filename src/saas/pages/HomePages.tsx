@@ -1,4 +1,4 @@
-import { CheckCircle2, Circle, HardHat, LogOut, PlugZap, SearchX, UsersRound } from 'lucide-react'
+import { CheckCircle2, Circle, LogOut, PlugZap, SearchX, UsersRound } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { Wordmark } from '@/app/shell/Logo'
@@ -8,6 +8,7 @@ import { PageHeader, Panel } from '@/ui/Layout'
 import { EmptyState, SkeletonRows } from '@/ui/States'
 import { useLogout, useMembers } from '../api/hooks'
 import { atLeast, ORG_ROLE_LABEL } from '../api/types'
+import { useEmployees, useSites, useTeams } from '../api/workforce'
 import { useActiveOrg, useSession } from '../session'
 
 /**
@@ -15,10 +16,6 @@ import { useActiveOrg, useSession } from '../session'
  * o ecrã diz isso mesmo, em vez de mostrar dados fictícios.
  */
 export const MODULES: { path: string; label: string; phase: string }[] = [
-  { path: '/trabalhadores', label: 'Trabalhadores', phase: 'F2' },
-  { path: '/obras', label: 'Obras', phase: 'F2' },
-  { path: '/equipas', label: 'Equipas', phase: 'F2' },
-  { path: '/mapa', label: 'Mapa de obras', phase: 'F2' },
   { path: '/planeamento', label: 'Planeamento', phase: 'F3' },
   { path: '/viaturas', label: 'Viaturas', phase: 'F3' },
   { path: '/horas', label: 'Horas e aprovações', phase: 'F4' },
@@ -33,7 +30,6 @@ export const MODULES: { path: string; label: string; phase: string }[] = [
   { path: '/encarregado/horas', label: 'Horas da equipa', phase: 'F4' },
   { path: '/encarregado/diario', label: 'Diário de obra', phase: 'depois de F6' },
   { path: '/encarregado/documentos', label: 'Documentação', phase: 'F5' },
-  { path: '/encarregado/problemas', label: 'Problemas', phase: 'F2' },
 ]
 
 const PHASE_TEXT: Record<string, string> = {
@@ -90,6 +86,14 @@ export function ManagerHome() {
   const canSeeTeam = atLeast(org.role, 'MANAGER')
   const members = useMembers(org.id)
   const activeMembers = members.data?.filter((m) => m.status === 'ACTIVE').length
+  const employees = useEmployees(org.id, {})
+  const teams = useTeams(org.id)
+  const sites = useSites(org.id)
+  const counts = {
+    employees: employees.data?.total ?? 0,
+    teams: teams.data?.length ?? 0,
+    sites: sites.data?.length ?? 0,
+  }
 
   return (
     <>
@@ -119,19 +123,36 @@ export function ManagerHome() {
                 </>
               )}
             </Step>
-            <Step done={false} title="Registar trabalhadores e obras">
-              Disponível com a fase F2.
+            <Step done={counts.employees > 0} title="Registar trabalhadores">
+              {counts.employees > 0 ? `${counts.employees} registados. ` : ''}
+              <Link to="/trabalhadores" className="text-pinho hover:underline">
+                {counts.employees > 0 ? 'Ver trabalhadores' : 'Registar o primeiro trabalhador'}
+              </Link>
+            </Step>
+            <Step done={counts.teams > 0} title="Organizar equipas">
+              {counts.teams > 0 ? `${counts.teams} equipas. ` : ''}
+              <Link to="/equipas" className="text-pinho hover:underline">
+                {counts.teams > 0 ? 'Ver equipas' : 'Criar a primeira equipa'}
+              </Link>
+            </Step>
+            <Step done={counts.sites > 0} title="Criar obras">
+              {counts.sites > 0 ? `${counts.sites} obras. ` : ''}
+              <Link to={counts.sites > 0 ? '/obras' : '/obras/nova'} className="text-pinho hover:underline">
+                {counts.sites > 0 ? 'Ver obras' : 'Criar a primeira obra'}
+              </Link>
             </Step>
           </ol>
         </Panel>
         <Panel title="Módulos" description="O que já guarda dados da sua empresa.">
           <ul className="divide-y divide-line-2 px-4">
-            <li className="flex items-center justify-between gap-3 py-2.5 text-sm">
-              <span>Contas, empresa, equipa e acessos</span>
-              <Badge tone="ok" dot>
-                Ligado
-              </Badge>
-            </li>
+            {['Contas, empresa, equipa e acessos', 'Trabalhadores e equipas', 'Obras, clientes e mapa', 'Ocorrências de obra'].map((label) => (
+              <li key={label} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                <span>{label}</span>
+                <Badge tone="ok" dot>
+                  Ligado
+                </Badge>
+              </li>
+            ))}
             {MODULES.filter((m) => !m.path.startsWith('/encarregado')).map((m) => (
               <li key={m.path} className="flex items-center justify-between gap-3 py-2.5 text-sm">
                 <span className="text-ink-2">{m.label}</span>
@@ -141,20 +162,6 @@ export function ManagerHome() {
           </ul>
         </Panel>
       </div>
-    </>
-  )
-}
-
-export function ForemanHome() {
-  const org = useActiveOrg()
-  return (
-    <>
-      <PageHeader eyebrow={org.name} title="Hoje" />
-      <Panel>
-        <EmptyState icon={<HardHat />} title="A sua área de encarregado está a ser ligada ao servidor">
-          A presença da equipa, a escala da semana e as horas para rever ficam disponíveis com o planeamento (fase F3) e o registo de horas (fase F4).
-        </EmptyState>
-      </Panel>
     </>
   )
 }

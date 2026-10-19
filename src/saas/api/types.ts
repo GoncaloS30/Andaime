@@ -32,6 +32,8 @@ export interface Member {
   role: OrgRole
   status: 'ACTIVE' | 'DISABLED'
   joinedAt: string
+  employeeId: string | null
+  employeeName: string | null
   version: number
 }
 

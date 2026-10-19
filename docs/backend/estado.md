@@ -18,7 +18,7 @@ Plano completo: secções "Arquitetura", "Modelo", "Endpoints" e "Sequência" em
 |---|---|
 | F0 — Auditoria e arquitetura | ✅ ADRs 0006–0011 e `docs/backend/*` |
 | F1 — Fundação SaaS | ✅ concluída em 2026-10-19 |
-| F2 — Trabalhadores, obras, equipas | ⏳ |
+| F2 — Trabalhadores, obras, equipas | ✅ concluída em 2026-10-19 |
 | F3 — Planeamento e viaturas | ⏳ |
 | F4 — Horas e aprovações | ⏳ |
 | F5 — Documentos, ausências, equipamentos, notificações | ⏳ |
@@ -130,6 +130,44 @@ npm run e2e:saas → 1 passed (10 s): registo + email real (Mailpit) + confirma�
 - Tipos TypeScript gerados do OpenAPI (F2, quando a API crescer).
 - Ligação de uma conta WORKER à ficha de trabalhador (F2, quando existirem trabalhadores).
 
+## F2 — Trabalhadores, obras e equipas (concluída em 2026-10-19)
+
+Backend (`workforce`, `sites`, `devdata`):
+- **V14** trabalhadores (número único por empresa, automático se vazio; competências; tamanhos), contratos sem sobreposição, equipas e `team_members` com períodos datados — um trabalhador está numa só equipa por dia (exclusion constraint) — e ligação conta ↔ ficha de trabalhador (`memberships.employee_id`).
+- **V15** clientes (NIF único), obras (código `OB-AA-NNN` automático, fuso IANA validado por trigger e por defeito o do país, limite e horas históricas importadas em minutos), ocorrências de obra.
+- Âmbito por papel no servidor: gestor e acima vêem tudo; o encarregado vê-se a si, os membros atuais das equipas que lidera e as obras de que é encarregado, **sem custos nem dados pessoais**; o trabalhador só a própria ficha.
+- Mudanças de equipa valem de hoje em diante: entrar numa equipa fecha a anterior na véspera; datas passadas são recusadas (400 `past-date`).
+- Métricas de obra calculadas no servidor (`SiteMetrics`, porta de `siteMetrics.ts`, com testes). Sem registos de horas ainda (F4), as realizadas/aprovadas vêm só do histórico importado e a API devolve `includesTimeEntries: false`; a interface diz isso.
+- Auditoria em todas as alterações; dados pessoais aparecem só como "alterado". Histórico por registo (`/audit?entityType=&entityId=`) para gestores.
+- Erros de base de dados traduzidos: 409 `duplicate`/`overlap`, 404 para referências inexistentes.
+- Semente de demonstração explícita e idempotente (`andaime.seed.demo.enabled=true` + email e palavra-passe do dono), passa pelos serviços reais e recusa correr no perfil `prod`.
+- Os testes passam a correr as migrações como `andaime_owner`, como em produção — apanhou a falta de permissões explícitas em tabelas novas.
+
+Frontend (`src/saas/pages/workforce`, `src/saas/pages/sites`):
+- Trabalhadores: lista com pesquisa, filtros e paginação no servidor; ficha (dados profissionais, percurso em equipas, contratos, histórico); criar, editar com versão, arquivar e repor.
+- Equipas: lista, criação com responsável e cor, juntar/retirar elementos com data, composição ao longo do tempo, histórico, arquivar.
+- Obras: cartões ou tabela com medidor de horas, nova obra com mapa para marcar a localização, ficha com métricas, localização, ocorrências e histórico, edição e arquivo; clientes; mapa de obras.
+- Encarregado: "Hoje" com as suas equipas e obras; "Problemas" com as ocorrências e comunicação de novas.
+- Definições → Equipa e acessos: ligar a conta de encarregados e trabalhadores à respetiva ficha.
+
+Verificação real:
+
+```text
+./mvnw verify → 28 testes, 0 falhas (SiteMetricsTest 5 · WorkforceSitesIntegrationTest 4 · IDOR sobre todas as rotas
+  /api/orgs/{orgId}, incluindo as novas · Modulith verify com os módulos workforce, sites e devdata)
+npm run typecheck · npm run lint → sem erros · npm test → 182 testes
+npm run e2e:saas → 2 passed (17 s): F1 + registar trabalhadores, formar equipa, obra com encarregado e métricas,
+  persistência após recarregar, percurso em equipas e histórico
+Semente: 1.ª execução cria a empresa; 2.ª execução "a empresa já existe; nada a fazer"
+```
+
+### Ainda não feito em F2
+
+- Fotos de trabalhadores e obras (passam para o storage em F5).
+- Viaturas e equipa/viatura por obra (F3), horas e documentos na ficha (F4/F5).
+- Paginação da lista de obras (limite de 1000 por pedido; suficiente até F7).
+- Tipos TypeScript gerados do OpenAPI (adiado: os contratos estão em `src/saas/api/*.ts` e cobertos por E2E).
+
 ## Comandos
 
 ```bash
@@ -147,6 +185,8 @@ npm run dev
 npm run dev:prototipo
 # E2E de ponta a ponta (API + Postgres + Mailpit a correr)
 npm run e2e:saas
+# Empresa de demonstração no PostgreSQL local (idempotente; nunca em prod). Valores em infra/.env.example
+wsl -d Ubuntu -- bash -lc "cd /mnt/c/Users/Utilizador/IdeaProjects/Andaime/backend && ./mvnw spring-boot:run -Dspring-boot.run.profiles=local -Dspring-boot.run.arguments='--andaime.seed.demo.enabled=true --andaime.seed.demo.owner-email=demo@andaime.test --andaime.seed.demo.owner-password=…'"
 ```
 
 Emails de desenvolvimento: http://localhost:58035 (Mailpit). Primeiro Platform Admin: inserir o `user_id` em `platform_admins` com o papel `andaime_owner` (de propósito, não há endpoint para isso).

@@ -5,7 +5,11 @@ import { ErrorState } from '@/ui/States'
 import { AccountSections, AccountPage, AuditPage, OrganizationSettingsPage, TeamAccessPage } from './pages/settings/SettingsPages'
 import { ForgotPasswordPage, LoginPage, ResetPasswordPage, SignupPage, VerifyEmailPage } from './pages/auth/AuthPages'
 import { InvitePage, OnboardingPage } from './pages/auth/OnboardingPages'
-import { ForemanHome, ManagerHome, MODULES, ModuleUnavailable, NotFoundPage, WorkerHome } from './pages/HomePages'
+import { ManagerHome, MODULES, ModuleUnavailable, NotFoundPage, WorkerHome } from './pages/HomePages'
+import { ClientsPage, ForemanHomePage, ForemanIssuesPage, GeoMapPage } from './pages/sites/MorePages'
+import { NewSitePage, SiteDetailPage, SitesPage } from './pages/sites/SitesPages'
+import { TeamDetailPage, TeamsPage } from './pages/workforce/TeamsPages'
+import { WorkerDetailPage, WorkersPage } from './pages/workforce/WorkersPages'
 import { PlatformPage } from './pages/PlatformPage'
 import { ExperienceGate, RedirectIfAuthenticated, RequireAuth, RequireOrg } from './session'
 import { SaasShell } from './shell/SaasShell'
@@ -32,6 +36,8 @@ function WorkerAccount() {
 
 const gestor = (element: ReactElement) => <ExperienceGate allow={['gestor']}>{element}</ExperienceGate>
 const encarregado = (element: ReactElement) => <ExperienceGate allow={['encarregado']}>{element}</ExperienceGate>
+/** Gestor e encarregado: o servidor limita o encarregado às suas equipas e obras. */
+const both = (element: ReactElement) => <ExperienceGate allow={['gestor', 'encarregado']}>{element}</ExperienceGate>
 
 export const router = createBrowserRouter([
   { path: '/entrar', element: publicOnly(<LoginPage />) },
@@ -70,7 +76,17 @@ export const router = createBrowserRouter([
             errorElement: <RouteError />,
             children: [
               { index: true, element: gestor(<ManagerHome />) },
-              { path: 'encarregado', element: encarregado(<ForemanHome />) },
+              { path: 'encarregado', element: encarregado(<ForemanHomePage />) },
+              { path: 'encarregado/problemas', element: encarregado(<ForemanIssuesPage />) },
+              { path: 'trabalhadores', element: both(<WorkersPage />) },
+              { path: 'trabalhadores/:id', element: both(<WorkerDetailPage />) },
+              { path: 'equipas', element: both(<TeamsPage />) },
+              { path: 'equipas/:id', element: both(<TeamDetailPage />) },
+              { path: 'obras', element: both(<SitesPage />) },
+              { path: 'obras/nova', element: gestor(<NewSitePage />) },
+              { path: 'obras/clientes', element: gestor(<ClientsPage />) },
+              { path: 'obras/:id', element: both(<SiteDetailPage />) },
+              { path: 'mapa', element: gestor(<GeoMapPage />) },
               ...MODULES.map((m) => ({
                 path: m.path.slice(1),
                 element: (m.path.startsWith('/encarregado') ? encarregado : gestor)(<ModuleUnavailable label={m.label} phase={m.phase} />),

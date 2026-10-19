@@ -64,6 +64,34 @@ Implementado na íntegra (F1 concluída). Todas as rotas `/api/orgs/{orgId}/…`
 
 Só OWNER pode atribuir ou retirar OWNER/ADMIN. O último OWNER ativo não pode ser despromovido nem desativado.
 
-## F2–F6 (planeado)
+## F2 — Trabalhadores, equipas, obras, clientes e ocorrências
+
+Todas sob `/api/orgs/{orgId}`. Gestor = OWNER, ADMIN ou MANAGER. O encarregado tem leitura limitada ao seu âmbito; o trabalhador só a sua ficha.
+
+| Método | Caminho | Quem | Descrição |
+|---|---|---|---|
+| GET | `/employees?q&status&team&category&archived&page&size` | todos (âmbito) | Página `{items, page, size, total}`; `team=none` para sem equipa |
+| GET | `/employees/{id}` | todos (âmbito) | Ficha; `restricted: true` e campos pessoais/custo a `null` para encarregados |
+| POST · PATCH | `/employees` · `/employees/{id}` | gestor | `{number?, fullName, category, phone, email, nationality, homeCity, hireDate, status, dailyCapacityMin, hourlyCost, skills[], sizes{}, notes, version}`; 409 `number-taken`, `stale` |
+| POST | `/employees/{id}/archive` · `/restore` | gestor | Arquivar sai das equipas a partir de hoje; 409 `employee-is-foreman` |
+| GET | `/employees/{id}/teams` | todos (âmbito) | Percurso em equipas |
+| GET · POST · DELETE | `/employees/{id}/contracts[/{contractId}]` | gestor | 409 `overlap` |
+| GET | `/teams?archived` · `/teams/{id}` | gestor, encarregado (as suas) | Membros atuais e composição ao longo do tempo |
+| POST · PATCH | `/teams` · `/teams/{id}` | gestor | `{name, color, foremanEmployeeId, version}`; 409 `name-taken` |
+| POST | `/teams/{id}/members` | gestor | `{employeeId, joinedOn}` (hoje ou futuro; 400 `past-date`) |
+| POST | `/teams/{id}/members/{employeeId}/leave` | gestor | `{lastDay}` |
+| POST | `/teams/{id}/archive` | gestor | |
+| GET | `/sites?q&status&country&archived` · `/sites/{id}` | gestor, encarregado (as suas) | Inclui `metrics` em minutos e `includesTimeEntries` |
+| GET | `/sites/next-code` | gestor | Próximo código `OB-AA-NNN` |
+| POST · PATCH | `/sites` · `/sites/{id}` | gestor | Substituição completa com `version`; 409 `code-taken`; 400 `invalid-timezone`, `invalid-director` |
+| POST | `/sites/{id}/archive` · `/restore` | gestor | |
+| GET · POST | `/sites/{id}/issues` | encarregado+ (âmbito) | `{category: SAFETY|MATERIAL|EQUIPMENT|ACCESS|OTHER, description}` |
+| GET | `/issues?status` | encarregado+ (âmbito) | |
+| POST | `/issues/{id}/resolve` | encarregado+ (âmbito) | `{note}`; 409 `already-resolved` |
+| GET · POST · PATCH | `/clients` · `/clients/{id}` | gestor | 409 `tax-id-taken` |
+| PUT | `/members/{membershipId}/employee` | ADMIN+ | `{employeeId | null}`; 409 `employee-linked` |
+| GET | `/audit?entityType&entityId` | gestor | Histórico de um registo |
+
+## F3–F6 (planeado)
 
 Ver `docs/backend/arquitetura.md` (Ecrã → API) e o plano aprovado. Cada fase acrescenta aqui a sua tabela quando é implementada.

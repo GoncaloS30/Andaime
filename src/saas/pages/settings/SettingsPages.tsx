@@ -27,6 +27,7 @@ import {
 } from '../../api/hooks'
 import { errorMessage, isApiError } from '../../api/http'
 import { atLeast, ORG_ROLE_LABEL, type Member, type Organization, type OrgRole } from '../../api/types'
+import { useEmployeeOptions, useLinkEmployee } from '../../api/workforce'
 import { useActiveOrg, useSession } from '../../session'
 import { EMAIL_PATTERN, FormError, passwordProblem } from '../auth/AuthLayout'
 import { TIMEZONES } from '../auth/OnboardingPages'
@@ -236,7 +237,7 @@ function InviteDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
           )}
         </Field>
         {role === 'WORKER' && (
-          <p className="text-xs text-ink-3">A ligação da conta à ficha do trabalhador fica disponível quando os trabalhadores estiverem ligados ao servidor (fase F2).</p>
+          <p className="text-xs text-ink-3">Depois de a pessoa aceitar, ligue a conta à ficha de trabalhador nesta página.</p>
         )}
       </form>
     </Dialog>
@@ -281,6 +282,39 @@ function RoleSelect({ member, actorRole, orgId }: { member: Member; actorRole: O
   )
 }
 
+/** Liga a conta à ficha de trabalhador: dá ao encarregado as suas equipas e ao trabalhador os seus dados. */
+function EmployeeLink({ member, orgId }: { member: Member; orgId: string }) {
+  const options = useEmployeeOptions(orgId)
+  const link = useLinkEmployee(orgId)
+  return (
+    <Select
+      aria-label={`Ficha de trabalhador de ${member.displayName}`}
+      value={member.employeeId ?? ''}
+      disabled={link.isPending}
+      className="h-8 min-w-44 text-sm"
+      onChange={(e) =>
+        link.mutate(
+          { membershipId: member.id, employeeId: e.target.value || null },
+          {
+            onSuccess: () => toast.success(e.target.value ? 'Conta ligada à ficha de trabalhador' : 'Ligação removida'),
+            onError: (error) => toast.error(isApiError(error, 'employee-linked') ? 'Essa ficha já está ligada a outra conta.' : errorMessage(error)),
+          },
+        )
+      }
+    >
+      <option value="">Sem ficha ligada</option>
+      {member.employeeId && !options.data?.items.some((e) => e.id === member.employeeId) && (
+        <option value={member.employeeId}>{member.employeeName}</option>
+      )}
+      {options.data?.items.map((e) => (
+        <option key={e.id} value={e.id}>
+          {e.fullName} · n.º {e.number}
+        </option>
+      ))}
+    </Select>
+  )
+}
+
 function MembersPanel() {
   const org = useActiveOrg()
   const { me } = useSession()
@@ -306,6 +340,8 @@ function MembersPanel() {
                 </p>
                 <p className="truncate text-sm text-ink-3">{m.email}</p>
               </div>
+              {m.status === 'ACTIVE' && canManage && (m.role === 'FOREMAN' || m.role === 'WORKER') && <EmployeeLink member={m} orgId={org.id} />}
+              {m.status === 'ACTIVE' && !canManage && m.employeeName && <span className="text-xs text-ink-3">Ficha: {m.employeeName}</span>}
               {m.status !== 'ACTIVE' ? (
                 <Badge tone="neutral">Sem acesso</Badge>
               ) : (
