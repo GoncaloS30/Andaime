@@ -24,3 +24,21 @@
 - As fotos de banco são ilustrativas (Pexels); as pessoas não correspondem aos nomes fictícios.
 - **Desempenho em telemóvel** (Lighthouse, 4G lento simulado + CPU 4×): primeira pintura ≈ 2,2 s (ecrã de arranque estático), mas a página interativa demora ≈ 4 s e o planeamento e a ficha da obra têm 300–1150 ms de bloqueio (pontuação 61–83, variável entre execuções). A semente e a store correm no arranque, no navegador; com backend real os dados chegariam por página. Em desktop: 98–99.
 - Testado em Microsoft Edge (Chromium) desktop, tablet e emulação de telemóvel; não testado em Safari/iOS real nem com leitores de ecrã reais (NVDA/VoiceOver).
+
+## V3.1 (funcionalidades do Lyrical e fotos)
+- **Integrações simuladas.** O Google Calendar e o OneDrive não ligam a nenhuma conta, nunca pedem credenciais e não enviam nada. "Ligar" acrescenta eventos de exemplo à Agenda; "sincronizar" regista localmente o que seria enviado (férias aprovadas, livro do RH do mês). Repetir não duplica.
+- **Livro de horas do RH:** segue o formato das folhas por pessoa do Lyrical (Data, Horas, Obra, Atividade, Ordem) com a coluna Ausência acrescentada no fim. A fórmula de atividade usa `WEEKDAY` e a folha "Tabelas" e não trata feriados.
+- **Dormidas:** "longe de casa" quer dizer outro país ou mais de 100 km entre a cidade de residência e a obra, numa linha reta calculada a partir de uma tabela de cidades. Uma cidade que não está na tabela fica "desconhecido". Não há reservas reais, preços nem disponibilidade de hotéis.
+- **Diário de obra:**
+  - no máximo 20 fotos por registo;
+  - a exportação Word é um `.docx` gerado no navegador, com as fotos convertidas de WebP para JPEG a 7 cm de largura. Abre no Word e no LibreOffice, mas não foi testada no Pages.
+- **Mapa de férias:** conta os dias úteis de segunda a sexta, sem feriados nacionais nem municipais.
+- **Folha de entrega de EPI:**
+  - a impressão usa uma página A4 vertical própria (`@page folha`), que o Chromium e o Edge respeitam; o Safari e o Firefox podem usar a orientação da impressora;
+  - a assinatura é feita em papel, sem assinatura digital.
+- **Cópia da demonstração:**
+  - o JSON só se importa na mesma versão dos dados;
+  - importar substitui tudo, sem juntar com o que já existe;
+  - as fotos carregadas vão dentro do ficheiro só se se escolher, em base64, que ocupa mais cerca de 37 %;
+  - não há encriptação: o ficheiro tem todos os dados da demonstração, que são fictícios.
+- **Fotos de banco:** 100 fotos do Pexels (créditos em Definições → Créditos das fotos e em `public/fotos/CREDITOS.md`). Ocupam cerca de 8 MB em `public/fotos`, mas cada ecrã só descarrega os tamanhos de que precisa.

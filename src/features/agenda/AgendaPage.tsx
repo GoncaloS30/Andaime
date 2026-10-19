@@ -83,7 +83,7 @@ export function AgendaPage() {
                       type="button"
                       onClick={() => setDay(d)}
                       aria-label={`${dateLong(d)}: ${list.length} ${list.length === 1 ? 'marcação' : 'marcações'}`}
-                      className={cn('mb-0.5 self-start rounded-sm px-1 text-xs font-semibold tabular hover:bg-line-2', outside ? 'text-ink-4' : 'text-ink-2', d === today && 'bg-pinho text-white hover:bg-pinho')}
+                      className={cn('mb-0.5 self-start rounded-sm px-1 text-xs font-semibold tabular hover:bg-line-2', outside ? 'text-ink-3' : 'text-ink-2', d === today && 'bg-pinho text-white hover:bg-pinho')}
                     >
                       {Number(d.slice(8))}
                     </button>
@@ -141,9 +141,9 @@ function Chip({ item, day, onOpen, roomy }: { item: AgendaItem; day: string; onO
       )}
       style={{ borderLeftColor: startsHere ? item.color : undefined, background: `color-mix(in oklab, ${item.color} 14%, white)` }}
     >
-      {item.time && <span className="shrink-0 font-mono tabular text-ink-3">{item.time}</span>}
+      {item.time && <span className="shrink-0 font-mono tabular text-ink-2">{item.time}</span>}
       {showTitle ? <span className="truncate">{item.title}</span> : <span aria-hidden className="h-[1.1em]" />}
-      {roomy && item.start !== item.end && <span className="ml-auto shrink-0 text-xs text-ink-3">{dateShort(item.start)}–{dateShort(item.end)}</span>}
+      {roomy && item.start !== item.end && <span className="ml-auto shrink-0 text-xs text-ink-2">{dateShort(item.start)}–{dateShort(item.end)}</span>}
     </button>
   )
 }

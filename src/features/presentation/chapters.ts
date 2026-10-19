@@ -19,6 +19,8 @@ export interface Step {
   target?: string
   /** Mostra o telemóvel do trabalhador ao lado. */
   stage?: WorkerTab
+  /** Mostra o telemóvel do encarregado (diário) ao lado. */
+  foremanPhone?: boolean
   role: Role
 }
 
@@ -141,6 +143,27 @@ export const CHAPTERS: Chapter[] = [
       { role: 'gestor', title: 'O que está a falhar', narration: 'Documentos expirados, a expirar, em falta ou por verificar — com o motivo de cada exigência.', run: ({ navigate }) => navigate('/documentos') },
       { role: 'gestor', title: 'O A1 a expirar', narration: 'Este trabalhador vai para França sem A1 válido. O planeamento já o assinala.', target: 'save-document', run: ({ navigate }) => { const t = scenario.documentTarget(); navigate(t ? `/trabalhadores/${t.workerId}?tab=documentos&doc=dt-a1` : '/documentos') } },
       { role: 'gestor', title: 'Renovado', narration: 'Nova versão válida por dois anos. O conflito desaparece e o dashboard tem menos um documento a tratar.', target: 'kpi-documents', run: ({ navigate }) => { scenario.documentRenewed(); navigate('/') } },
+    ],
+  },
+  {
+    id: 'dormidas',
+    title: '10 · Dormidas da semana',
+    summary: 'Quem dorme fora sai da escala; marca-se o hotel e o trabalhador vê no telemóvel onde dorme.',
+    steps: [
+      { role: 'gestor', title: 'Quem dorme fora', narration: 'A lista sai da escala da semana: datas propostas, noites e os hotéis de cada obra. "Longe de casa" é outro país ou mais de 100 km da residência.', target: 'stays-board', run: ({ navigate }) => navigate('/dormidas') },
+      { role: 'gestor', stage: 'hoje', title: 'Hotel marcado', narration: 'Marcado o hotel, a estadia fica na ficha da pessoa e o trabalhador vê no telemóvel onde dorme, com a morada e as noites. Se a escala mudar, a estadia passa a "sem escala".', run: ({ navigate }) => { const r = scenario.stay(); navigate(r ? `/trabalhadores/${r.workerId}?tab=alojamento` : '/dormidas') } },
+      { role: 'gestor', title: 'E no centro de operações', narration: 'O dashboard resume quem dorme fora esta semana e o que falta marcar.', target: 'lodging-panel', run: ({ navigate }) => { scenario.stay(); navigate('/') } },
+    ],
+  },
+  {
+    id: 'diario',
+    title: '11 · Diário de obra com fotos',
+    summary: 'O encarregado regista o dia com fotos no telemóvel; o escritório vê-o no momento e exporta para Word.',
+    steps: [
+      { role: 'encarregado', title: 'O diário no telemóvel', narration: 'O encarregado regista o que se fez no dia, com fotos tiradas na hora.', target: 'diary-new', run: ({ navigate }) => navigate('/encarregado/diario') },
+      { role: 'gestor', foremanPhone: true, title: 'Chega ao escritório', narration: 'Duas fotos e duas linhas sobre a descofragem. O gestor, na ficha da obra, vê o registo no momento em que é escrito.', target: 'diary-new', run: ({ navigate }) => { scenario.diaryEntry(); scenario.role('gestor'); navigate(`/obras/${scenario.foremanSite()}?tab=diario`) } },
+      { role: 'gestor', title: 'No centro de operações', narration: 'Os últimos registos de todas as obras, com a primeira foto de cada um.', target: 'latest-diary', run: ({ navigate }) => { scenario.diaryEntry(); scenario.role('gestor'); navigate('/') } },
+      { role: 'gestor', title: 'Para o dono de obra', narration: 'O diário do mês sai em Word, em A4 e com as fotos sem deformar, pronto a enviar. Também há Excel.', target: 'diary-export', run: ({ navigate }) => { scenario.diaryEntry(); scenario.role('gestor'); navigate(`/obras/${scenario.foremanSite()}?tab=diario`) } },
     ],
   },
 ]

@@ -2,6 +2,9 @@
  * Pré-requisitos idempotentes do guião (padrão "jump" do Mesa):
  * cada função garante um estado e pode ser chamada várias vezes sem duplicar nada.
  */
+import { PHOTOS } from '@/data/seed/photoManifest'
+import type { PhotoRef } from '@/domain/photos'
+import { stayBoard } from '@/domain/stays'
 import type { ID, Role } from '@/domain/types'
 import { addDays, weekStart } from '@/domain/weeks'
 import { selectConflicts } from '@/store/selectors'
@@ -10,6 +13,8 @@ import { demoStore } from '@/store/store'
 const S = () => demoStore.getState()
 export const DEMO_SITE_NAME = 'Armazém Maia Norte'
 const ABSENCE_REASON = 'Pedido feito durante a apresentação'
+const STAY_NOTE = 'Marcado durante a apresentação'
+const DIARY_TITLE = 'Descofragem da laje do piso 3'
 let docTargetCache: { seededAt: string; value: { workerId: ID; docId: ID } } | null = null
 
 export const scenario = {
@@ -131,6 +136,44 @@ export const scenario = {
     const mon = scenario.nextMonday()
     const done = Object.values(S().db.assignments).some((a) => a.workerId === wid && a.siteId === 's3' && a.date === mon)
     if (!done) S().transferWorker({ workerId: wid, siteId: 's3', from: mon, to: addDays(mon, 4), permanent: false })
+  },
+
+  /** Quem dorme fora esta semana: a persona da app, se estiver longe de casa (para se ver no telemóvel); senão, o primeiro. */
+  stayTarget() {
+    const rows = stayBoard(S().db, weekStart(S().session.today)).filter((r) => r.away === 'longe')
+    return rows.find((r) => r.workerId === scenario.persona()) ?? rows[0]
+  },
+
+  /** Estadia marcada para essa pessoa, num hotel da obra (cria um se a obra ainda não tiver). */
+  stay() {
+    const row = scenario.stayTarget()
+    if (!row || row.stay?.hotelId) return row
+    scenario.role('gestor')
+    const hotelId =
+      row.hotels[0]?.id ??
+      S().createHotel({ siteId: row.siteId, name: 'Hotel Tejo Nascente', address: 'Av. do Mar Vermelho 4, Lisboa', contact: '+351 210 000 314', notes: 'Pequeno-almoço às 6h30 para as equipas.' })
+    S().markStay({ workerId: row.workerId, siteId: row.siteId, week: weekStart(S().session.today), hotelId, checkIn: row.proposed.checkIn, checkOut: row.proposed.checkOut, notes: STAY_NOTE })
+    return row
+  },
+
+  /** Obra do encarregado da apresentação (onde escreve o diário). */
+  foremanSite(): ID {
+    const fid = S().session.personas.encarregado
+    return Object.values(S().db.sites).find((x) => x.foremanId === fid && x.status === 'em_curso')?.id ?? 's1'
+  },
+
+  /** O registo de hoje no diário, escrito pelo encarregado com duas fotos. */
+  diaryEntry(): ID {
+    const siteId = scenario.foremanSite()
+    const today = S().session.today
+    const found = Object.values(S().db.diary).find((d) => d.siteId === siteId && d.date === today && d.title === DIARY_TITLE)
+    if (found) return found.id
+    const photos: PhotoRef[] = ['d04', 'd05']
+      .map((id) => PHOTOS.diario.find((p) => p.id === id))
+      .filter((p) => p !== undefined)
+      .map((p, k) => ({ kind: 'banco', src: p.src, credit: p.credit, alt: `${DIARY_TITLE} — foto ${k + 1}`, w: p.w, h: p.h }))
+    scenario.role('encarregado')
+    return S().createDiaryEntry({ siteId, date: today, title: DIARY_TITLE, text: 'Laje descofrada sem fissuras visíveis. Escoramento mantém-se mais 7 dias.\nCofragem limpa e arrumada para o piso 4.', photos })
   },
 
   vehicleSwap() {

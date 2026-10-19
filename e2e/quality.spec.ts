@@ -16,6 +16,12 @@ const PAGES: { path: string; role: 'gestor' | 'encarregado' | 'trabalhador'; nam
   { path: '/trabalhadores/w-0001', role: 'gestor', name: 'trabalhador' },
   { path: '/viaturas/v11', role: 'gestor', name: 'viatura' },
   { path: '/equipas', role: 'gestor', name: 'equipas' },
+  // V3.1
+  { path: '/obras/s1?tab=diario', role: 'gestor', name: 'diario' },
+  { path: '/dormidas', role: 'gestor', name: 'dormidas' },
+  { path: '/agenda', role: 'gestor', name: 'agenda' },
+  { path: '/horas?vista=grelha', role: 'gestor', name: 'horas-grelha' },
+  { path: '/definicoes', role: 'gestor', name: 'definicoes' },
 ]
 
 test.describe('@quality', () => {

@@ -2,7 +2,9 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-PT/1.1.0/); versões em [SemVer](https://semver.org/lang/pt-BR/).
 
-## [Por publicar] — V3.1
+## [Por publicar]
+
+## [3.1.0] — 2026-10-19
 
 Funcionalidades do Lyrical Design e fotos (spec `docs/superpowers/specs/2026-10-16-andaime-lyrical-fotos-design.md`).
 
@@ -51,12 +53,16 @@ Funcionalidades do Lyrical Design e fotos (spec `docs/superpowers/specs/2026-10-
   - Definições → Cópia da demonstração: exportar para JSON (com as fotos carregadas, opcional, com o tamanho estimado) e importar com validação da versão e confirmação;
   - página "Créditos das fotos" com autor, licença e ligação ao original de cada foto;
   - fluxos 16 e 17 com testes de domínio, store, Excel lido de volta e E2E.
+- **Modo apresentação** (bloco 7): capítulos "10 · Dormidas da semana" (hotel marcado e "Onde durmo" no telemóvel do trabalhador) e "11 · Diário de obra com fotos" (palco dividido com o telemóvel do encarregado e a ficha da obra ao lado).
+- Auditoria de acessibilidade (axe) e quality gate alargados às rotas novas: diário, alojamento, dormidas, agenda, mapa do ano, totais, grelha, livro do RH, definições e créditos.
 - Repositório configurado para trabalho em equipa: CI, Dependabot, CODEOWNERS, modelos de issue e PR, licença e guia de contribuição.
 
 ### Alterado
 - Lista de obras em cartões (a tabela continua disponível). No telemóvel, linha compacta com miniatura.
 
 ### Corrigido
+- Guião: realçar um painel mais alto do que o ecrã deslocava a página inteira.
+- Ficha da obra: os números da caixa Horas sobrepunham-se quando o palco dividido estreitava o conteúdo.
 - CLS no planeamento: os filtros saltavam de linha com a troca de fonte.
 - Scroll horizontal na ficha da viatura em ecrãs estreitos.
 - Horas sobrepostas na tira da semana da ficha do trabalhador (360–390 px).

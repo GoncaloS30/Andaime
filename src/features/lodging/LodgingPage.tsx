@@ -88,6 +88,7 @@ export function LodgingPage() {
 
         <Panel
           title="Quem está em obra"
+          tour="stays-board"
           description="Uma linha por pessoa e obra escalada. As datas vêm propostas pela escala; ajuste e marque."
           actions={
             <label className="flex items-center gap-2 text-sm">

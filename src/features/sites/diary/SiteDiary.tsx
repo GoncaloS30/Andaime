@@ -64,7 +64,7 @@ export function SiteDiary({ site, camera }: { site: Site; camera?: boolean }) {
           <Input id={`dq-${site.id}`} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Procurar (ex.: betonagem)" className="w-56 pl-8" />
         </div>
         <div className="ml-auto flex flex-wrap gap-2">
-          <Button size="sm" icon={<FileText className="size-3.5" />} loading={exporting === 'word'} disabled={!list.length} onClick={() => void doExport('word')}>Word</Button>
+          <Button size="sm" icon={<FileText className="size-3.5" />} loading={exporting === 'word'} disabled={!list.length} onClick={() => void doExport('word')} data-tour="diary-export">Word</Button>
           <Button size="sm" icon={<Sheet className="size-3.5" />} loading={exporting === 'excel'} disabled={!list.length} onClick={() => void doExport('excel')}>Excel</Button>
           <Button size="sm" variant="primary" icon={<Plus className="size-3.5" />} onClick={() => setEditing('novo')} data-tour="diary-new">Novo registo</Button>
         </div>
