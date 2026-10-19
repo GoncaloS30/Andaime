@@ -50,3 +50,46 @@ export async function apiPost<T>(page: Page, path: string, body: unknown): Promi
   expect(response.ok(), `${path}: ${response.status()} ${await response.text()}`).toBeTruthy()
   return (await response.json()) as T
 }
+
+/** Último link com token enviado para um endereço (Mailpit), ex.: '/convite' ou '/verificar-email'. */
+export async function linkFromMail(page: Page, to: string, path: string): Promise<string> {
+  let token: string | undefined
+  await expect
+    .poll(async () => {
+      const search = await page.request.get(`${MAILPIT}/api/v1/search?query=${encodeURIComponent(`to:"${to}"`)}`)
+      const { messages } = (await search.json()) as { messages: { ID: string }[] }
+      for (const { ID } of messages) {
+        const { Text } = (await (await page.request.get(`${MAILPIT}/api/v1/message/${ID}`)).json()) as { Text: string }
+        token = new RegExp(`${path}[?/](?:token=)?([A-Za-z0-9_-]{20,})`).exec(Text)?.[1]
+        if (token) return token
+      }
+      return undefined
+    })
+    .toBeTruthy()
+  return token!
+}
+
+/** Conta nova que aceita um convite e entra (noutro contexto do navegador). */
+export async function acceptInvitation(page: Page, name: string, email: string) {
+  await page.goto('/registar')
+  await page.getByLabel('Nome').fill(name)
+  await page.getByLabel('Email').fill(email)
+  await page.getByLabel('Palavra-passe').fill(PASSWORD)
+  await page.getByRole('button', { name: 'Criar conta' }).click()
+  await page.goto(`/verificar-email?token=${await linkFromMail(page, email, '/verificar-email')}`)
+  await expect(page.getByText('Email confirmado')).toBeVisible()
+  await page.goto(`/convite/${await linkFromMail(page, email, '/convite')}`)
+  await page.getByRole('link', { name: 'Entrar para aceitar' }).click()
+  await page.getByLabel('Email').fill(email)
+  await page.getByLabel('Palavra-passe').fill(PASSWORD)
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click()
+  await page.getByRole('button', { name: 'Aceitar convite' }).click()
+}
+
+export async function apiPut<T>(page: Page, path: string, body: unknown): Promise<T> {
+  const cookies = await page.context().cookies()
+  const xsrf = cookies.find((c) => c.name === 'XSRF-TOKEN')?.value ?? ''
+  const response = await page.request.put(`/api${path}`, { data: body, headers: { 'X-XSRF-TOKEN': decodeURIComponent(xsrf) } })
+  expect(response.ok(), `${path}: ${response.status()} ${await response.text()}`).toBeTruthy()
+  return (await response.json()) as T
+}

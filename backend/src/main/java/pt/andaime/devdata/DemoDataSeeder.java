@@ -38,6 +38,9 @@ import pt.andaime.sites.application.ClientService;
 import pt.andaime.sites.application.SiteService;
 import pt.andaime.sites.application.SiteViews.ClientInput;
 import pt.andaime.sites.application.SiteViews.SiteInput;
+import pt.andaime.timekeeping.application.TimeEntryService;
+import pt.andaime.timekeeping.application.TimekeepingViews.ManualEntry;
+import pt.andaime.timekeeping.application.TimesheetService;
 import pt.andaime.workforce.application.EmployeeService;
 import pt.andaime.workforce.application.TeamService;
 import pt.andaime.workforce.application.WorkforceViews.EmployeeInput;
@@ -124,11 +127,13 @@ class DemoDataSeeder implements ApplicationRunner {
     private final SiteService sites;
     private final VehicleService vehicles;
     private final PlanningService planning;
+    private final TimeEntryService timeEntries;
+    private final TimesheetService timesheets;
 
     DemoDataSeeder(Environment environment, JdbcTemplate jdbcTemplate, PasswordEncoder passwordEncoder,
             PlatformTransactionManager transactionManager, Ids ids, Clock clock, OrganizationService organizations,
             EmployeeService employees, TeamService teams, ClientService clients, SiteService sites,
-            VehicleService vehicles, PlanningService planning) {
+            VehicleService vehicles, PlanningService planning, TimeEntryService timeEntries, TimesheetService timesheets) {
         this.environment = environment;
         this.jdbcTemplate = jdbcTemplate;
         this.passwordEncoder = passwordEncoder;
@@ -142,6 +147,8 @@ class DemoDataSeeder implements ApplicationRunner {
         this.sites = sites;
         this.vehicles = vehicles;
         this.planning = planning;
+        this.timeEntries = timeEntries;
+        this.timesheets = timesheets;
     }
 
     @Override
@@ -267,6 +274,31 @@ class DemoDataSeeder implements ApplicationRunner {
             planning.execute(new Command("SCHEDULE", null, null, command.employeeIds(), site, null, command.from(),
                     command.to(), command.weekdays(), command.start(), command.end(), null, null, null, null,
                     command.foremanEmployeeId(), null, null, null, null, warnings), false);
+        }
+
+        // Semana passada com horas registadas: quase todas aprovadas, uma equipa submetida e outra por submeter.
+        var lastMonday = monday.minusDays(7);
+        int index = 0;
+        for (var team : TEAMS) {
+            var site = siteIds.get(team.name());
+            if (site == null) {
+                continue;
+            }
+            for (var member : teamMembers.get(team.name())) {
+                for (int day = 0; day < 5; day++) {
+                    var late = random.nextInt(5) == 0;
+                    timeEntries.create(new ManualEntry(member, site, lastMonday.plusDays(day), LocalTime.of(8, 0),
+                            late ? LocalTime.of(18, 30) : LocalTime.of(17, 0), null, null, "Registo de demonstração"));
+                }
+                if (index == 0) {
+                    continue;
+                }
+                timesheets.transition(member, lastMonday, "submit", null, null);
+                if (index > 1) {
+                    timesheets.transition(member, lastMonday, "approve", null, null);
+                }
+            }
+            index++;
         }
     }
 

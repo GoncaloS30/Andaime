@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import org.slf4j.MDC;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.UncategorizedSQLException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.http.HttpHeaders;
@@ -68,6 +69,16 @@ final class ApiExceptionHandler {
             case "23503" -> problem(HttpStatus.NOT_FOUND, "not-found", "Um dos registos indicados não existe.");
             default -> problem(HttpStatus.BAD_REQUEST, "invalid-data", "Os dados não respeitam as regras da aplicação.");
         };
+    }
+
+    /** Regras de negócio garantidas por trigger, com SQLSTATE próprio (classe AN). */
+    @ExceptionHandler(UncategorizedSQLException.class)
+    ProblemDetail handleBusinessRule(UncategorizedSQLException exception) {
+        if ("AN001".equals(sqlState(exception))) {
+            return problem(HttpStatus.CONFLICT, "timesheet-locked",
+                    "A semana já foi aprovada. Para corrigir, o gestor tem de reabrir a folha de horas.");
+        }
+        throw exception;
     }
 
     private static String sqlState(Throwable exception) {

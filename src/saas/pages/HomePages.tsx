@@ -1,4 +1,4 @@
-import { CheckCircle2, Circle, LogOut, PlugZap, SearchX, UsersRound } from 'lucide-react'
+import { CheckCircle2, Circle, LogOut, PlugZap, SearchX } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { Wordmark } from '@/app/shell/Logo'
@@ -10,13 +10,13 @@ import { useLogout, useMembers } from '../api/hooks'
 import { atLeast, ORG_ROLE_LABEL } from '../api/types'
 import { useEmployees, useSites, useTeams } from '../api/workforce'
 import { useActiveOrg, useSession } from '../session'
+import { WorkerClock } from './timekeeping/WorkerClock'
 
 /**
  * Estado real da ligação de cada módulo ao servidor. Enquanto um módulo não estiver ligado,
  * o ecrã diz isso mesmo, em vez de mostrar dados fictícios.
  */
 export const MODULES: { path: string; label: string; phase: string }[] = [
-  { path: '/horas', label: 'Horas e aprovações', phase: 'F4' },
   { path: '/ausencias', label: 'Ausências', phase: 'F5' },
   { path: '/agenda', label: 'Agenda', phase: 'F5' },
   { path: '/documentos', label: 'Documentos', phase: 'F5' },
@@ -24,7 +24,6 @@ export const MODULES: { path: string; label: string; phase: string }[] = [
   { path: '/mapas', label: 'Mapas semanais', phase: 'F6' },
   { path: '/relatorios', label: 'Relatórios', phase: 'F6' },
   { path: '/dormidas', label: 'Dormidas', phase: 'depois de F6' },
-  { path: '/encarregado/horas', label: 'Horas da equipa', phase: 'F4' },
   { path: '/encarregado/diario', label: 'Diário de obra', phase: 'depois de F6' },
   { path: '/encarregado/documentos', label: 'Documentação', phase: 'F5' },
 ]
@@ -182,11 +181,7 @@ export function WorkerHome() {
           <p className="text-sm text-ink-3">{org.name}</p>
           <h1 className="font-expanded text-xl font-semibold text-ink">Olá, {me.user.displayName.split(' ')[0]}</h1>
         </div>
-        <Panel>
-          <EmptyState icon={<UsersRound />} title="Ainda não há nada para registar">
-            Picar o ponto, ver as escalas e pedir ausências ficam disponíveis quando o registo de horas estiver ligado ao servidor (fase F4).
-          </EmptyState>
-        </Panel>
+        <WorkerClock />
         <Link to="/definicoes/conta" className={buttonStyles('secondary')}>
           A minha conta
         </Link>

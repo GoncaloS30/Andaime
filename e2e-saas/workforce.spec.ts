@@ -84,7 +84,7 @@ test('registar trabalhadores, formar uma equipa e criar uma obra com encarregado
   await page.getByRole('button', { name: 'Criar obra' }).click()
   await expect(page.getByRole('heading', { name: 'Edifício E2E' })).toBeVisible()
   await expect(page.getByText('Atenção · 90 %')).toBeVisible()
-  await expect(page.getByText('Inclui só as horas importadas')).toBeVisible()
+  await expect(page.getByText('Inclui só as horas importadas')).toHaveCount(0)
 
   // Persistido no servidor: aparece após recarregar e o percurso em equipas da trabalhadora tem a equipa.
   await page.reload()
