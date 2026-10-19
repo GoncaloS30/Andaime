@@ -8,7 +8,7 @@ export type Severity = 'BLOCK' | 'WARN' | 'OFF'
 export interface Fix {
   id: string
   label: string
-  kind: 'REMOVE_ASSIGNMENTS' | 'SET_VEHICLE' | 'SET_FOREMAN' | 'OPEN_SITE'
+  kind: 'REMOVE_ASSIGNMENTS' | 'SET_VEHICLE' | 'SET_FOREMAN' | 'OPEN_SITE' | 'OPEN_DOCUMENTS'
   params: Record<string, unknown>
 }
 

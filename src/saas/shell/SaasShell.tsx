@@ -7,6 +7,7 @@ import { LogoMark, Wordmark } from '@/app/shell/Logo'
 import { cn } from '@/lib/cn'
 import { Avatar } from '@/ui/Avatar'
 import { Menu } from '@/ui/Menu'
+import { NotificationBell } from './NotificationBell'
 import { Drawer } from '@/ui/Overlay'
 import { SkeletonRows } from '@/ui/States'
 import { useLogout, useSelectOrganization } from '../api/hooks'
@@ -189,6 +190,7 @@ function Topbar() {
         <OrganizationSwitcher />
       </div>
       <div className="ml-auto flex shrink-0 items-center gap-1.5">
+        <NotificationBell />
         <UserMenu />
       </div>
     </header>

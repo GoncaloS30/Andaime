@@ -28,6 +28,20 @@ services:
       - "58035:8025"
     restart: unless-stopped
 
+  # Armazenamento de objetos compatível com S3 para documentos (só desenvolvimento; em produção, qualquer S3).
+  # As imagens públicas do MinIO deixaram de ser publicadas; o SeaweedFS é open source e fala a mesma API.
+  objectstore:
+    image: chrislusf/seaweedfs:4.48
+    container_name: andaime-objectstore
+    # Credenciais só de desenvolvimento local (as mesmas valores por omissão de application.yml).
+    command: server -s3 -dir=/data -s3.config=/etc/seaweedfs/s3.json
+    ports:
+      - "59010:8333"
+    volumes:
+      - andaime-objectstore-data:/data
+      - ./objectstore/s3.json:/etc/seaweedfs/s3.json:ro
+    restart: unless-stopped
+
   backend:
     build:
       context: ../backend
@@ -41,6 +55,7 @@ services:
       ANDAIME_DATABASE_PASSWORD: ${ANDAIME_DATABASE_PASSWORD:-andaime_app_local}
       ANDAIME_MAIL_HOST: mailpit
       ANDAIME_MAIL_PORT: 1025
+      ANDAIME_STORAGE_ENDPOINT: http://objectstore:8333
     ports:
       - "8088:8088"
     depends_on:
@@ -48,7 +63,10 @@ services:
         condition: service_healthy
       mailpit:
         condition: service_started
+      objectstore:
+        condition: service_started
     restart: unless-stopped
 
 volumes:
   andaime-postgres-data:
+  andaime-objectstore-data:

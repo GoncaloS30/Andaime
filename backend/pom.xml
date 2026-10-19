@@ -21,6 +21,8 @@
 		<spring-modulith.version>2.1.1</spring-modulith.version>
 		<springdoc.version>3.1.0</springdoc.version>
 		<bouncycastle.version>1.86</bouncycastle.version>
+		<awssdk.version>2.56.0</awssdk.version>
+		<tika.version>4.1.0</tika.version>
 	</properties>
 
 	<dependencies>
@@ -72,6 +74,31 @@
 		<dependency>
 			<groupId>org.springframework.modulith</groupId>
 			<artifactId>spring-modulith-starter-jpa</artifactId>
+		</dependency>
+		<!-- Armazenamento de documentos compatível com S3 (SeaweedFS em desenvolvimento e testes) -->
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>s3</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>software.amazon.awssdk</groupId>
+					<artifactId>netty-nio-client</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>software.amazon.awssdk</groupId>
+					<artifactId>apache-client</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>url-connection-client</artifactId>
+		</dependency>
+		<!-- Deteção do tipo real dos ficheiros carregados (não confia na extensão nem no navegador) -->
+		<dependency>
+			<groupId>org.apache.tika</groupId>
+			<artifactId>tika-core</artifactId>
+			<version>${tika.version}</version>
 		</dependency>
 		<!-- Argon2id (Spring Security usa a implementação da Bouncy Castle) -->
 		<dependency>
@@ -129,6 +156,13 @@
 				<groupId>org.springframework.modulith</groupId>
 				<artifactId>spring-modulith-bom</artifactId>
 				<version>${spring-modulith.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>software.amazon.awssdk</groupId>
+				<artifactId>bom</artifactId>
+				<version>${awssdk.version}</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>

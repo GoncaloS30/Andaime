@@ -10,7 +10,10 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.postgresql.PostgreSQLContainer;
+import org.testcontainers.utility.MountableFile;
 
 import pt.andaime.identity.application.IdentityMailGateway;
 import pt.andaime.organization.application.OrganizationMailGateway;
@@ -32,8 +35,17 @@ abstract class IntegrationTestSupport {
             .withPassword("postgres_local")
             .withInitScript("postgres-init.sql");
 
+    /** Armazenamento S3 real (SeaweedFS) para os documentos. */
+    @SuppressWarnings("resource")
+    static final GenericContainer<?> OBJECT_STORE = new GenericContainer<>("chrislusf/seaweedfs:4.48")
+            .withCommand("server", "-s3", "-dir=/data", "-s3.config=/etc/seaweedfs/s3.json")
+            .withCopyFileToContainer(MountableFile.forClasspathResource("objectstore-s3.json"), "/etc/seaweedfs/s3.json")
+            .withExposedPorts(8333)
+            .waitingFor(Wait.forLogMessage(".*Start Seaweed S3 API Server.*", 1).withStartupTimeout(java.time.Duration.ofMinutes(2)));
+
     static {
         POSTGRES.start();
+        OBJECT_STORE.start();
     }
 
     @MockitoBean
@@ -50,6 +62,7 @@ abstract class IntegrationTestSupport {
         registry.add("spring.flyway.url", POSTGRES::getJdbcUrl);
         registry.add("spring.flyway.user", () -> "andaime_owner");
         registry.add("spring.flyway.password", () -> "andaime_owner_local");
+        registry.add("andaime.storage.endpoint", () -> "http://" + OBJECT_STORE.getHost() + ":" + OBJECT_STORE.getMappedPort(8333));
     }
 
     static Connection ownerConnection() throws SQLException {

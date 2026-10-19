@@ -134,6 +134,9 @@ export function PlanningPage({ readOnlyView = false }: { readOnlyView?: boolean 
       case 'OPEN_SITE':
         navigate(`/obras/${fix.params.siteId as string}`)
         break
+      case 'OPEN_DOCUMENTS':
+        navigate(`/documentos?employeeId=${fix.params.employeeId as string}`)
+        break
     }
     void conflict
   }

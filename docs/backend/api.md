@@ -131,6 +131,29 @@ Todas sob `/api/orgs/{orgId}`. Instantes em ISO UTC; horas locais da obra; minut
 | GET | `/timesheets/{employeeId}/{week}` | todos (âmbito) | Dias com registos |
 | POST | `/timesheets/{employeeId}/{week}/{submit, approve, reject, reopen}` | submit: o próprio, encarregado ou gestor; restantes: gestor | `{note?, version?}`; reject e reopen exigem nota; 409 `invalid-transition`, `open-entries`, `stale` |
 
-## F5–F6 (planeado)
+## F5 — Documentos, ausências, equipamentos e notificações
+
+Todas sob `/api/orgs/{orgId}`.
+
+| Método | Caminho | Quem | Descrição |
+|---|---|---|---|
+| GET · POST · PATCH | `/document-types[/{id}]` | ver: todos; alterar: gestor | `{name, subject: EMPLOYEE, VEHICLE, requiresExpiry, alertDays}`; 409 `name-taken` |
+| PUT | `/document-types/{id}/requirements` | gestor | `{everywhere, countries[]}` |
+| GET | `/documents?employeeId&vehicleId&typeId&status&archived` | todos (âmbito) | Situação `VALID`, `EXPIRING`, `EXPIRED` |
+| POST | `/documents` (multipart) | trabalhador (o próprio), encarregado (equipa), gestor | `typeId, employeeId ou vehicleId, issuedOn?, expiresOn?, file`; 415 `file-type`; 413 `file-too-large` |
+| GET | `/documents/{id}` · `/documents/compliance?country` | âmbito · encarregado+ | Versões; conformidade por trabalhador |
+| GET | `/documents/{id}/versions/{versionId}/download` | âmbito | Ficheiro (`attachment`, `nosniff`, sem cache); auditado |
+| POST | `/documents/{id}/versions/{versionId}/verify` · `/documents/{id}/archive` | gestor | |
+| GET · POST | `/absences?from&to&status&employeeId` | âmbito | Pedido `{employeeId?, kind, startsOn, endsOn, partialMinutes?, note?}`; 409 `overlap` |
+| GET | `/absences/{id}/impact` | âmbito | Atribuições afetadas |
+| POST | `/absences/{id}/approve` | gestor | `{resolution: REMOVE, KEEP, version}`; 409 `resolution-required` com `assignments` |
+| POST | `/absences/{id}/reject` · `/cancel` | gestor · o próprio/encarregado (pedidas), gestor (aprovadas) | reject exige `note` |
+| GET · POST · PATCH | `/equipment/items[/{id}]` | ver: encarregado+; alterar: gestor | `{name, category: PPE, UNIFORM, TOOL, tracking: STOCK, SERIAL, size, minStock}` |
+| POST | `/equipment/receive` · `/items/{id}/adjust` · `/deliver` · `/return` | gestor | 409 `insufficient-stock`, `serial-taken`, `unit-unavailable`, `not-held` |
+| GET | `/equipment/holdings/{employeeId}` · `/movements` · `/items/{id}/units` | âmbito · gestor · encarregado+ | |
+| GET · POST | `/notifications` · `/notifications/read` | o próprio | `{unread, items}`; `{ids[]}` vazio = todas |
+| GET | `/notifications/stream` | o próprio | SSE: evento `changed` |
+
+## F6 (planeado)
 
 Ver `docs/backend/arquitetura.md` (Ecrã → API) e o plano aprovado. Cada fase acrescenta aqui a sua tabela quando é implementada.
