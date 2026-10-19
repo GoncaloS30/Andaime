@@ -290,6 +290,21 @@ export interface Issue {
   status: 'aberto' | 'resolvido'
 }
 
+/** Diário de obra: o que se fez num dia, com fotos. Pode haver mais de um registo por dia. */
+export interface DiaryEntry {
+  id: ID
+  siteId: ID
+  date: ISODate
+  title: string
+  text: string
+  authorId: ID
+  authorName: string
+  authorRole: Role
+  createdAt: string
+  updatedAt: string
+  photos: PhotoRef[]
+}
+
 export interface WeekNote {
   weekStart: ISODate
   text: string
@@ -344,6 +359,7 @@ export interface DB {
   deliveries: Record<ID, Delivery>
   issues: Record<ID, Issue>
   weekNotes: Record<ISODate, WeekNote>
+  diary: Record<ID, DiaryEntry>
   activity: ActivityEvent[]
   notifications: Notification[]
 }

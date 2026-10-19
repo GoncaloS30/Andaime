@@ -26,11 +26,12 @@ import { ActivityList } from '../shared/ActivityList'
 import { CountryTag } from '../shared/Country'
 import { DocumentDialog } from '../shared/DocumentDialog'
 import { SiteMap } from '../shared/SiteMap'
+import { SiteDiary } from './diary/SiteDiary'
 import { WeeklyBars } from './WeeklyBars'
 
-const TABS = ['resumo', 'cliente', 'localizacao', 'responsaveis', 'equipa', 'planeamento', 'viaturas', 'horas', 'documentos', 'historico'] as const
+const TABS = ['resumo', 'diario', 'cliente', 'localizacao', 'responsaveis', 'equipa', 'planeamento', 'viaturas', 'horas', 'documentos', 'historico'] as const
 const LABEL: Record<(typeof TABS)[number], string> = {
-  resumo: 'Resumo', cliente: 'Cliente', localizacao: 'Localização', responsaveis: 'Responsáveis', equipa: 'Equipa',
+  resumo: 'Resumo', diario: 'Diário', cliente: 'Cliente', localizacao: 'Localização', responsaveis: 'Responsáveis', equipa: 'Equipa',
   planeamento: 'Planeamento', viaturas: 'Viaturas', horas: 'Horas', documentos: 'Documentos', historico: 'Histórico',
 }
 
@@ -305,6 +306,9 @@ export function SiteDetailPage() {
             </ul>
           </Panel>
           {docType && <DocumentDialog open onOpenChange={() => setDocType(null)} ownerType="obra" ownerId={id} typeId={docType} />}
+        </TabPanel>
+        <TabPanel value="diario">
+          <SiteDiary site={s} />
         </TabPanel>
         <TabPanel value="historico">
           <div className="grid gap-4 lg:grid-cols-2">

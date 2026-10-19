@@ -23,6 +23,7 @@ import type {
 } from '@/domain/types'
 import type { Personas } from '@/data/seed'
 import type { PhotoRef } from '@/domain/photos'
+import type { DiaryInput } from './actions/diary'
 import type { PhotoTarget } from './actions/photos'
 
 export type { Personas }
@@ -164,6 +165,10 @@ export interface DemoActions {
   resetDemo(): void
   // fotos
   setPhoto(target: PhotoTarget, photo: PhotoRef | null): void
+  // diário de obra
+  createDiaryEntry(input: DiaryInput): ID
+  updateDiaryEntry(id: ID, patch: Partial<Omit<DiaryInput, 'siteId'>>): void
+  removeDiaryEntry(id: ID): void
   // planeamento
   previewSchedule(input: ScheduleInput): Conflict[]
   createSchedule(input: ScheduleInput): { batchId: ID; created: number }
