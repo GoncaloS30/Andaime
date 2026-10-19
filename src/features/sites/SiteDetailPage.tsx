@@ -54,7 +54,7 @@ function MetricsGrid({ siteId }: { siteId: string }) {
   )
   return (
     <div>
-      <dl className="grid grid-cols-2 gap-y-4 sm:grid-cols-3 lg:grid-cols-6">
+      <dl className="grid grid-cols-[repeat(auto-fit,minmax(7.5rem,1fr))] gap-x-4 gap-y-4">
         {item('Limite', m.limit ? formatHours(m.limit) : 'Sem limite', GLOSSARY.limite, true)}
         {item('Realizadas', formatHours(Math.round(m.realized)), GLOSSARY.realizadas, true)}
         {item('Aprovadas', formatHours(Math.round(m.approved)), GLOSSARY.aprovadas)}

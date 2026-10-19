@@ -15,7 +15,7 @@ export function LatestDiary() {
   )
   if (items.length === 0) return null
   return (
-    <Panel title="Diário de obra" description="Últimos registos das obras" bodyClassName="flex flex-col divide-y divide-line-2" flush>
+    <Panel tour="latest-diary" title="Diário de obra" description="Últimos registos das obras" bodyClassName="flex flex-col divide-y divide-line-2" flush>
       {items.map(({ e, site }) => (
         <Link key={e.id} to={`/obras/${e.siteId}?tab=diario`} className="flex items-start gap-3 px-4 py-3 hover:bg-cal">
           <div className="min-w-0 flex-1">

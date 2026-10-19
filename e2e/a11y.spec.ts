@@ -2,7 +2,9 @@ import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 import { asRole, go, open, state } from './helpers'
 
-const GESTOR = ['/', '/planeamento', '/planeamento?vista=obras', '/planeamento?escala=mes', '/trabalhadores', '/equipas', '/equipas/t1', '/obras', '/obras?vista=tabela', '/obras/s1?tab=horas', '/obras/nova', '/viaturas', '/viaturas/v4', '/horas', '/ausencias', '/mapas', '/documentos', '/equipamentos', '/relatorios', '/definicoes', '/design']
+const GESTOR = ['/', '/planeamento', '/planeamento?vista=obras', '/planeamento?escala=mes', '/trabalhadores', '/equipas', '/equipas/t1', '/obras', '/obras?vista=tabela', '/obras/s1?tab=horas', '/obras/nova', '/viaturas', '/viaturas/v4', '/horas', '/ausencias', '/mapas', '/documentos', '/equipamentos', '/relatorios', '/definicoes', '/design',
+  // V3.1
+  '/obras/s1?tab=diario', '/obras/s8?tab=alojamento', '/dormidas', '/agenda', '/ausencias?vista=ano', '/horas?vista=totais', '/horas?vista=grelha', '/horas?vista=rh', '/definicoes/creditos']
 
 /** Violações sérias ou críticas (WCAG 2.1 AA) da página atual. */
 async function audit(page: import('@playwright/test').Page, label: string) {
@@ -16,11 +18,11 @@ async function audit(page: import('@playwright/test').Page, label: string) {
     .map((v) => `${label}: ${v.id} — ${v.help} (${v.nodes.length}) ${v.nodes[0]?.target.join(' ')}`)
 }
 
-// Em blocos de 5 rotas: correm em paralelo e cada um cabe no tempo de um teste.
-for (let i = 0; i < GESTOR.length; i += 5) {
-  const routes = GESTOR.slice(i, i + 5)
+// Em blocos de 3 rotas: correm em paralelo e cada um cabe no tempo de um teste, mesmo com a suite toda a correr.
+for (let i = 0; i < GESTOR.length; i += 3) {
+  const routes = GESTOR.slice(i, i + 3)
   test(`acessibilidade — gestor ${routes.join(' ')}`, async ({ page }) => {
-    // Cinco rotas pesadas (planeamento) por teste: com a suite toda em paralelo, 90 s não chegam.
+    // Rotas pesadas (planeamento): com a suite toda em paralelo, 90 s não chegam.
     test.setTimeout(150_000)
     const found: string[] = []
     await open(page, '/')
@@ -36,7 +38,7 @@ test('acessibilidade — ficha do trabalhador', async ({ page }) => {
   const found: string[] = []
   await open(page, '/')
   const wid = await state<string>(page, '(s) => s.session.personas.trabalhador')
-  for (const tab of ['visao', 'horas', 'documentos', 'fardamento']) {
+  for (const tab of ['visao', 'horas', 'documentos', 'fardamento', 'equipamentos', 'alojamento']) {
     await go(page, `/trabalhadores/${wid}?tab=${tab}`)
     found.push(...(await audit(page, `ficha ${tab}`)))
   }
@@ -47,7 +49,7 @@ test('acessibilidade — encarregado e trabalhador', async ({ page }) => {
   const found: string[] = []
   test.setTimeout(120_000)
   await open(page, '/')
-  for (const p of ['/encarregado', '/encarregado/semana', '/encarregado/horas', '/encarregado/documentos', '/encarregado/problemas']) {
+  for (const p of ['/encarregado', '/encarregado/semana', '/encarregado/horas', '/encarregado/documentos', '/encarregado/problemas', '/encarregado/diario']) {
     await asRole(page, 'encarregado', p)
     found.push(...(await audit(page, p)))
   }

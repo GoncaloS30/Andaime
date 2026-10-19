@@ -11,7 +11,7 @@ export function LodgingPanel() {
   if (s.away === 0 && s.orphans.length === 0) return null
   const pending = s.undecided + s.orphans.length
   return (
-    <Panel title="Dormidas desta semana" actions={<Link to="/dormidas" className="text-sm font-medium text-pinho hover:underline">Abrir</Link>}>
+    <Panel tour="lodging-panel" title="Dormidas desta semana" actions={<Link to="/dormidas" className="text-sm font-medium text-pinho hover:underline">Abrir</Link>}>
       <p className="flex items-center gap-2 text-sm">
         <BedDouble className="size-4 text-ink-3" aria-hidden />
         <span><strong className="tabular">{s.away}</strong> pessoas fora · <strong className="tabular">{s.nights}</strong> noites</span>

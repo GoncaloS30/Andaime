@@ -59,8 +59,9 @@ export function BackupPanel() {
   const confirm = async () => {
     if (!pending) return
     const { backup } = pending
-    importDemo({ db: backup.db as DB, session: backup.session as Session })
+    // Primeiro as fotos: quando os dados mudarem, os ecrãs já as encontram no armazenamento.
     const n = await restorePhotos(backup.photos)
+    importDemo({ db: backup.db as DB, session: backup.session as Session })
     setPending(null)
     toast.success('Cópia importada', { description: n ? `Com ${n} ${n === 1 ? 'foto carregada' : 'fotos carregadas'}.` : 'Os dados da demonstração foram substituídos.' })
   }

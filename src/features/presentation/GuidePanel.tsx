@@ -42,7 +42,8 @@ export function GuidePanel() {
       scenario.role(s.role)
       await s.run({ navigate })
       setHighlight(s.target ?? null)
-      if (s.stage) setStage(true, s.stage)
+      if (s.stage) setStage(true, s.stage, 'trabalhador')
+      else if (s.foremanPhone) setStage(true, undefined, 'encarregado')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Não foi possível preparar este passo.')
     } finally {
@@ -76,7 +77,7 @@ export function GuidePanel() {
             <p className="font-wide text-sm font-semibold">Modo apresentação</p>
             <p className="text-[11px] text-white/60">Cada passo prepara o que precisa. A app continua utilizável.</p>
           </div>
-          <IconButton label={stage ? 'Esconder telemóvel' : 'Mostrar telemóvel do trabalhador'} variant="onDark" size="sm" aria-pressed={stage} onClick={() => setStage(!stage)}>
+          <IconButton label={stage ? 'Esconder telemóvel' : 'Mostrar telemóvel'} variant="onDark" size="sm" aria-pressed={stage} onClick={() => setStage(!stage)}>
             <Smartphone className="size-4" />
           </IconButton>
         </header>

@@ -26,7 +26,9 @@ export function Spotlight() {
       const el = document.querySelector<HTMLElement>(`[data-tour="${target}"]`)
       if (el) {
         if (!scrolled) {
-          el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' })
+          // Alvos mais altos do que o ecrã: só o mínimo (centrar puxava também o contentor da página).
+          const tall = el.getBoundingClientRect().height > window.innerHeight * 0.6
+          el.scrollIntoView({ block: tall ? 'nearest' : 'center', inline: 'nearest', behavior: 'smooth' })
           scrolled = true
         }
         const r = el.getBoundingClientRect()

@@ -171,6 +171,23 @@ test('Modo apresentação: todos os passos correm sem erros', async ({ page }) =
   await act(page, '(s) => s')
 })
 
+test('Guião: dormidas e diário mostram o efeito no telemóvel ao lado', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await open(page, '/')
+  await page.getByRole('button', { name: 'Apresentar' }).click()
+  const guide = page.getByRole('complementary', { name: 'Guião de apresentação' })
+  await guide.getByRole('button', { name: /10 · Dormidas da semana/ }).click()
+  await guide.getByRole('button', { name: /Hotel marcado/ }).click()
+  await expect(page.getByRole('complementary', { name: /app do trabalhador/ }).getByRole('region', { name: 'Onde durmo esta semana' })).toBeVisible()
+  await guide.getByRole('button', { name: /11 · Diário de obra com fotos/ }).click()
+  await guide.getByRole('button', { name: /Chega ao escritório/ }).click()
+  await expect(page.getByRole('complementary', { name: /app do encarregado/ })).toContainText('Descofragem da laje do piso 3')
+  await expect(page.getByRole('main')).toContainText('Descofragem da laje do piso 3')
+  // Repetir o passo não duplica o registo.
+  await guide.getByRole('button', { name: /Chega ao escritório/ }).click()
+  expect(await state<number>(page, "(s) => Object.values(s.db.diary).filter((d) => d.title === 'Descofragem da laje do piso 3').length")).toBe(1)
+})
+
 test('Planeamento: arrastar a pega altera o período', async ({ page }) => {
   await open(page, '/')
   const mon = await nextMonday(page)
