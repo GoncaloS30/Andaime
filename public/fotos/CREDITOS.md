@@ -97,3 +97,10 @@ Fotos de banco com licença livre usadas na demonstração. As pessoas retratada
 | diario/d12 | Aliaksei Smalenski | Pexels License | https://www.pexels.com/photo/stacked-cement-bags-on-wooden-pallet-outdoors-29817952/ |
 | diario/d13 | Bulat843 | Pexels License | https://www.pexels.com/photo/roofer-applying-waterproof-membrane-to-flat-roof-39238328/ |
 | diario/d14 | Gundula Vogel | Pexels License | https://www.pexels.com/photo/roofer-performing-maintenance-on-red-brick-building-31762405/ |
+| hoteis/ht1 | Stephen Leonardi | Pexels License | https://www.pexels.com/photo/saynamkhan-river-view-hotel-in-luang-prabang-laos-27087103/ |
+| hoteis/ht2 | Denisa Susca | Pexels License | https://www.pexels.com/photo/ivy-growing-on-hotel-building-16094034/ |
+| hoteis/ht3 | George Frewat | Pexels License | https://www.pexels.com/photo/charming-urban-hotel-facade-with-sunshine-31969409/ |
+| hoteis/ht4 | Liisbet Luup | Pexels License | https://www.pexels.com/photo/classic-parisian-architecture-in-cityscape-36138525/ |
+| hoteis/ht5 | Nadtochiy Photography | Pexels License | https://www.pexels.com/photo/historic-european-architecture-in-cityscape-34422205/ |
+| hoteis/ht6 | Ryszard Zaleski | Pexels License | https://www.pexels.com/photo/charming-architecture-in-swieradow-zdroj-poland-28675612/ |
+| hoteis/ht7 | Isa Bödi | Pexels License | https://www.pexels.com/photo/historic-architecture-in-central-munich-streets-29215204/ |

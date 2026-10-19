@@ -800,5 +800,62 @@ export const PHOTOS: Record<'trabalhadores' | 'gestores' | 'obras' | 'viaturas' 
       "credit": "Foto: Gundula Vogel / Pexels"
     }
   ],
-  "hoteis": []
+  "hoteis": [
+    {
+      "id": "ht1",
+      "src": "hoteis/ht1",
+      "w": 800,
+      "h": 600,
+      "alt": "Edifício branco com varandas",
+      "credit": "Foto: Stephen Leonardi / Pexels"
+    },
+    {
+      "id": "ht2",
+      "src": "hoteis/ht2",
+      "w": 800,
+      "h": 600,
+      "alt": "Fachada com hera",
+      "credit": "Foto: Denisa Susca / Pexels"
+    },
+    {
+      "id": "ht3",
+      "src": "hoteis/ht3",
+      "w": 800,
+      "h": 600,
+      "alt": "Fachada de hotel urbano",
+      "credit": "Foto: George Frewat / Pexels"
+    },
+    {
+      "id": "ht4",
+      "src": "hoteis/ht4",
+      "w": 800,
+      "h": 600,
+      "alt": "Fachada parisiense",
+      "credit": "Foto: Liisbet Luup / Pexels"
+    },
+    {
+      "id": "ht5",
+      "src": "hoteis/ht5",
+      "w": 800,
+      "h": 600,
+      "alt": "Fachadas históricas",
+      "credit": "Foto: Nadtochiy Photography / Pexels"
+    },
+    {
+      "id": "ht6",
+      "src": "hoteis/ht6",
+      "w": 800,
+      "h": 600,
+      "alt": "Pensão com fachada tradicional",
+      "credit": "Foto: Ryszard Zaleski / Pexels"
+    },
+    {
+      "id": "ht7",
+      "src": "hoteis/ht7",
+      "w": 800,
+      "h": 600,
+      "alt": "Fachadas históricas em Munique",
+      "credit": "Foto: Isa Bödi / Pexels"
+    }
+  ]
 }
