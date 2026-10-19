@@ -3,6 +3,7 @@ import {
   BedDouble,
   BookOpen,
   Building2,
+  CalendarDays,
   CalendarRange,
   ClipboardCheck,
   FileCheck2,
@@ -44,6 +45,7 @@ export const GESTOR_NAV: NavGroup[] = [
       { to: '/obras', label: 'Obras', icon: Building2 },
       { to: '/viaturas', label: 'Viaturas', icon: Truck },
       { to: '/dormidas', label: 'Dormidas', icon: BedDouble },
+      { to: '/agenda', label: 'Agenda', icon: CalendarDays },
     ],
   },
   {

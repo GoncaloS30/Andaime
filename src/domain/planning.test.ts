@@ -71,3 +71,12 @@ describe('newConflicts', () => {
     expect(newConflicts([c('a'), c('b')], [c('b'), c('c')]).map((x) => x.id)).toEqual(['c'])
   })
 })
+
+describe('atraso face ao contrato', () => {
+  it('conta os dias úteis em que a previsão passa o fim contratual', async () => {
+    const { delayWorkdays } = await import('./planning')
+    expect(delayWorkdays({ contractEnd: '2026-10-16', endDate: '2026-10-23' })).toBe(5)
+    expect(delayWorkdays({ contractEnd: '2026-10-16', endDate: '2026-10-16' })).toBe(0)
+    expect(delayWorkdays({ contractEnd: '2026-10-16', endDate: '2026-10-10' })).toBe(0)
+  })
+})

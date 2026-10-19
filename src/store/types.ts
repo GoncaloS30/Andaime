@@ -23,6 +23,7 @@ import type {
 } from '@/domain/types'
 import type { Personas } from '@/data/seed'
 import type { PhotoRef } from '@/domain/photos'
+import type { EventInput } from './actions/calendar'
 import type { DiaryInput } from './actions/diary'
 import type { HotelInput, StayInput } from './actions/lodging'
 import type { PhotoTarget } from './actions/photos'
@@ -115,6 +116,8 @@ export interface SiteInput {
   hourLimit: number | null
   startDate: ISODate
   endDate: ISODate
+  /** Por defeito, igual à previsão de fim. */
+  contractEnd?: ISODate
   directorId: ID
   description: string
   teamId?: ID | null
@@ -176,6 +179,11 @@ export interface DemoActions {
   removeHotel(id: ID): void
   markStay(input: StayInput): ID
   removeStay(id: ID): void
+  // agenda e integrações (simulado)
+  createEvent(input: EventInput): ID
+  removeEvent(id: ID): void
+  connectGoogle(connected: boolean): void
+  syncVacationsToGoogle(): { created: number; existing: number }
   // planeamento
   previewSchedule(input: ScheduleInput): Conflict[]
   createSchedule(input: ScheduleInput): { batchId: ID; created: number }

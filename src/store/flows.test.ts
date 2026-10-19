@@ -346,3 +346,44 @@ describe('Fluxo 10 — dormidas e hotéis', () => {
     expect(week.some((s) => s.hotelId === null)).toBe(true)
   })
 })
+
+describe('Fluxo 12 — férias no mapa do ano, na agenda e no Google (simulado)', () => {
+  it('férias aprovadas aparecem no mapa do ano e na agenda; sincronizar duas vezes não duplica', async () => {
+    const { yearMap } = await import('@/domain/vacationMap')
+    const { agendaItems } = await import('@/domain/agenda')
+    const store = make()
+    const st = () => store.getState()
+    const wid = st().session.personas.trabalhador
+    const id = st().createAbsence({ workerId: wid, type: 'ferias', start: '2026-11-02', end: '2026-11-06', hours: null, reason: 'Férias de outono' })
+    st().decideAbsence(id, 'aprovado', '')
+    const row = yearMap(st().db, 2026).find((r) => r.worker.id === wid)!
+    expect(row.periods.some((p) => p.id === id)).toBe(true)
+    expect(row.vacationDays).toBeGreaterThanOrEqual(5)
+    const items = agendaItems(st().db, '2026-11-01', '2026-11-30', { ausencias: true, obras: false, validades: false, eventos: false, google: false })
+    expect(items.some((i) => i.id === `aus-${id}`)).toBe(true)
+
+    expect(() => st().syncVacationsToGoogle()).toThrow('Ligue')
+    st().connectGoogle(true)
+    const first = st().syncVacationsToGoogle()
+    expect(first.created).toBeGreaterThan(0)
+    const second = st().syncVacationsToGoogle()
+    expect(second).toMatchObject({ created: 0, existing: first.created + first.existing })
+    expect(Object.values(st().db.events).filter((e) => e.syncKey === `ferias:${id}`)).toHaveLength(1)
+    st().connectGoogle(false)
+    expect(Object.values(st().db.events).some((e) => e.source === 'google')).toBe(false)
+  })
+  it('eventos próprios: criar e apagar', () => {
+    const store = make()
+    const st = () => store.getState()
+    const id = st().createEvent({ title: 'Visita da fiscalização', date: '2026-10-22', endDate: '2026-10-22', time: '10:30', location: 'OB-24-031' })
+    expect(st().db.events[id]).toMatchObject({ source: 'andaime', time: '10:30' })
+    expect(() => st().createEvent({ title: ' ', date: '2026-10-22', endDate: '2026-10-22', time: null, location: '' })).toThrow('título')
+    st().removeEvent(id)
+    expect(st().db.events[id]).toBeUndefined()
+  })
+  it('licença e outra ausência são tipos válidos', () => {
+    const store = make()
+    const id = store.getState().createAbsence({ workerId: store.getState().session.personas.trabalhador, type: 'licenca', start: '2026-11-10', end: '2026-11-10', hours: null, reason: 'Casamento' })
+    expect(store.getState().db.absences[id]!.type).toBe('licenca')
+  })
+})

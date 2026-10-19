@@ -6,6 +6,7 @@ import { DEFAULT_SETTINGS, type HHMM, type ISODate } from '@/domain/types'
 import { localToday } from '@/domain/weeks'
 import { planningActions } from './actions/planning'
 import { operationActions } from './actions/operations'
+import { calendarActions } from './actions/calendar'
 import { diaryActions } from './actions/diary'
 import { lodgingActions } from './actions/lodging'
 import { photoActions } from './actions/photos'
@@ -75,6 +76,7 @@ export function createDemoStore(opts: StoreOptions = {}): ZStore<DemoState> {
         ...photoActions(api),
         ...diaryActions(api),
         ...lodgingActions(api),
+        ...calendarActions(api),
       }
     }),
   )

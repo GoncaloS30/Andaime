@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 import { useDerived } from '@/app/hooks'
 import { ModuleGuard } from '@/app/ModuleGuard'
 import { detectConflicts } from '@/domain/conflicts'
-import { ABSENCE_STATUS, ABSENCE_TYPE } from '@/domain/labels'
+import { ABSENCE_COLOR, ABSENCE_STATUS, ABSENCE_TYPE } from '@/domain/labels'
 import { newConflicts } from '@/domain/planning'
 import type { Absence, AbsenceType, ID } from '@/domain/types'
 import { addDays, dateShort, eachDay, isWeekend, monthLabel, weekStart, weekday } from '@/domain/weeks'
@@ -20,18 +20,12 @@ import { PageHeader, Panel } from '@/ui/Layout'
 import { Dialog } from '@/ui/Overlay'
 import { EmptyState } from '@/ui/States'
 import { Tabs, TabPanel } from '@/ui/Tabs'
+import { YearMap } from './YearMap'
 import { AbsenceDialog } from '../shared/AbsenceDialog'
 import { ConflictCard } from '../shared/ConflictCard'
 import { plural } from '@/lib/plural'
 
-const TYPE_COLOR: Record<AbsenceType, string> = {
-  ferias: '#1a9e72',
-  falta_justificada: '#2a78d6',
-  falta_injustificada: '#b03a2e',
-  baixa: '#8a4fc7',
-  formacao: '#d4652f',
-  parcial: '#8f8a14',
-}
+const TYPE_COLOR = ABSENCE_COLOR
 
 function Impact({ a }: { a: Absence }) {
   const db = useDemo((s) => s.db)
@@ -244,9 +238,10 @@ export function AbsencesPage() {
         }
       />
       <ModuleGuard empty={{ icon: <Palmtree />, title: 'Sem ausências', text: 'Os pedidos feitos na app do trabalhador e as ausências registadas aparecem aqui.' }}>
-        <Tabs value={tab} onValueChange={(v) => setSp(v === 'pedidos' ? {} : { vista: v }, { replace: true })} label="Ausências" tabs={[{ value: 'pedidos', label: 'Pedidos', count: pending, tone: 'warn' }, { value: 'calendario', label: 'Calendário' }, { value: 'todas', label: 'Todas' }]}>
+        <Tabs value={tab} onValueChange={(v) => setSp(v === 'pedidos' ? {} : { vista: v }, { replace: true })} label="Ausências" tabs={[{ value: 'pedidos', label: 'Pedidos', count: pending, tone: 'warn' }, { value: 'calendario', label: 'Calendário' }, { value: 'ano', label: 'Mapa do ano' }, { value: 'todas', label: 'Todas' }]}>
           <TabPanel value="pedidos"><Requests highlight={sp.get('id')} /></TabPanel>
           <TabPanel value="calendario"><Calendar /></TabPanel>
+          <TabPanel value="ano"><YearMap /></TabPanel>
           <TabPanel value="todas"><AllList /></TabPanel>
         </Tabs>
       </ModuleGuard>

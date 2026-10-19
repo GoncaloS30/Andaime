@@ -63,6 +63,7 @@ export const router = createBrowserRouter([
       { path: 'obras/nova', ...lazyPage(() => import('@/features/sites/NewSitePage'), 'NewSitePage', G) },
       { path: 'obras/:id', ...lazyPage(() => import('@/features/sites/SiteDetailPage'), 'SiteDetailPage', G) },
       { path: 'viaturas', ...lazyPage(() => import('@/features/vehicles/VehiclesPage'), 'VehiclesPage', G) },
+      { path: 'agenda', ...lazyPage(() => import('@/features/agenda/AgendaPage'), 'AgendaPage', G) },
       { path: 'dormidas', ...lazyPage(() => import('@/features/lodging/LodgingPage'), 'LodgingPage', G) },
       { path: 'viaturas/:id', ...lazyPage(() => import('@/features/vehicles/VehicleDetailPage'), 'VehicleDetailPage', G) },
       { path: 'horas', ...lazyPage(() => import('@/features/timesheets/TimesheetsPage'), 'TimesheetsPage', G) },
