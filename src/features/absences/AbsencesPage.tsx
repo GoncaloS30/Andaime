@@ -20,6 +20,7 @@ import { PageHeader, Panel } from '@/ui/Layout'
 import { Dialog } from '@/ui/Overlay'
 import { EmptyState } from '@/ui/States'
 import { Tabs, TabPanel } from '@/ui/Tabs'
+import { YearMap } from './YearMap'
 import { AbsenceDialog } from '../shared/AbsenceDialog'
 import { ConflictCard } from '../shared/ConflictCard'
 import { plural } from '@/lib/plural'
@@ -237,9 +238,10 @@ export function AbsencesPage() {
         }
       />
       <ModuleGuard empty={{ icon: <Palmtree />, title: 'Sem ausências', text: 'Os pedidos feitos na app do trabalhador e as ausências registadas aparecem aqui.' }}>
-        <Tabs value={tab} onValueChange={(v) => setSp(v === 'pedidos' ? {} : { vista: v }, { replace: true })} label="Ausências" tabs={[{ value: 'pedidos', label: 'Pedidos', count: pending, tone: 'warn' }, { value: 'calendario', label: 'Calendário' }, { value: 'todas', label: 'Todas' }]}>
+        <Tabs value={tab} onValueChange={(v) => setSp(v === 'pedidos' ? {} : { vista: v }, { replace: true })} label="Ausências" tabs={[{ value: 'pedidos', label: 'Pedidos', count: pending, tone: 'warn' }, { value: 'calendario', label: 'Calendário' }, { value: 'ano', label: 'Mapa do ano' }, { value: 'todas', label: 'Todas' }]}>
           <TabPanel value="pedidos"><Requests highlight={sp.get('id')} /></TabPanel>
           <TabPanel value="calendario"><Calendar /></TabPanel>
+          <TabPanel value="ano"><YearMap /></TabPanel>
           <TabPanel value="todas"><AllList /></TabPanel>
         </Tabs>
       </ModuleGuard>

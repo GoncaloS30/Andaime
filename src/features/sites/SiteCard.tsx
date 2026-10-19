@@ -1,6 +1,7 @@
 import { Building2 } from 'lucide-react'
 import { Link } from 'react-router'
 import { SITE_STATUS } from '@/domain/labels'
+import { delayWorkdays } from '@/domain/planning'
 import type { SiteMetrics } from '@/domain/siteMetrics'
 import type { Client, Site, Team, Worker } from '@/domain/types'
 import { Badge } from '@/ui/Badge'
@@ -56,9 +57,12 @@ export function SiteCard({ s, client, foreman, teams, m, priority, eager }: Site
       </Link>
       <div className="mt-auto space-y-2 px-3 pb-3 sm:pt-2.5">
         <div className="flex items-center justify-between gap-2 text-xs">
-          <Badge tone={s.status === 'em_curso' ? 'ok' : s.status === 'planeada' ? 'info' : 'neutral'} dot>
-            {SITE_STATUS[s.status]}
-          </Badge>
+          <span className="flex shrink-0 items-center gap-1">
+            <Badge tone={s.status === 'em_curso' ? 'ok' : s.status === 'planeada' ? 'info' : 'neutral'} dot>
+              {SITE_STATUS[s.status]}
+            </Badge>
+            {delayWorkdays(s) > 0 && <Badge tone="warn">Atraso {delayWorkdays(s)} d</Badge>}
+          </span>
           <span className="truncate text-ink-3">
             {teams.map((t) => t.name).join(', ') || 'Sem equipa'} · {foreman?.name ?? 'Sem encarregado'}
           </span>

@@ -63,6 +63,11 @@ export function planCopyWeek(
   return { drafts, skipped }
 }
 
+/** Dias úteis em que a previsão de fim passa o fim contratual (0 se não passa). */
+export function delayWorkdays(site: { contractEnd: ISODate; endDate: ISODate }): number {
+  return site.endDate > site.contractEnd ? workdaysBetween(addDays(site.contractEnd, 1), site.endDate).length : 0
+}
+
 export function workdaysBetween(from: ISODate, to: ISODate, includeWeekends = false): ISODate[] {
   return eachDay(from, to).filter((d) => includeWeekends || !isWeekend(d))
 }

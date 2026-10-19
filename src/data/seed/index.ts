@@ -42,6 +42,7 @@ import {
 } from './catalog'
 import { seedDiary } from './diary'
 import { seedEvents } from './events'
+import { seedVacations } from './vacations'
 import { seedLodging } from './lodging'
 import { assignSeedPhotos } from './photos'
 
@@ -600,5 +601,6 @@ export function createSeed({ today, seed = 20261015 }: { today: ISODate; seed?: 
   db.diary = seedDiary(db, today)
   Object.assign(db, seedLodging(db, today))
   db.events = seedEvents(today)
+  Object.assign(db.absences, seedVacations(db, today))
   return { db, personas }
 }

@@ -29,6 +29,13 @@ Funcionalidades do Lyrical Design e fotos (spec `docs/superpowers/specs/2026-10-
   - separador Alojamento na obra (hotéis com foto, morada, contacto e uso) e na ficha do trabalhador;
   - "Onde durmo esta semana" na app do trabalhador, com notificação; painel no dashboard;
   - fluxo 10 com testes de domínio, store e E2E.
+- **Ausências, mapa de férias e agenda** (bloco 4):
+  - tipos de ausência Licença e Outra, com nota de ajuda por tipo;
+  - separador Mapa do ano nas ausências: uma linha por pessoa, períodos aprovados (cheios) e pedidos (tracejados), dias úteis por ano;
+  - página Agenda: grelha do mês com camadas (ausências, datas das obras, validades, eventos, Google), eventos próprios, lista por dia no telemóvel;
+  - Google Calendar simulado: ligar, desligar e sincronizar férias sem duplicar;
+  - obra com fim contratual e previsão de fim, com aviso de atraso na ficha e nos cartões;
+  - fluxo 12 com testes de domínio, store e E2E.
 - Repositório configurado para trabalho em equipa: CI, Dependabot, CODEOWNERS, modelos de issue e PR, licença e guia de contribuição.
 
 ### Alterado

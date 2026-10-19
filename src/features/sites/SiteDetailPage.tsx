@@ -7,6 +7,7 @@ import { GLOSSARY } from '@/copy'
 import { DOC_STATE_LABEL, docState, latestDoc, requiredSiteDocTypes } from '@/domain/documents'
 import { entryHours, formatHours } from '@/domain/hours'
 import { COUNTRY_NAME, ISSUE_CATEGORY, SITE_STATUS } from '@/domain/labels'
+import { delayWorkdays } from '@/domain/planning'
 import type { SiteStatus } from '@/domain/types'
 import { addDays, dateNumeric, dateShort, dayShort, weekDays, weekStart } from '@/domain/weeks'
 import { selectSiteMetrics } from '@/store/selectors'
@@ -143,7 +144,11 @@ export function SiteDetailPage() {
               <p className="mb-4 text-sm text-ink-2">{s.description}</p>
               <dl className="grid grid-cols-2 gap-4">
                 <Detail label="Início">{dateNumeric(s.startDate)}</Detail>
-                <Detail label="Fim previsto">{dateNumeric(s.endDate)}</Detail>
+                <Detail label="Fim contratual">{dateNumeric(s.contractEnd)}</Detail>
+                <Detail label="Previsão de fim">
+                  {dateNumeric(s.endDate)}
+                  {delayWorkdays(s) > 0 && <Badge tone="warn" className="ml-1.5">+{delayWorkdays(s)} dias úteis face ao contrato</Badge>}
+                </Detail>
                 <Detail label="Fuso horário">{s.timezone}</Detail>
                 <Detail label="Ordem ERP">{s.erpOrder}</Detail>
               </dl>
