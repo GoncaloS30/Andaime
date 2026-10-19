@@ -902,5 +902,68 @@
     "autor": "Gundula Vogel",
     "licenca": "Pexels License",
     "alt": "Trabalho na cobertura"
+  },
+  {
+    "id": "ht1",
+    "categoria": "hoteis",
+    "original": "fotos-originais/hoteis/ht1.jpg",
+    "url": "https://www.pexels.com/photo/saynamkhan-river-view-hotel-in-luang-prabang-laos-27087103/",
+    "autor": "Stephen Leonardi",
+    "licenca": "Pexels License",
+    "alt": "Edifício branco com varandas"
+  },
+  {
+    "id": "ht2",
+    "categoria": "hoteis",
+    "original": "fotos-originais/hoteis/ht2.jpg",
+    "url": "https://www.pexels.com/photo/ivy-growing-on-hotel-building-16094034/",
+    "autor": "Denisa Susca",
+    "licenca": "Pexels License",
+    "alt": "Fachada com hera"
+  },
+  {
+    "id": "ht3",
+    "categoria": "hoteis",
+    "original": "fotos-originais/hoteis/ht3.jpg",
+    "url": "https://www.pexels.com/photo/charming-urban-hotel-facade-with-sunshine-31969409/",
+    "autor": "George Frewat",
+    "licenca": "Pexels License",
+    "alt": "Fachada de hotel urbano"
+  },
+  {
+    "id": "ht4",
+    "categoria": "hoteis",
+    "original": "fotos-originais/hoteis/ht4.jpg",
+    "url": "https://www.pexels.com/photo/classic-parisian-architecture-in-cityscape-36138525/",
+    "autor": "Liisbet Luup",
+    "licenca": "Pexels License",
+    "alt": "Fachada parisiense"
+  },
+  {
+    "id": "ht5",
+    "categoria": "hoteis",
+    "original": "fotos-originais/hoteis/ht5.jpg",
+    "url": "https://www.pexels.com/photo/historic-european-architecture-in-cityscape-34422205/",
+    "autor": "Nadtochiy Photography",
+    "licenca": "Pexels License",
+    "alt": "Fachadas históricas"
+  },
+  {
+    "id": "ht6",
+    "categoria": "hoteis",
+    "original": "fotos-originais/hoteis/ht6.jpg",
+    "url": "https://www.pexels.com/photo/charming-architecture-in-swieradow-zdroj-poland-28675612/",
+    "autor": "Ryszard Zaleski",
+    "licenca": "Pexels License",
+    "alt": "Pensão com fachada tradicional"
+  },
+  {
+    "id": "ht7",
+    "categoria": "hoteis",
+    "original": "fotos-originais/hoteis/ht7.jpg",
+    "url": "https://www.pexels.com/photo/historic-architecture-in-central-munich-streets-29215204/",
+    "autor": "Isa Bödi",
+    "licenca": "Pexels License",
+    "alt": "Fachadas históricas em Munique"
   }
 ]

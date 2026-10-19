@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  BedDouble,
   BookOpen,
   Building2,
   CalendarRange,
@@ -42,6 +43,7 @@ export const GESTOR_NAV: NavGroup[] = [
       { to: '/trabalhadores', label: 'Trabalhadores', icon: Users },
       { to: '/obras', label: 'Obras', icon: Building2 },
       { to: '/viaturas', label: 'Viaturas', icon: Truck },
+      { to: '/dormidas', label: 'Dormidas', icon: BedDouble },
     ],
   },
   {

@@ -318,3 +318,31 @@ describe('Fluxo 11 — diário de obra', () => {
     expect(sites.size).toBeGreaterThan(3)
   })
 })
+
+describe('Fluxo 10 — dormidas e hotéis', () => {
+  it('marca o hotel para quem está escalado longe; o trabalhador é notificado; tirar o hotel deixa a estadia por definir', () => {
+    const store = make()
+    const st = () => store.getState()
+    const hotelId = st().createHotel({ siteId: 's8', name: 'Hotel Isartor', address: 'Isartorplatz 3, München', contact: '+49 89 000 000', notes: '' })
+    expect(() => st().createHotel({ siteId: 's8', name: 'hotel isartor', address: '', contact: '', notes: '' })).toThrow('Já existe')
+    const wid = Object.values(st().db.assignments).find((a) => a.siteId === 's8' && a.date >= WS)!.workerId
+    const id = st().markStay({ workerId: wid, siteId: 's8', week: WS, hotelId, checkIn: WS, checkOut: addDays(WS, 4), notes: '' })
+    expect(st().db.stays[id]).toMatchObject({ hotelId, workerId: wid })
+    expect(st().db.notifications.some((n) => n.role === 'trabalhador' && n.personaId === wid && n.body.includes('Hotel Isartor'))).toBe(true)
+    // Marcar de novo a mesma pessoa, semana e obra atualiza em vez de duplicar
+    const again = st().markStay({ workerId: wid, siteId: 's8', week: WS, hotelId, checkIn: addDays(WS, 1), checkOut: addDays(WS, 4), notes: 'Chega na terça' })
+    expect(again).toBe(id)
+    expect(Object.values(st().db.stays).filter((s) => s.workerId === wid && s.week === WS && s.siteId === 's8')).toHaveLength(1)
+    st().removeHotel(hotelId)
+    expect(st().db.stays[id]!.hotelId).toBeNull()
+    expect(() => st().markStay({ workerId: wid, siteId: 's8', week: WS, hotelId: null, checkIn: WS, checkOut: WS, notes: '' })).toThrow('saída')
+  })
+  it('o seed tem hotéis nas obras longe e estadias nesta semana, uma por definir', () => {
+    const store = make()
+    const { db } = store.getState()
+    expect(Object.values(db.hotels).length).toBeGreaterThanOrEqual(5)
+    const week = Object.values(db.stays).filter((s) => s.week === WS)
+    expect(week.length).toBeGreaterThan(3)
+    expect(week.some((s) => s.hotelId === null)).toBe(true)
+  })
+})

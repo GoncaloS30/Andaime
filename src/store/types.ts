@@ -24,6 +24,7 @@ import type {
 import type { Personas } from '@/data/seed'
 import type { PhotoRef } from '@/domain/photos'
 import type { DiaryInput } from './actions/diary'
+import type { HotelInput, StayInput } from './actions/lodging'
 import type { PhotoTarget } from './actions/photos'
 
 export type { Personas }
@@ -169,6 +170,12 @@ export interface DemoActions {
   createDiaryEntry(input: DiaryInput): ID
   updateDiaryEntry(id: ID, patch: Partial<Omit<DiaryInput, 'siteId'>>): void
   removeDiaryEntry(id: ID): void
+  // dormidas e hotéis
+  createHotel(input: HotelInput): ID
+  updateHotel(id: ID, patch: Partial<Omit<HotelInput, 'siteId'>>): void
+  removeHotel(id: ID): void
+  markStay(input: StayInput): ID
+  removeStay(id: ID): void
   // planeamento
   previewSchedule(input: ScheduleInput): Conflict[]
   createSchedule(input: ScheduleInput): { batchId: ID; created: number }

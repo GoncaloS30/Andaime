@@ -189,6 +189,8 @@ export function db(parts: {
     managers: {},
     clients: {},
     diary: {},
+    hotels: {},
+    stays: {},
     sites: byId(parts.sites ?? []),
     workers: byId(parts.workers ?? []),
     teams: byId(parts.teams ?? []),

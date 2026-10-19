@@ -41,6 +41,7 @@ import {
   VEHICLES,
 } from './catalog'
 import { seedDiary } from './diary'
+import { seedLodging } from './lodging'
 import { assignSeedPhotos } from './photos'
 
 export interface Personas {
@@ -585,10 +586,13 @@ export function createSeed({ today, seed = 20261015 }: { today: ISODate; seed?: 
     issues,
     weekNotes,
     diary: {},
+    hotels: {},
+    stays: {},
     activity,
     notifications,
   }
   assignSeedPhotos(db)
   db.diary = seedDiary(db, today)
+  Object.assign(db, seedLodging(db, today))
   return { db, personas }
 }
