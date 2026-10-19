@@ -18,11 +18,11 @@ async function audit(page: import('@playwright/test').Page, label: string) {
     .map((v) => `${label}: ${v.id} — ${v.help} (${v.nodes.length}) ${v.nodes[0]?.target.join(' ')}`)
 }
 
-// Em blocos de 5 rotas: correm em paralelo e cada um cabe no tempo de um teste.
-for (let i = 0; i < GESTOR.length; i += 5) {
-  const routes = GESTOR.slice(i, i + 5)
+// Em blocos de 3 rotas: correm em paralelo e cada um cabe no tempo de um teste, mesmo com a suite toda a correr.
+for (let i = 0; i < GESTOR.length; i += 3) {
+  const routes = GESTOR.slice(i, i + 3)
   test(`acessibilidade — gestor ${routes.join(' ')}`, async ({ page }) => {
-    // Cinco rotas pesadas (planeamento) por teste: com a suite toda em paralelo, 90 s não chegam.
+    // Rotas pesadas (planeamento): com a suite toda em paralelo, 90 s não chegam.
     test.setTimeout(150_000)
     const found: string[] = []
     await open(page, '/')

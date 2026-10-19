@@ -89,7 +89,7 @@ Funcionalidades do Lyrical Design e fotos (spec `docs/superpowers/specs/2026-10-
 | Lint | `npx eslint src e2e` | 0 erros |
 | Testes unitários e de store | `npx vitest run` | **182/182** em 34 ficheiros |
 | Dependências | `npm audit` | **0 vulnerabilidades** |
-| E2E, acessibilidade e quality gate | `npx playwright test` (Edge) | **43/43** testes, os 17 fluxos incluídos |
+| E2E, acessibilidade e quality gate | `npx playwright test` (Edge) | **47/47** numa só execução (5,7 min), com os 17 fluxos |
 | axe WCAG 2.1 AA | `e2e/a11y.spec.ts` | 0 violações sérias ou críticas em 30 rotas do gestor, 6 separadores da ficha, 6 rotas do encarregado e 5 ecrãs da app |
 | Quality gate | `-g @quality` | 16 ecrãs × 5 larguras sem overflow; capturas em `docs/review/screens` |
 | Lighthouse desktop | `lighthouse@12 --preset=desktop` | Dormidas 94 · Diário 93 · Totais de horas 95; **100** em acessibilidade e boas práticas; CLS ≤ 0,001 |
@@ -118,6 +118,7 @@ Os novos testes E2E cobrem:
 | Quality gate | Horas a 360 px: o seletor de vistas (4 opções) saía 8 px da página | O seletor desliza na horizontal dentro da sua largura |
 | Guião | Realçar um painel mais alto do que o ecrã deslocava a página inteira | Alvos altos com `block: 'nearest'` |
 | Crítica visual | Palco dividido: os números da caixa Horas da obra sobrepunham-se e as linhas das dormidas ficavam espremidas | Grelha `auto-fit` na caixa Horas; o passo com telemóvel mostra a ficha (Alojamento) em vez da lista |
+| E2E | O grupo axe do planeamento (5 rotas pesadas) excedia os 150 s com a suite toda em paralelo | Grupos de 3 rotas: a suite passou a correr em 5,7 min, em vez de 9,6 |
 | Revisão | Importar uma cópia: as fotos eram repostas depois dos dados e os ecrãs não as encontravam logo | Repor primeiro as fotos e só depois substituir os dados |
 | Bundle | Os créditos das fotos (URL e autor de cada uma) iam entrar no bundle inicial pelo manifesto | Módulo gerado à parte, carregado só pela página de créditos |
 | Build | Importação dinâmica sem efeito (constantes da folha de entrega vinham do módulo do Excel) | Constantes passaram para `src/domain/equipment.ts` |
