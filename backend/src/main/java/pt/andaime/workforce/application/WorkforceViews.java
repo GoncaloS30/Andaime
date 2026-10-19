@@ -104,8 +104,13 @@ public final class WorkforceViews {
             String foremanName,
             int memberCount,
             List<String> memberNames,
+            VehicleRef vehicle,
             boolean archived,
             int version) {
+    }
+
+    /** Viatura atual da equipa (ligação válida hoje). */
+    public record VehicleRef(UUID id, String plate) {
     }
 
     public record TeamDetail(
@@ -115,6 +120,7 @@ public final class WorkforceViews {
             UUID foremanEmployeeId,
             String foremanName,
             boolean archived,
+            VehicleRef vehicle,
             List<MemberRow> members,
             List<MemberRow> history,
             int version) {

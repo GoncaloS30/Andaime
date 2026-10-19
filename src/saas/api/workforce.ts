@@ -85,6 +85,7 @@ export interface TeamSummary {
   foremanName: string | null
   memberCount: number
   memberNames: string[]
+  vehicle: { id: string; plate: string } | null
   archived: boolean
   version: number
 }
@@ -106,6 +107,7 @@ export interface TeamDetail {
   foremanEmployeeId: string | null
   foremanName: string | null
   archived: boolean
+  vehicle: { id: string; plate: string } | null
   members: MemberRow[]
   history: MemberRow[]
   version: number

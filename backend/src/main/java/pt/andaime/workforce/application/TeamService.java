@@ -25,6 +25,7 @@ import pt.andaime.workforce.EmployeeDirectory;
 import pt.andaime.workforce.application.WorkforceViews.MemberRow;
 import pt.andaime.workforce.application.WorkforceViews.TeamDetail;
 import pt.andaime.workforce.application.WorkforceViews.TeamSummary;
+import pt.andaime.workforce.application.WorkforceViews.VehicleRef;
 
 /**
  * Equipas e a sua composição datada. Regras:
@@ -63,17 +64,22 @@ public class TeamService {
         }
         var today = TenantContext.today(clock);
         var scope = WorkforceScope.teams("team");
-        var params = new ArrayList<Object>(List.of(today, today));
+        var params = new ArrayList<Object>(List.of(today, today, today, today));
         params.addAll(scope.params());
         return jdbcTemplate.query("""
                 SELECT team.id, team.name, team.color, team.foreman_employee_id, foreman.full_name AS foreman_name,
-                       team.archived_at, team.version,
+                       team.archived_at, team.version, current_vehicle.id AS vehicle_id, current_vehicle.plate AS vehicle_plate,
                        count(member.id) AS member_count,
                        coalesce(array_agg(person.full_name ORDER BY person.full_name)
                                 FILTER (WHERE person.id IS NOT NULL), '{}') AS member_names
                 FROM teams team
                 LEFT JOIN employees foreman
                        ON foreman.organization_id = team.organization_id AND foreman.id = team.foreman_employee_id
+                LEFT JOIN LATERAL (SELECT vehicle.id, vehicle.plate FROM team_vehicle_links link
+                       JOIN vehicles vehicle ON vehicle.organization_id = link.organization_id AND vehicle.id = link.vehicle_id
+                       WHERE link.organization_id = team.organization_id AND link.team_id = team.id
+                         AND link.valid_from <= ? AND (link.valid_to IS NULL OR link.valid_to >= ?)
+                       LIMIT 1) current_vehicle ON TRUE
                 LEFT JOIN team_members member
                        ON member.organization_id = team.organization_id AND member.team_id = team.id
                       AND member.joined_on <= ? AND (member.left_on IS NULL OR member.left_on >= ?)
@@ -81,7 +87,7 @@ public class TeamService {
                        ON person.organization_id = member.organization_id AND person.id = member.employee_id
                 WHERE\s""" + scope.sql() + (archived ? " AND team.archived_at IS NOT NULL" : " AND team.archived_at IS NULL") + """
 
-                GROUP BY team.id, foreman.full_name
+                GROUP BY team.id, foreman.full_name, current_vehicle.id, current_vehicle.plate
                 ORDER BY lower(team.name)
                 """, (resultSet, rowNumber) -> new TeamSummary(
                 resultSet.getObject("id", UUID.class),
@@ -91,6 +97,7 @@ public class TeamService {
                 resultSet.getString("foreman_name"),
                 resultSet.getInt("member_count"),
                 Arrays.asList((String[]) resultSet.getArray("member_names").getArray()),
+                vehicle(resultSet),
                 resultSet.getObject("archived_at") != null,
                 resultSet.getInt("version")), params.toArray());
     }
@@ -101,18 +108,24 @@ public class TeamService {
             throw forbidden();
         }
         var scope = WorkforceScope.teams("team");
-        var params = new ArrayList<Object>(List.of(teamId));
+        var now = TenantContext.today(clock);
+        var params = new ArrayList<Object>(List.of(now, now, teamId));
         params.addAll(scope.params());
         var head = jdbcTemplate.query("""
                 SELECT team.id, team.name, team.color, team.foreman_employee_id, foreman.full_name AS foreman_name,
-                       team.archived_at, team.version
+                       team.archived_at, team.version, current_vehicle.id AS vehicle_id, current_vehicle.plate AS vehicle_plate
                 FROM teams team
                 LEFT JOIN employees foreman
                        ON foreman.organization_id = team.organization_id AND foreman.id = team.foreman_employee_id
+                LEFT JOIN LATERAL (SELECT vehicle.id, vehicle.plate FROM team_vehicle_links link
+                       JOIN vehicles vehicle ON vehicle.organization_id = link.organization_id AND vehicle.id = link.vehicle_id
+                       WHERE link.organization_id = team.organization_id AND link.team_id = team.id
+                         AND link.valid_from <= ? AND (link.valid_to IS NULL OR link.valid_to >= ?)
+                       LIMIT 1) current_vehicle ON TRUE
                 WHERE team.id = ? AND\s""" + scope.sql(), (resultSet, rowNumber) -> new Object[] {
                 resultSet.getString("name"), resultSet.getString("color"),
                 resultSet.getObject("foreman_employee_id", UUID.class), resultSet.getString("foreman_name"),
-                resultSet.getObject("archived_at") != null, resultSet.getInt("version")}, params.toArray())
+                resultSet.getObject("archived_at") != null, resultSet.getInt("version"), vehicle(resultSet)}, params.toArray())
                 .stream().findFirst().orElseThrow(TeamService::notFound);
         var today = TenantContext.today(clock);
         var rows = jdbcTemplate.query("""
@@ -128,7 +141,7 @@ public class TeamService {
                 .sorted((a, b) -> a.fullName().compareToIgnoreCase(b.fullName()))
                 .toList();
         return new TeamDetail(teamId, (String) head[0], (String) head[1], (UUID) head[2], (String) head[3],
-                (Boolean) head[4], current, rows, (Integer) head[5]);
+                (Boolean) head[4], (VehicleRef) head[6], current, rows, (Integer) head[5]);
     }
 
     @Transactional
@@ -280,6 +293,11 @@ public class TeamService {
         if (taken) {
             throw new ApiException(HttpStatus.CONFLICT, "name-taken", "Já existe uma equipa com o nome " + name.strip() + ".");
         }
+    }
+
+    private static VehicleRef vehicle(ResultSet resultSet) throws SQLException {
+        var id = resultSet.getObject("vehicle_id", UUID.class);
+        return id == null ? null : new VehicleRef(id, resultSet.getString("vehicle_plate"));
     }
 
     private static Map<String, Object> values(String name, String color, UUID foreman) {

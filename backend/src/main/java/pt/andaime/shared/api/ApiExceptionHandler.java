@@ -26,7 +26,9 @@ final class ApiExceptionHandler {
             response.setHeader(HttpHeaders.RETRY_AFTER,
                     Long.toString(Math.max(1, rateLimited.retryAfter().toSeconds())));
         }
-        return problem(exception.status(), exception.code(), exception.getMessage());
+        var problem = problem(exception.status(), exception.code(), exception.getMessage());
+        exception.properties().forEach(problem::setProperty);
+        return problem;
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

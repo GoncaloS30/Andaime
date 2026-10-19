@@ -1,17 +1,18 @@
-import { Archive, ArrowLeft, Pencil, Plus, UserMinus, UserPlus, UsersRound } from 'lucide-react'
+import { Archive, ArrowLeft, Pencil, Plus, Truck, UserMinus, UserPlus, UsersRound } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
 import { SERIES } from '@/domain/palette'
 import { cn } from '@/lib/cn'
 import { Avatar, PhotoStack } from '@/ui/Avatar'
-import { Badge } from '@/ui/Badge'
+import { Badge, Plate } from '@/ui/Badge'
 import { Button } from '@/ui/Button'
 import { Field, Input, Select } from '@/ui/Field'
 import { PageHeader, Panel } from '@/ui/Layout'
 import { Dialog } from '@/ui/Overlay'
 import { EmptyState, ErrorState, SkeletonRows } from '@/ui/States'
 import { errorMessage, isApiError } from '../../api/http'
+import { useLinkTeamVehicle, useVehicles } from '../../api/planning'
 import { atLeast } from '../../api/types'
 import {
   addDaysIso,
@@ -227,6 +228,47 @@ function MemberDialog({ team, open, onOpenChange }: { team: TeamDetail; open: bo
   )
 }
 
+/** Viatura atual da equipa; a troca vale a partir de hoje (o planeamento passado não muda). */
+function TeamVehicle({ team, manager }: { team: TeamDetail; manager: boolean }) {
+  const org = useActiveOrg()
+  const vehicles = useVehicles(org.id, {}, manager && !team.archived)
+  const link = useLinkTeamVehicle(org.id)
+  if (!manager || team.archived) {
+    return team.vehicle ? (
+      <p className="mt-1 flex items-center gap-1.5 text-sm text-ink-3">
+        <Truck className="size-4" aria-hidden /> <Plate plate={team.vehicle.plate} />
+      </p>
+    ) : null
+  }
+  return (
+    <label className="mt-2 flex items-center gap-2 text-sm text-ink-3">
+      <Truck className="size-4" aria-hidden />
+      <span className="sr-only">Viatura da equipa</span>
+      <Select
+        aria-label="Viatura da equipa"
+        className="h-8 max-w-[260px]"
+        value={team.vehicle?.id ?? ''}
+        disabled={link.isPending}
+        onChange={(e) =>
+          link.mutate(
+            { teamId: team.id, vehicleId: e.target.value || null },
+            { onSuccess: () => toast.success('Viatura da equipa atualizada a partir de hoje'), onError: (err) => toast.error(errorMessage(err)) },
+          )
+        }
+      >
+        <option value="">Sem viatura</option>
+        {(vehicles.data ?? [])
+          .filter((v) => v.status !== 'INACTIVE')
+          .map((v) => (
+            <option key={v.id} value={v.id}>
+              {v.plate} · {v.seats} lugares{v.team && v.team.id !== team.id ? ` (agora em ${v.team.name})` : ''}
+            </option>
+          ))}
+      </Select>
+    </label>
+  )
+}
+
 export function TeamDetailPage() {
   const { id = '' } = useParams()
   const org = useActiveOrg()
@@ -263,6 +305,7 @@ export function TeamDetailPage() {
           <p className="text-sm text-ink-3">
             {t.members.length} elementos · {t.foremanName ? `Responsável: ${t.foremanName}` : 'sem responsável'}
           </p>
+          <TeamVehicle team={t} manager={manager} />
         </div>
         {manager && !t.archived && (
           <div className="flex flex-wrap gap-2">

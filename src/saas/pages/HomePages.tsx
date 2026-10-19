@@ -16,8 +16,6 @@ import { useActiveOrg, useSession } from '../session'
  * o ecrã diz isso mesmo, em vez de mostrar dados fictícios.
  */
 export const MODULES: { path: string; label: string; phase: string }[] = [
-  { path: '/planeamento', label: 'Planeamento', phase: 'F3' },
-  { path: '/viaturas', label: 'Viaturas', phase: 'F3' },
   { path: '/horas', label: 'Horas e aprovações', phase: 'F4' },
   { path: '/ausencias', label: 'Ausências', phase: 'F5' },
   { path: '/agenda', label: 'Agenda', phase: 'F5' },
@@ -26,7 +24,6 @@ export const MODULES: { path: string; label: string; phase: string }[] = [
   { path: '/mapas', label: 'Mapas semanais', phase: 'F6' },
   { path: '/relatorios', label: 'Relatórios', phase: 'F6' },
   { path: '/dormidas', label: 'Dormidas', phase: 'depois de F6' },
-  { path: '/encarregado/semana', label: 'Escala da semana', phase: 'F3' },
   { path: '/encarregado/horas', label: 'Horas da equipa', phase: 'F4' },
   { path: '/encarregado/diario', label: 'Diário de obra', phase: 'depois de F6' },
   { path: '/encarregado/documentos', label: 'Documentação', phase: 'F5' },

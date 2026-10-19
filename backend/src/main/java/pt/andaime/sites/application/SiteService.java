@@ -54,7 +54,10 @@ public class SiteService {
     private static final String SELECT = """
             SELECT site.*, client.name AS client_name, foreman.full_name AS foreman_name,
                    director.display_name AS director_name,
-                   (SELECT count(*) FROM site_issues issue WHERE issue.site_id = site.id AND issue.status = 'OPEN') AS open_issues
+                   (SELECT count(*) FROM site_issues issue WHERE issue.site_id = site.id AND issue.status = 'OPEN') AS open_issues,
+                   (SELECT coalesce(sum(assignment.planned_min), 0) FROM assignments assignment
+                    WHERE assignment.organization_id = site.organization_id AND assignment.site_id = site.id
+                      AND assignment.work_date >= ?) AS planned_future_min
             FROM sites site
             LEFT JOIN clients client ON client.organization_id = site.organization_id AND client.id = site.client_id
             LEFT JOIN employees foreman ON foreman.organization_id = site.organization_id AND foreman.id = site.foreman_employee_id
@@ -84,7 +87,8 @@ public class SiteService {
     public List<SiteSummary> list(String query, String status, String country, boolean archived) {
         var scope = scope();
         var where = new StringBuilder(scope.sql());
-        var params = new ArrayList<>(scope.params());
+        var params = new ArrayList<Object>(List.of(TenantContext.today(clock)));
+        params.addAll(scope.params());
         where.append(archived ? " AND site.archived_at IS NOT NULL" : " AND site.archived_at IS NULL");
         if (status != null && !status.isBlank()) {
             where.append(" AND site.status = ?");
@@ -124,7 +128,7 @@ public class SiteService {
     @Transactional(readOnly = true)
     public SiteDetail get(UUID siteId) {
         var scope = scope();
-        var params = new ArrayList<Object>(List.of(siteId));
+        var params = new ArrayList<Object>(List.of(TenantContext.today(clock), siteId));
         params.addAll(scope.params());
         return jdbcTemplate.query(SELECT + " WHERE site.id = ? AND " + scope.sql(), this::detail, params.toArray())
                 .stream().findFirst().orElseThrow(SiteService::notFound);
@@ -219,7 +223,10 @@ public class SiteService {
             }
             return new Scope("FALSE", List.of());
         }
-        return new Scope("site.foreman_employee_id = ?", List.of(me));
+        return new Scope("""
+                (site.foreman_employee_id = ? OR site.id IN (SELECT assignment.site_id FROM assignments assignment
+                 JOIN teams team ON team.organization_id = assignment.organization_id AND team.id = assignment.team_id
+                 WHERE team.foreman_employee_id = ? AND assignment.work_date >= current_date - 30))""", List.of(me, me));
     }
 
     // --- auxiliares ---------------------------------------------------------------------
@@ -369,15 +376,15 @@ public class SiteService {
     }
 
     /**
-     * Métricas a partir dos dados persistidos. Até existir registo de horas (F4) e planeamento (F3),
-     * as realizadas e aprovadas vêm só do histórico importado e as planeadas são zero — sem números inventados.
+     * Métricas a partir dos dados persistidos. Até existir registo de horas (F4), as realizadas e aprovadas vêm só
+     * do histórico importado; as planeadas são as atribuições de hoje em diante.
      */
     private static SiteMetrics metrics(ResultSet resultSet) throws SQLException {
         return SiteMetrics.of(
                 (Integer) resultSet.getObject("hour_limit_min"),
                 resultSet.getInt("baseline_realized_min"),
                 resultSet.getInt("baseline_approved_min"),
-                0,
+                resultSet.getInt("planned_future_min"),
                 false);
     }
 

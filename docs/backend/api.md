@@ -92,6 +92,26 @@ Todas sob `/api/orgs/{orgId}`. Gestor = OWNER, ADMIN ou MANAGER. O encarregado t
 | PUT | `/members/{membershipId}/employee` | ADMIN+ | `{employeeId | null}`; 409 `employee-linked` |
 | GET | `/audit?entityType&entityId` | gestor | Histórico de um registo |
 
-## F3–F6 (planeado)
+## F3 — Planeamento e viaturas
+
+Todas sob `/api/orgs/{orgId}`. Horas locais da obra (`HH:mm`), durações em minutos.
+
+| Método | Caminho | Quem | Descrição |
+|---|---|---|---|
+| GET | `/planning/board?from&to` | todos (âmbito) | `{assignments, conflicts, readOnly}`; máximo 92 dias. Gestor vê tudo e os conflitos; encarregado as suas equipas/obras; trabalhador as suas atribuições |
+| GET | `/planning/conflicts?from&to` | gestor | Conflitos com `severity` (BLOCK/WARN), explicação e `fixes` |
+| POST | `/planning/preview` | gestor | Corre o comando e desfaz: `{created, updated, deleted, skipped[], newConflicts[]}` |
+| POST | `/planning/commands` | gestor | `{kind, …, acknowledgedConflictIds[]}`; 409 `planning-conflicts` (bloqueantes) ou `confirmation-required` (avisos a confirmar), ambos com `conflicts[]`; 409 `stale` |
+| GET | `/planning/change-sets?limit` | gestor | Últimas alterações do próprio, com `canRevert` |
+| POST | `/planning/change-sets/{id}/revert` | gestor | 409 `stale` (mudou entretanto), `already-reverted` |
+| GET | `/vehicles?q&status&archived` · `/vehicles/{id}` | encarregado+ | Alertas a 30 dias; ficha com indisponibilidades e próximas saídas |
+| POST · PATCH | `/vehicles` · `/vehicles/{id}` | gestor | `{plate, make, model, seats, status, km, insuranceUntil, inspectionUntil, maintenanceDue, notes, version}`; 409 `plate-taken`, `stale` |
+| POST | `/vehicles/{id}/archive` · `/restore` | gestor | Arquivar fecha a ligação à equipa |
+| POST · DELETE | `/vehicles/{id}/unavailability[/{uid}]` | gestor | `{startsOn, endsOn, reason}` |
+| PUT | `/teams/{teamId}/vehicle` | gestor | `{vehicleId | null, from?}` (hoje ou futuro) |
+
+Tipos de comando: `ASSIGN`, `SCHEDULE` (várias pessoas × dias da semana), `UPDATE`, `BULK_UPDATE`, `DUPLICATE`, `DELETE`, `TRANSFER`, `COPY_WEEK` (ignora dias passados, pessoas inativas e dias já planeados e devolve-os em `skipped`). Máximo de 500 atribuições por comando.
+
+## F4–F6 (planeado)
 
 Ver `docs/backend/arquitetura.md` (Ecrã → API) e o plano aprovado. Cada fase acrescenta aqui a sua tabela quando é implementada.

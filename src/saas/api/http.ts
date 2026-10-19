@@ -17,9 +17,17 @@ export class ApiError extends Error {
   readonly fieldErrors: Record<string, string>
   readonly requestId?: string
   readonly retryAfter?: number
+  /** Propriedades extra do problema (ex.: `conflicts` num 409 de planeamento). */
+  readonly details: Record<string, unknown>
 
-  constructor(status: number, code: string, message: string, extra: { fieldErrors?: FieldProblem[]; requestId?: string; retryAfter?: number } = {}) {
+  constructor(
+    status: number,
+    code: string,
+    message: string,
+    extra: { fieldErrors?: FieldProblem[]; requestId?: string; retryAfter?: number; details?: Record<string, unknown> } = {},
+  ) {
     super(message)
+    this.details = extra.details ?? {}
     this.name = 'ApiError'
     this.status = status
     this.code = code
@@ -53,7 +61,7 @@ async function refreshCsrf(): Promise<void> {
 
 async function toApiError(response: Response): Promise<ApiError> {
   const retryAfter = Number(response.headers.get('Retry-After')) || undefined
-  let body: { code?: string; detail?: string; title?: string; errors?: FieldProblem[]; requestId?: string } = {}
+  let body: { code?: string; detail?: string; title?: string; errors?: FieldProblem[]; requestId?: string; [key: string]: unknown } = {}
   try {
     body = await response.json()
   } catch {
@@ -75,6 +83,7 @@ async function toApiError(response: Response): Promise<ApiError> {
     fieldErrors: body.errors,
     requestId: body.requestId,
     retryAfter,
+    details: body,
   })
 }
 

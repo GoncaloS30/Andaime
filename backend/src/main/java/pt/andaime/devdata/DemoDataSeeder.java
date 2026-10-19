@@ -2,7 +2,10 @@ package pt.andaime.devdata;
 
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.temporal.TemporalAdjusters;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,7 +26,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import pt.andaime.fleet.application.VehicleService;
+import pt.andaime.fleet.application.VehicleService.VehicleInput;
 import pt.andaime.organization.application.OrganizationService;
+import pt.andaime.planning.application.PlanningService;
+import pt.andaime.planning.application.PlanningViews.Command;
+import pt.andaime.planning.domain.ConflictEngine.Severity;
 import pt.andaime.shared.ids.Ids;
 import pt.andaime.shared.tenant.TenantContext;
 import pt.andaime.sites.application.ClientService;
@@ -114,10 +122,13 @@ class DemoDataSeeder implements ApplicationRunner {
     private final TeamService teams;
     private final ClientService clients;
     private final SiteService sites;
+    private final VehicleService vehicles;
+    private final PlanningService planning;
 
     DemoDataSeeder(Environment environment, JdbcTemplate jdbcTemplate, PasswordEncoder passwordEncoder,
             PlatformTransactionManager transactionManager, Ids ids, Clock clock, OrganizationService organizations,
-            EmployeeService employees, TeamService teams, ClientService clients, SiteService sites) {
+            EmployeeService employees, TeamService teams, ClientService clients, SiteService sites,
+            VehicleService vehicles, PlanningService planning) {
         this.environment = environment;
         this.jdbcTemplate = jdbcTemplate;
         this.passwordEncoder = passwordEncoder;
@@ -129,6 +140,8 @@ class DemoDataSeeder implements ApplicationRunner {
         this.teams = teams;
         this.clients = clients;
         this.sites = sites;
+        this.vehicles = vehicles;
+        this.planning = planning;
     }
 
     @Override
@@ -185,6 +198,7 @@ class DemoDataSeeder implements ApplicationRunner {
 
         Map<String, UUID> teamIds = new java.util.HashMap<>();
         Map<String, UUID> leaders = new java.util.HashMap<>();
+        Map<String, List<UUID>> teamMembers = new java.util.HashMap<>();
         for (var team : TEAMS) {
             var members = new ArrayList<UUID>();
             for (int i = 0; i < team.size(); i++) {
@@ -197,6 +211,7 @@ class DemoDataSeeder implements ApplicationRunner {
             var created = teams.create(team.name(), team.color(), members.getFirst());
             teamIds.put(team.name(), created.id());
             leaders.put(team.name(), members.getFirst());
+            teamMembers.put(team.name(), members);
             for (var member : members) {
                 teams.addMember(created.id(), member, today);
             }
@@ -208,17 +223,50 @@ class DemoDataSeeder implements ApplicationRunner {
                     "Servente", random, today);
         }
 
+        // Uma carrinha por equipa (as letras da matrícula são fictícias) e uma de reserva na oficina.
+        int plate = 10;
+        for (var team : TEAMS) {
+            plate += 7;
+            var vehicle = vehicles.create(new VehicleInput("%02d-ZZ-%02d".formatted(plate, 90 - plate), "Renault", "Master",
+                    team.size() + 1, "OPERATIONAL", 40000 + plate * 1500, today.plusDays(40 + plate * 5),
+                    today.plusDays(plate == 24 ? 12 : 120 + plate), null, null));
+            vehicles.linkTeam(teamIds.get(team.name()), vehicle.id(), today);
+        }
+        vehicles.create(new VehicleInput("99-ZZ-01", "Ford", "Transit", 9, "WORKSHOP", 182000, today.plusDays(90),
+                today.plusDays(200), today.plusDays(5), "Embraiagem."));
+
+        Map<String, UUID> siteIds = new java.util.HashMap<>();
         for (var site : SITES) {
             var client = clients.create(new ClientInput(site.client(), null, null, null, null, site.clientCountry()));
             var limitMin = site.limitHours() * 60;
             var realized = (int) Math.round(limitMin * site.done());
             var start = today.plusDays(site.startOffsetDays());
-            sites.create(new SiteInput(site.code(), site.name(), client.id(), site.country(), site.city(), site.address(),
+            var created = sites.create(new SiteInput(site.code(), site.name(), client.id(), site.country(), site.city(), site.address(),
                     BigDecimal.valueOf(site.lat()), BigDecimal.valueOf(site.lng()), null,
                     site.startOffsetDays() > 0 ? "PLANNED" : "ACTIVE", start, start.plusDays(site.durationDays()),
                     limitMin, realized, (int) Math.round(realized * 0.85), null,
                     site.team() == null ? null : leaders.get(site.team()), site.color(),
                     "Obra fictícia de demonstração.", null));
+            if (site.team() != null && site.startOffsetDays() <= 0) {
+                siteIds.put(site.team(), created.id());
+            }
+        }
+
+        // Esta semana e a próxima: cada equipa na sua obra, de segunda a sexta, pelos mesmos comandos da API.
+        var monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        for (var team : TEAMS) {
+            var site = siteIds.get(team.name());
+            if (site == null) {
+                continue;
+            }
+            var command = new Command("SCHEDULE", null, null, teamMembers.get(team.name()), site, null,
+                    today, monday.plusDays(11), List.of(1, 2, 3, 4, 5), LocalTime.of(8, 0), LocalTime.of(17, 0), null,
+                    null, null, null, leaders.get(team.name()), null, null, null, null, List.of());
+            var preview = planning.execute(command, true);
+            var warnings = preview.newConflicts().stream().filter(c -> c.severity() == Severity.WARN).map(c -> c.id()).toList();
+            planning.execute(new Command("SCHEDULE", null, null, command.employeeIds(), site, null, command.from(),
+                    command.to(), command.weekdays(), command.start(), command.end(), null, null, null, null,
+                    command.foremanEmployeeId(), null, null, null, null, warnings), false);
         }
     }
 

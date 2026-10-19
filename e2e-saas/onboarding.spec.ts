@@ -73,7 +73,7 @@ test('criar empresa, convidar um encarregado e entrar com o papel certo', async 
   await expect(owner.getByText(company).first()).toBeVisible()
 
   // Os módulos por ligar dizem-no, sem dados fictícios.
-  await owner.goto('/planeamento')
+  await owner.goto('/dormidas')
   await expect(owner.getByText('Ainda não ligado ao servidor')).toBeVisible()
 
   // 2. Convida um encarregado.
