@@ -7,8 +7,15 @@
 ## Política laboral (por empresa, com data de início)
 
 Configurável em Definições → Regras: horas normais por dia e por semana, dias de descanso, pausa automática (depois de
-quantos minutos e quanto tempo), atribuição dos turnos que passam a meia-noite e feriados da empresa. A tabela de
-feriados nacionais existe mas **vem vazia**: hoje cada empresa introduz os feriados que se lhe aplicam.
+quantos minutos e quanto tempo), atribuição dos turnos que passam a meia-noite e feriados da empresa. Os feriados
+**nacionais** de PT, ES, FR, BE, LU, NL, DE, AT, IT, IE, GB (Inglaterra e País de Gales) e CH (só federal) são
+calculados pelo sistema e contam no cálculo de horas (do país da empresa e do país de cada obra); regionais e
+municipais registam-se como feriados da empresa.
+
+Pontos a validar nos feriados nacionais: Itália (4 de outubro a partir de 2026), Países Baixos (5 de maio e
+Sexta-feira Santa dependem da convenção), Espanha (6 de janeiro substituível pelas regiões; feriados ao domingo),
+Irlanda e Bélgica (dias de substituição não modelados), Reino Unido (feriados pontuais futuros), França (segunda-feira de
+Pentecostes como dia de solidariedade; Alsácia-Mosela), Portugal (Sexta-feira Santa noutro dia por costume local).
 
 | País | Por omissão hoje | A validar |
 |---|---|---|
@@ -34,5 +41,5 @@ segurança na construção, certificado A1, carta de condução; nas viaturas, s
 ## Fusos e feriados
 
 Cada obra tem o seu fuso (IANA). Os registos de tempo guardam o instante (UTC) e o fuso da obra; os dias são calculados
-no fuso da obra. Feriados: carregar os nacionais por país (hoje vazios) depois de confirmar a lista, mais os
-regionais/municipais relevantes.
+no fuso da obra. Quando a obra e a empresa são de países diferentes, contam os feriados nacionais de ambos — **a
+confirmar** (ex.: trabalhador de empresa portuguesa numa obra em Espanha a 10 de junho).

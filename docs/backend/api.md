@@ -184,6 +184,16 @@ Com acesso de suporte, qualquer escrita devolve 403 `support-read-only`. `/actua
 - Avisos por email: pedidos e decisões de ausência, folhas devolvidas e documentos a caducar/caducados seguem também por email, depois do commit, para quem os tem ligados (fila na tabela `notifications`, `SKIP LOCKED`, recuo 2–16 min, desiste à 5.ª tentativa).
 - Antivírus: com `andaime.antivirus.mode=clamd` (por omissão no perfil `prod`), documentos e fotos são analisados pelo clamd antes de irem para o armazenamento: 422 `file-infected`; 503 `antivirus-unavailable` se o clamd não responder (falha fechada). Os documentos guardam `scan_status` (`CLEAN` ou `NOT_SCANNED`).
 
+## Feriados nacionais
+
+| Método | Caminho | Quem | Descrição |
+|---|---|---|---|
+| GET | `/api/orgs/{orgId}/public-holidays?country=PT&year=2026` | encarregado+ | `[{date, name}]` dos feriados **nacionais** (PT, ES, FR, BE, LU, NL, DE, AT, IT, IE, GB — Inglaterra e País de Gales —, CH só federal); 400 `unsupported-country` (com `supported`) ou `validation` (ano fora de 2000–2100) |
+
+- Calculados em Java (festas móveis a partir da Páscoa) e carregados a pedido na tabela global `public_holidays` pela função `app.ensure_public_holidays` (V25); `andaime_app` deixa de poder escrever diretamente na tabela.
+- No cálculo de horas contam os feriados da empresa, os nacionais do país da empresa e, para cada registo, os nacionais do país da obra. `andaime.holidays.national-in-hours=false` tira os nacionais do cálculo (usado nos testes, que trabalham com datas relativas a hoje).
+- Regionais, municipais (e o Carnaval em Portugal) não estão incluídos: registam-se como feriados da empresa. Listas a validar juridicamente ([../juridico/regras-por-pais.md](../juridico/regras-por-pais.md)).
+
 ## RGPD — conservação e exportação de dados
 
 | Método | Caminho | Quem | Descrição |
