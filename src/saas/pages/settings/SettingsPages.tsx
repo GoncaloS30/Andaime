@@ -1,4 +1,4 @@
-import { MailPlus, Monitor, RotateCw, Trash2, UserX } from 'lucide-react'
+import { Download, MailPlus, Monitor, RotateCw, Trash2, UserX } from 'lucide-react'
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { NavLink, Navigate, useNavigate } from 'react-router'
 import { toast } from 'sonner'
@@ -25,7 +25,7 @@ import {
   useUpdateOrganization,
   useUpdateProfile,
 } from '../../api/hooks'
-import { errorMessage, isApiError } from '../../api/http'
+import { downloadFile, errorMessage, isApiError } from '../../api/http'
 import { useNotificationPreferences, useUpdateNotificationPreferences } from '../../api/operations'
 import { atLeast, ORG_ROLE_LABEL, type Member, type Organization, type OrgRole } from '../../api/types'
 import { useEmployeeOptions, useLinkEmployee } from '../../api/workforce'
@@ -604,8 +604,46 @@ export function AccountSections() {
         <PasswordForm />
       </Panel>
       <EmailNoticesPanel />
+      <MyDataPanel />
       <SessionsPanel />
     </div>
+  )
+}
+
+/** RGPD (arts. 15.º e 20.º): cópia de tudo o que a empresa guarda sobre a ficha ligada a esta conta. */
+function MyDataPanel() {
+  const org = useActiveOrg()
+  const [loading, setLoading] = useState(false)
+  const [notLinked, setNotLinked] = useState(false)
+  if (org.supportUntil) return null
+  const download = async () => {
+    setLoading(true)
+    setNotLinked(false)
+    try {
+      await downloadFile(`/orgs/${org.id}/me/export`, 'os-meus-dados.zip')
+    } catch (error) {
+      if (isApiError(error, 'no-employee')) setNotLinked(true)
+      else toast.error(errorMessage(error))
+    } finally {
+      setLoading(false)
+    }
+  }
+  return (
+    <Panel title="Os meus dados" description="Direito de acesso e portabilidade (RGPD).">
+      <p className="mb-3 text-sm text-ink-2">
+        Descarregue um ficheiro ZIP com os dados que {org.name} guarda sobre si: ficha, contratos, equipas, planeamento, ponto e
+        horas, ausências, documentos, fardamento e notificações.
+      </p>
+      <Button icon={<Download className="size-4" />} loading={loading} onClick={() => void download()}>
+        Descarregar os meus dados
+      </Button>
+      {notLinked && (
+        <p role="status" className="mt-3 text-sm text-ink-3">
+          A sua conta não está ligada a uma ficha de trabalhador em {org.name}, por isso não há dados de trabalhador para
+          exportar. Se trabalha nesta empresa, peça a um administrador que ligue a sua conta à sua ficha.
+        </p>
+      )}
+    </Panel>
   )
 }
 

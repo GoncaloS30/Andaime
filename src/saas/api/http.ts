@@ -132,3 +132,29 @@ export async function api<T>(path: string, options: { method?: Method; body?: un
   const text = await response.text()
   return (text ? JSON.parse(text) : undefined) as T
 }
+
+/**
+ * Descarrega um ficheiro da API (GET, mesma origem, sem CSRF) e entrega-o ao browser. Ao contrário de um simples
+ * `<a download>`, um erro chega como {@link ApiError} e pode ser explicado no ecrã em vez de virar um ficheiro JSON.
+ */
+export async function downloadFile(path: string, fallbackName: string): Promise<void> {
+  const response = await fetch(`/api${path}`, {
+    credentials: 'same-origin',
+    headers: { Accept: 'application/zip, application/octet-stream, application/problem+json' },
+  })
+  if (!response.ok) {
+    const error = await toApiError(response)
+    if (response.status === 401) unauthorizedListeners.forEach((l) => l())
+    throw error
+  }
+  const disposition = response.headers.get('Content-Disposition') ?? ''
+  const name = /filename="?([^";]+)"?/.exec(disposition)?.[1] ?? fallbackName
+  const url = URL.createObjectURL(await response.blob())
+  const link = document.createElement('a')
+  link.href = url
+  link.download = name
+  document.body.append(link)
+  link.click()
+  link.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 10_000)
+}

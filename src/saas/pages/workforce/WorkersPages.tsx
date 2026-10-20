@@ -1,11 +1,11 @@
-import { Archive, ArchiveRestore, ArrowLeft, FileSignature, Mail, Pencil, Phone, Plus, Search, Trash2, Users, UserX } from 'lucide-react'
+import { Archive, ArchiveRestore, ArrowLeft, Download, FileSignature, Mail, Pencil, Phone, Plus, Search, Trash2, Users, UserX } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import { CATEGORIES } from '@/domain/labels'
 import { Avatar } from '@/ui/Avatar'
 import { Badge } from '@/ui/Badge'
-import { Button } from '@/ui/Button'
+import { Button, buttonStyles } from '@/ui/Button'
 import { Detail, PageHeader, Panel } from '@/ui/Layout'
 import { Field, Input, Select } from '@/ui/Field'
 import { Dialog } from '@/ui/Overlay'
@@ -415,6 +415,12 @@ export function WorkerDetailPage() {
               <Button icon={<Pencil className="size-4" />} onClick={() => setEditing(true)}>
                 Editar
               </Button>
+            )}
+            {atLeast(org.role, 'ADMIN') && !org.supportUntil && (
+              // RGPD (arts. 15.º e 20.º): ZIP com os dados e os documentos do trabalhador; cada exportação fica auditada.
+              <a href={`/api/orgs/${org.id}/employees/${w.id}/export`} download className={buttonStyles('ghost')}>
+                <Download className="size-4" aria-hidden /> Exportar dados (RGPD)
+              </a>
             )}
             {w.archivedAt && !w.anonymized && atLeast(org.role, 'ADMIN') && <AnonymizeButton id={w.id} name={w.fullName} />}
             {!w.anonymized && (
