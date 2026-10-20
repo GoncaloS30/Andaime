@@ -2,6 +2,7 @@ package pt.andaime.notifications;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -14,10 +15,18 @@ import pt.andaime.shared.tenant.TenantContext;
 
 /**
  * Contrato público do módulo de notificações. As notificações são gravadas na mesma transação da alteração que as
- * origina (se a alteração falhar, não há notificação) e só são empurradas por SSE depois do commit.
+ * origina (se a alteração falhar, não há notificação) e só são empurradas por SSE depois do commit. As que seguem por
+ * email ficam na fila da própria tabela e são enviadas por {@code NotificationEmailSender} (outbox).
  */
 @Component
 public class Notifier {
+
+    /**
+     * Avisos que também seguem por email (depois do commit, para quem não os desligou): decisões e pedidos de ausência,
+     * folhas devolvidas e validades de documentos. Os restantes ficam só na aplicação.
+     */
+    static final Set<String> EMAIL_KINDS = Set.of("absence.requested", "absence.decided", "timesheet.rejected",
+            "document.expiring", "document.expired");
 
     private final JdbcTemplate jdbcTemplate;
     private final NotificationStream stream;
@@ -34,14 +43,16 @@ public class Notifier {
     public void notify(Collection<UUID> userIds, String kind, String title, String body, String link, String dedupeKey) {
         var organizationId = TenantContext.organizationId().orElseThrow();
         var actor = TenantContext.userId().orElse(null);
+        var email = EMAIL_KINDS.contains(kind);
         for (var userId : userIds) {
             if (userId == null || userId.equals(actor) && dedupeKey == null) {
                 continue;
             }
             jdbcTemplate.update("""
-                    INSERT INTO notifications (organization_id, user_id, kind, title, body, link, dedupe_key)
-                    VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING
-                    """, organizationId, userId, kind, title, body, link, dedupeKey);
+                    INSERT INTO notifications (organization_id, user_id, kind, title, body, link, dedupe_key, email_status, email_next_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, CASE WHEN ? THEN 'PENDING' END, CASE WHEN ? THEN now() END)
+                    ON CONFLICT DO NOTHING
+                    """, organizationId, userId, kind, title, body, link, dedupeKey, email, email);
         }
         var recipients = List.copyOf(userIds);
         if (TransactionSynchronizationManager.isSynchronizationActive()) {

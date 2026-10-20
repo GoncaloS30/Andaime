@@ -374,3 +374,19 @@ export function useMarkNotificationsRead(orgId: string) {
     onSuccess: (data) => qc.setQueryData(['org', orgId, 'notifications'], data),
   })
 }
+
+/** Preferências de aviso do utilizador nesta empresa (por omissão, os avisos importantes também seguem por email). */
+export function useNotificationPreferences(orgId: string) {
+  return useQuery({
+    queryKey: ['org', orgId, 'notification-preferences'],
+    queryFn: () => api<{ email: boolean }>(`${base(orgId)}/notifications/preferences`),
+  })
+}
+
+export function useUpdateNotificationPreferences(orgId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { email: boolean }) => api<{ email: boolean }>(`${base(orgId)}/notifications/preferences`, { method: 'PUT', body }),
+    onSuccess: (data) => qc.setQueryData(['org', orgId, 'notification-preferences'], data),
+  })
+}

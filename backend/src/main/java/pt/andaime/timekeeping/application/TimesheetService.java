@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import pt.andaime.audit.AuditLog;
+import pt.andaime.notifications.Notifier;
 import pt.andaime.reporting.ReportingProjection;
 import pt.andaime.shared.api.ApiException;
 import pt.andaime.shared.tenant.OrgRole;
@@ -42,14 +43,16 @@ public class TimesheetService {
     private final JdbcTemplate jdbcTemplate;
     private final AuditLog auditLog;
     private final ReportingProjection reporting;
+    private final Notifier notifier;
     private final Clock clock;
 
     public TimesheetService(TimekeepingRepository repository, JdbcTemplate jdbcTemplate, AuditLog auditLog,
-            ReportingProjection reporting, Clock clock) {
+            ReportingProjection reporting, Notifier notifier, Clock clock) {
         this.repository = repository;
         this.jdbcTemplate = jdbcTemplate;
         this.auditLog = auditLog;
         this.reporting = reporting;
+        this.notifier = notifier;
         this.clock = clock;
     }
 
@@ -184,6 +187,10 @@ public class TimesheetService {
                                version = version + 1
                         WHERE employee_id = ? AND week_start = ?
                         """, userId, note.strip(), employeeId, monday);
+                var reason = note.strip();
+                notifier.notify(notifier.userOfEmployee(employeeId), "timesheet.rejected", "Folha de horas devolvida",
+                        "Semana de " + monday.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) + ": "
+                                + (reason.length() > 900 ? reason.substring(0, 900) + "…" : reason), "/app", null);
             }
             default -> {
                 expect(status, "reabrir", "APPROVED");

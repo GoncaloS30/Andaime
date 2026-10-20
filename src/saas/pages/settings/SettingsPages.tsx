@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/cn'
 import { Badge } from '@/ui/Badge'
 import { Button } from '@/ui/Button'
-import { Field, Input, Select } from '@/ui/Field'
+import { Field, Input, Select, Switch } from '@/ui/Field'
 import { PageHeader, Panel } from '@/ui/Layout'
 import { Dialog } from '@/ui/Overlay'
 import { EmptyState, ErrorState, SkeletonRows } from '@/ui/States'
@@ -26,6 +26,7 @@ import {
   useUpdateProfile,
 } from '../../api/hooks'
 import { errorMessage, isApiError } from '../../api/http'
+import { useNotificationPreferences, useUpdateNotificationPreferences } from '../../api/operations'
 import { atLeast, ORG_ROLE_LABEL, type Member, type Organization, type OrgRole } from '../../api/types'
 import { useEmployeeOptions, useLinkEmployee } from '../../api/workforce'
 import { useActiveOrg, useSession } from '../../session'
@@ -600,8 +601,34 @@ export function AccountSections() {
       <Panel title="Palavra-passe">
         <PasswordForm />
       </Panel>
+      <EmailNoticesPanel />
       <SessionsPanel />
     </div>
+  )
+}
+
+function EmailNoticesPanel() {
+  const org = useActiveOrg()
+  const preferences = useNotificationPreferences(org.id)
+  const update = useUpdateNotificationPreferences(org.id)
+  return (
+    <Panel title="Avisos por email">
+      {preferences.isPending ? (
+        <SkeletonRows rows={1} />
+      ) : preferences.isError ? (
+        <ErrorState onRetry={() => void preferences.refetch()} />
+      ) : (
+        <Switch
+          checked={update.isPending ? !preferences.data.email : preferences.data.email}
+          disabled={update.isPending}
+          onChange={(email) =>
+            update.mutate({ email }, { onError: (error) => toast.error(errorMessage(error)) })
+          }
+          label="Receber avisos importantes por email"
+          description={`Ausências, folhas de horas devolvidas e documentos a caducar em ${org.name}. Os avisos continuam sempre na aplicação.`}
+        />
+      )}
+    </Panel>
   )
 }
 

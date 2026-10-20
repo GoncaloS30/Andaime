@@ -58,6 +58,24 @@ public class NotificationService {
         return inbox(30);
     }
 
+    public record Preferences(boolean email) {
+    }
+
+    /** Preferências do utilizador corrente nesta empresa (cada empresa tem as suas). */
+    @Transactional(readOnly = true)
+    public Preferences preferences() {
+        var email = jdbcTemplate.queryForObject("SELECT email_notifications FROM memberships WHERE user_id = ?", Boolean.class,
+                TenantContext.userId().orElseThrow());
+        return new Preferences(Boolean.TRUE.equals(email));
+    }
+
+    @Transactional
+    public Preferences updatePreferences(Preferences preferences) {
+        jdbcTemplate.update("UPDATE memberships SET email_notifications = ? WHERE user_id = ?", preferences.email(),
+                TenantContext.userId().orElseThrow());
+        return preferences();
+    }
+
     public SseEmitter subscribe() {
         return stream.open(TenantContext.organizationId().orElseThrow(), TenantContext.userId().orElseThrow());
     }

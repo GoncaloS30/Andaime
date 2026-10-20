@@ -16,6 +16,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.MountableFile;
 
 import pt.andaime.identity.application.IdentityMailGateway;
+import pt.andaime.notifications.application.NotificationMailGateway;
 import pt.andaime.organization.application.OrganizationMailGateway;
 
 /**
@@ -53,6 +54,9 @@ abstract class IntegrationTestSupport {
 
     @MockitoBean
     OrganizationMailGateway organizationMailGateway;
+
+    @MockitoBean
+    NotificationMailGateway notificationMailGateway;
 
     @DynamicPropertySource
     static void databaseProperties(DynamicPropertyRegistry registry) {
