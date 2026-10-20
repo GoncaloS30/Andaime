@@ -256,15 +256,18 @@ class DemoDataSeeder implements ApplicationRunner {
                 today.plusDays(200), today.plusDays(5), "Embraiagem."));
 
         Map<String, UUID> siteIds = new java.util.HashMap<>();
+        var siteIndex = 0;
         for (var site : SITES) {
+            // A segunda obra tem a previsão de fim 12 dias depois do fim contratual: mostra o aviso de atraso.
+            var lateDays = siteIndex++ == 1 ? 12 : 0;
             var client = clients.create(new ClientInput(site.client(), null, null, null, null, site.clientCountry()));
             var limitMin = site.limitHours() * 60;
             var realized = (int) Math.round(limitMin * site.done());
             var start = today.plusDays(site.startOffsetDays());
             var created = sites.create(new SiteInput(site.code(), site.name(), client.id(), site.country(), site.city(), site.address(),
                     BigDecimal.valueOf(site.lat()), BigDecimal.valueOf(site.lng()), null,
-                    site.startOffsetDays() > 0 ? "PLANNED" : "ACTIVE", start, start.plusDays(site.durationDays()),
-                    limitMin, realized, (int) Math.round(realized * 0.85), null,
+                    site.startOffsetDays() > 0 ? "PLANNED" : "ACTIVE", start, start.plusDays(site.durationDays() + lateDays),
+                    start.plusDays(site.durationDays()), limitMin, realized, (int) Math.round(realized * 0.85), null,
                     site.team() == null ? null : leaders.get(site.team()), site.color(),
                     "Obra fictícia de demonstração.", null));
             if (site.team() != null && site.startOffsetDays() <= 0) {

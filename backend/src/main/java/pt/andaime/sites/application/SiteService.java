@@ -33,6 +33,7 @@ import pt.andaime.sites.application.SiteViews.SiteDetail;
 import pt.andaime.sites.application.SiteViews.SiteInput;
 import pt.andaime.sites.application.SiteViews.SiteSummary;
 import pt.andaime.sites.domain.SiteMetrics;
+import pt.andaime.sites.domain.SiteSchedule;
 import pt.andaime.workforce.EmployeeDirectory;
 
 /**
@@ -132,6 +133,9 @@ public class SiteService {
                         resultSet.getString("color"),
                         resultSet.getObject("start_date", LocalDate.class),
                         resultSet.getObject("end_date", LocalDate.class),
+                        resultSet.getObject("contract_end_date", LocalDate.class),
+                        SiteSchedule.delayWorkdays(resultSet.getObject("contract_end_date", LocalDate.class),
+                                resultSet.getObject("end_date", LocalDate.class)),
                         ref(resultSet, "client_id", "client_name"),
                         ref(resultSet, "foreman_employee_id", "foreman_name"),
                         resultSet.getInt("open_issues"),
@@ -161,13 +165,13 @@ public class SiteService {
         ensureCodeFree((String) values.get("code"), null);
         var id = jdbcTemplate.queryForObject("""
                 INSERT INTO sites (organization_id, code, name, client_id, country, city, address, latitude, longitude,
-                    timezone, status, start_date, end_date, hour_limit_min, baseline_realized_min, baseline_approved_min,
-                    director_user_id, foreman_employee_id, color, description, erp_order)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id
+                    timezone, status, start_date, end_date, contract_end_date, hour_limit_min, baseline_realized_min,
+                    baseline_approved_min, director_user_id, foreman_employee_id, color, description, erp_order)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id
                 """, UUID.class, organizationId, values.get("code"), values.get("name"), values.get("clientId"),
                 values.get("country"), values.get("city"), values.get("address"), values.get("latitude"),
                 values.get("longitude"), values.get("timezone"), values.get("status"), values.get("startDate"),
-                values.get("endDate"), values.get("hourLimitMin"), values.get("baselineRealizedMin"),
+                values.get("endDate"), values.get("contractEndDate"), values.get("hourLimitMin"), values.get("baselineRealizedMin"),
                 values.get("baselineApprovedMin"), values.get("directorUserId"), values.get("foremanEmployeeId"),
                 values.get("color"), values.get("description"), values.get("erpOrder"));
         auditLog.record("site.created", "site", id, Changes.created(values, NOT_AUDITED_VALUES));
@@ -183,14 +187,15 @@ public class SiteService {
         ensureCodeFree((String) after.get("code"), siteId);
         var updated = jdbcTemplate.update("""
                 UPDATE sites SET code = ?, name = ?, client_id = ?, country = ?, city = ?, address = ?, latitude = ?,
-                    longitude = ?, timezone = ?, status = ?, start_date = ?, end_date = ?, hour_limit_min = ?,
+                    longitude = ?, timezone = ?, status = ?, start_date = ?, end_date = ?, contract_end_date = ?,
+                    hour_limit_min = ?,
                     baseline_realized_min = ?, baseline_approved_min = ?, director_user_id = ?,
                     foreman_employee_id = ?, color = ?, description = ?, erp_order = ?, version = version + 1
                 WHERE id = ? AND version = ? AND archived_at IS NULL
                 """, after.get("code"), after.get("name"), after.get("clientId"), after.get("country"),
                 after.get("city"), after.get("address"), after.get("latitude"), after.get("longitude"),
                 after.get("timezone"), after.get("status"), after.get("startDate"), after.get("endDate"),
-                after.get("hourLimitMin"), after.get("baselineRealizedMin"), after.get("baselineApprovedMin"),
+                after.get("contractEndDate"), after.get("hourLimitMin"), after.get("baselineRealizedMin"), after.get("baselineApprovedMin"),
                 after.get("directorUserId"), after.get("foremanEmployeeId"), after.get("color"),
                 after.get("description"), after.get("erpOrder"), siteId, expectedVersion);
         if (updated == 0) {
@@ -281,8 +286,12 @@ public class SiteService {
         if (input.startDate() != null && input.endDate() != null && input.endDate().isBefore(input.startDate())) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "invalid-dates", "A data de fim é anterior à data de início.");
         }
+        if (input.startDate() != null && input.contractEndDate() != null && input.contractEndDate().isBefore(input.startDate())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "invalid-dates", "O fim contratual é anterior à data de início.");
+        }
         values.put("startDate", input.startDate());
         values.put("endDate", input.endDate());
+        values.put("contractEndDate", input.contractEndDate());
         values.put("hourLimitMin", input.hourLimitMin());
         var realized = input.baselineRealizedMin() == null ? 0 : input.baselineRealizedMin();
         var approved = input.baselineApprovedMin() == null ? 0 : input.baselineApprovedMin();
@@ -324,6 +333,7 @@ public class SiteService {
         values.put("status", site.status());
         values.put("startDate", site.startDate());
         values.put("endDate", site.endDate());
+        values.put("contractEndDate", site.contractEndDate());
         values.put("hourLimitMin", site.hourLimitMin());
         values.put("baselineRealizedMin", site.baselineRealizedMin());
         values.put("baselineApprovedMin", site.baselineApprovedMin());
@@ -414,6 +424,9 @@ public class SiteService {
                 resultSet.getString("color"),
                 resultSet.getObject("start_date", LocalDate.class),
                 resultSet.getObject("end_date", LocalDate.class),
+                resultSet.getObject("contract_end_date", LocalDate.class),
+                SiteSchedule.delayWorkdays(resultSet.getObject("contract_end_date", LocalDate.class),
+                        resultSet.getObject("end_date", LocalDate.class)),
                 (Integer) resultSet.getObject("hour_limit_min"),
                 resultSet.getInt("baseline_realized_min"),
                 resultSet.getInt("baseline_approved_min"),

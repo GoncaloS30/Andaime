@@ -185,6 +185,7 @@ public class SiteController {
             @Pattern(regexp = "PLANNED|ACTIVE|SUSPENDED|DONE") String status,
             LocalDate startDate,
             LocalDate endDate,
+            LocalDate contractEndDate,
             @Min(60) @Max(100_000_000) Integer hourLimitMin,
             @Min(0) @Max(100_000_000) Integer baselineRealizedMin,
             @Min(0) @Max(100_000_000) Integer baselineApprovedMin,
@@ -197,7 +198,7 @@ public class SiteController {
 
         SiteInput toInput() {
             return new SiteInput(code, name, clientId, country, city, address, latitude, longitude, timezone, status,
-                    startDate, endDate, hourLimitMin, baselineRealizedMin, baselineApprovedMin, directorUserId,
+                    startDate, endDate, contractEndDate, hourLimitMin, baselineRealizedMin, baselineApprovedMin, directorUserId,
                     foremanEmployeeId, color, description, erpOrder);
         }
     }

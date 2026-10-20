@@ -206,6 +206,39 @@ class WorkforceSitesIntegrationTest extends ApiTestSupport {
     }
 
     @Test
+    void fimContratualComPrevisaoAtrasadaDaAvisoEmDiasUteis() throws Exception {
+        var owner = newUser("dono-prazos");
+        var orgId = createOrganization(owner, "Prazos de obra");
+        var start = LocalDate.parse("2026-01-05");
+
+        // Fim contratual sexta 16/10, previsão sexta 23/10: 5 dias úteis de atraso.
+        var site = body(perform(owner, post("/api/orgs/{orgId}/sites", orgId).content("""
+                {"name":"Obra atrasada","country":"PT","startDate":"%s","contractEndDate":"2026-10-16","endDate":"2026-10-23"}
+                """.formatted(start))).andExpect(status().isCreated()));
+        var siteId = UUID.fromString(JsonPath.read(site, "$.id"));
+        assertThat((String) JsonPath.read(site, "$.contractEndDate")).isEqualTo("2026-10-16");
+        assertThat((Integer) JsonPath.read(site, "$.delayWorkdays")).isEqualTo(5);
+        var list = body(perform(owner, get("/api/orgs/{orgId}/sites", orgId)).andExpect(status().isOk()));
+        assertThat(JsonPath.<List<Integer>>read(list, "$[?(@.name == 'Obra atrasada')].delayWorkdays")).containsExactly(5);
+
+        // A previsão volta para dentro do prazo: o aviso desaparece e a auditoria regista só a data mudada.
+        perform(owner, patch("/api/orgs/{orgId}/sites/{siteId}", orgId, siteId).content("""
+                {"name":"Obra atrasada","country":"PT","startDate":"%s","contractEndDate":"2026-10-16","endDate":"2026-10-15","version":0}
+                """.formatted(start))).andExpect(status().isOk()).andExpect(jsonPath("$.delayWorkdays").value(0));
+        var audit = body(perform(owner, get("/api/orgs/{orgId}/audit", orgId)
+                .param("entityType", "site").param("entityId", siteId.toString())));
+        assertThat(JsonPath.<java.util.Map<String, Object>>read(audit, "$.items[0].changes")).containsOnlyKeys("endDate");
+
+        // Sem fim contratual não há aviso; fim contratual antes do início é recusado.
+        perform(owner, post("/api/orgs/{orgId}/sites", orgId).content("""
+                {"name":"Sem contrato","country":"PT","endDate":"2026-12-31"}"""))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.delayWorkdays").value(0));
+        perform(owner, post("/api/orgs/{orgId}/sites", orgId).content("""
+                {"name":"Datas trocadas","country":"PT","startDate":"%s","contractEndDate":"2025-12-31"}
+                """.formatted(start))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("invalid-dates"));
+    }
+
+    @Test
     void recursosDeOutraEmpresaNaoSaoAcessiveisPeloCaminhoDaPropria() throws Exception {
         var ownerA = newUser("dono-idor-a");
         var orgA = createOrganization(ownerA, "IDOR A");
