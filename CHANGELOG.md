@@ -5,6 +5,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-PT/1.1.0/); 
 ## [Por publicar]
 
 ### Acrescentado
+- RGPD: conservação de dados por empresa (anonimização automática opcional, limpezas), exportação dos dados de um trabalhador num ZIP e dossier jurídico em rascunho.
+- Verificação em dois passos (aplicação de autenticação) com códigos de recuperação.
+- Feriados nacionais de 12 países no cálculo de horas.
+- Planeamento: vista mensal e versão própria para telemóvel.
+- Ficheiros para instalar em produção (Docker Compose, nginx, PostgreSQL, ClamAV) com teste local.
 - Backend SaaS (`backend/`, Spring Boot 4.1, PostgreSQL 18, Flyway): contas com sessões seguras, verificação de email, recuperação de palavra-passe, empresas com isolamento por RLS, papéis (proprietário, administrador, gestor, encarregado, trabalhador), convites, auditoria e administração da plataforma.
 - Aplicação real ligada à API (`src/saas/`): entrar, registar, convites, criar empresa, troca de empresa, definições da empresa, equipa e acessos, sessões e auditoria.
 - E2E de ponta a ponta contra a API real (`npm run e2e:saas`).
@@ -23,6 +28,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-PT/1.1.0/); 
 - Regra de proteção do `main` pronta a aplicar (`.github/protecao-main.json`).
 
 ### Alterado
+- Segurança: dependências Java analisadas no CI e vulnerabilidades do Tomcat/Jackson corrigidas; alertas do OWASP ZAP tratados; os emails passam a ter remetente.
 - O protótipo local (dados no navegador, fotos de demonstração, Excel no cliente) foi retirado; a aplicação usa só a API.
 - Planeamento e folhas de horas até 4–5× mais rápidos com centenas de trabalhadores; respostas comprimidas.
 - Acessibilidade: nomes acessíveis, links, contraste e navegação por teclado corrigidos em vários ecrãs.

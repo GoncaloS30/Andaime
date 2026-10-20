@@ -415,10 +415,41 @@ restore-test.sh → contagens iguais, 19 migrações, RLS e permissões ok, 103 
 - Não foi necessária uma migration: `/planning/board` já aceita intervalos até 92 dias. A próxima migration mantém-se
   **V23**.
 
+### RGPD, 2FA, feriados e produção (2026-10-20)
+
+Feito em paralelo por vários agentes e integrado/verificado por Claude.
+
+- **Conservação de dados (V23)**: política por empresa (`/retention`) com anonimização automática de ex-trabalhadores
+  arquivados (**desligada por omissão** — irreversível, cada empresa liga-a) e prazo das notificações; a anonimização
+  (manual ou automática) passa a apagar os ficheiros dos documentos; job diário com limpeza global de tokens, convites
+  e bloqueios antigos.
+- **Exportação RGPD** (arts. 15.º e 20.º): ZIP com todos os dados do trabalhador e os seus ficheiros, pelo
+  administrador ou pelo próprio («Os meus dados»); auditada.
+- **Verificação em dois passos (V24)**: TOTP com códigos de recuperação, login em dois passos, segredo cifrado
+  (`ANDAIME_TOTP_KEY`), política da empresa para exigir 2FA a administradores (aviso no frontend).
+- **Feriados nacionais (V25)** de 12 países calculados pelo sistema e usados no cálculo de horas (país da empresa e da
+  obra); lista nas Regras. Pontos a validar em [regras-por-pais.md](../juridico/regras-por-pais.md).
+- **Produção**: imagem do frontend (nginx sem privilégios, CSP, proxy `/api`, SSE), `infra/compose.prod.yaml`
+  (web, backend, PostgreSQL, ClamAV, Caddy opcional), papéis da BD com palavras-passe do ambiente, teste local repetível
+  `scripts/ops/prod-smoke.sh`, guia em [../operacao/deploy.md](../operacao/deploy.md). Corrigido: os emails saíam sem
+  remetente (`andaime.mail.from`).
+- **Antivírus validado com o ClamAV real**: upload pela API com `andaime.antivirus.mode=clamd` → `scan_status = CLEAN`.
+
+Verificação real:
+
+```text
+./mvnw verify → 111 testes, 0 falhas (com tudo integrado, incluindo o remetente dos emails)
+npm run typecheck · npm run lint → sem erros · npm test → 36 testes
+npm run e2e:saas → 26 passed (API com ClamAV real ligado)
+```
+
 ### Ainda não feito (decisões ou serviços externos)
 
-- Deploy real (sem autorização para criar recursos) e teste de intrusão externo.
-- Tipos TypeScript gerados do OpenAPI.
+- Deploy real: escolher e contratar fornecedores, DNS, segredos e TLS — passos em
+  [../operacao/deploy.md](../operacao/deploy.md). Teste de intrusão externo.
+- Decisão: dados de saúde (ausência por doença, ficha de aptidão médica) só para gestores?
+- Tipos TypeScript gerados do OpenAPI; regeneração de códigos de recuperação 2FA; rotação da chave TOTP; bloqueio da API
+  (e não só aviso) quando a empresa exige 2FA.
 - Validação jurídica: rascunho técnico em [docs/juridico](../juridico/README.md) (registo de tratamentos, retenção,
   esboço de AIPD, regras por país) — não declara conformidade.
 

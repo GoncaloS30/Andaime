@@ -8,7 +8,8 @@ spring:
   flyway:
     clean-disabled: true
 
-# Porta de gestão interna (Prometheus, info): não exposta pelo proxy; o health continua na porta pública.
+# Porta de gestão interna (health, Prometheus, info): não exposta pelo proxy. Com uma porta de gestão própria, todo o
+# Actuator (health incluído) passa para ela; o proxy responde a /healthz para verificações externas.
 management:
   server:
     port: ${ANDAIME_MANAGEMENT_PORT:8098}

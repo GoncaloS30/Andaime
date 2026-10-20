@@ -42,7 +42,8 @@ Fora de âmbito sem análise de privacidade específica: geolocalização contí
 
 - HTTPS obrigatório em produção (terminação no reverse proxy; `Secure` nos cookies; HSTS).
 - Backups cifrados e com restauro testado (F7: `scripts/ops/`, ver `docs/operacao/backups.md`).
-- Actuator: só `health` na porta pública; `prometheus` e restantes apenas na porta de gestão interna (F7).
+- Actuator: em produção todo o Actuator (health incluído) fica só na porta de gestão interna (8098), nunca pelo proxy; o
+  nginx responde a `/healthz` para verificações externas. Em desenvolvimento, sem porta de gestão, só `health` é público.
 
 ## Revisão de segurança F7 (2026-10-20)
 
