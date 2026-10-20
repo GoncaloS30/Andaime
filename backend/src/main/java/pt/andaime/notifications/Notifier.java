@@ -67,6 +67,11 @@ public class Notifier {
         }
     }
 
+    /** Conservação de dados: apaga as notificações da empresa corrente com mais de {@code months} meses. */
+    public int deleteOlderThan(int months) {
+        return jdbcTemplate.update("DELETE FROM notifications WHERE created_at < now() - make_interval(months => ?)", months);
+    }
+
     /** Gestores ativos (dono, administrador e gestor) da empresa corrente. */
     public List<UUID> managers() {
         return jdbcTemplate.queryForList("""

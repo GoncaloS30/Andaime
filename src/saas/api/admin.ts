@@ -20,6 +20,20 @@ export interface Holiday {
   name: string
 }
 
+/** Conservação de dados (RGPD). `anonymizeAfterMonths` nulo/ausente = anonimização automática desligada. */
+export interface RetentionPolicy {
+  anonymizeAfterMonths?: number | null
+  notificationsAfterMonths: number
+  updatedAt?: string | null
+  version: number
+}
+
+export interface RetentionInput {
+  anonymizeAfterMonths: number | null
+  notificationsAfterMonths: number
+  version: number
+}
+
 export interface SupportGrant {
   id: string
   platformUserEmail: string
@@ -57,6 +71,17 @@ export function useHolidayAction(orgId: string) {
         ? api<Holiday>(`${base(orgId)}/holidays`, { method: 'POST', body: { date: v.date, name: v.name } })
         : api<void>(`${base(orgId)}/holidays/${v.id}`, { method: 'DELETE' }),
     onSuccess: () => Promise.all(['policy', 'timesheets', 'audit'].map((s) => qc.invalidateQueries({ queryKey: ['org', orgId, s] }))),
+  })
+}
+
+export const useRetentionPolicy = (orgId: string) =>
+  useQuery({ queryKey: ['org', orgId, 'policy', 'retention'], queryFn: () => api<RetentionPolicy>(`${base(orgId)}/retention`) })
+
+export function useSaveRetentionPolicy(orgId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: RetentionInput) => api<RetentionPolicy>(`${base(orgId)}/retention`, { method: 'PUT', body: input }),
+    onSuccess: () => Promise.all(['policy', 'audit'].map((s) => qc.invalidateQueries({ queryKey: ['org', orgId, s] }))),
   })
 }
 

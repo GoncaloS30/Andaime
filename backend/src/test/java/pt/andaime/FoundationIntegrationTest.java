@@ -100,7 +100,7 @@ class FoundationIntegrationTest extends IntegrationTestSupport {
                 versions.add(result.getString("version"));
             }
             assertThat(versions).containsExactlyElementsOf(
-                    List.of("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "18.1", "18.2", "19", "20", "21", "22"));
+                    List.of("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "18.1", "18.2", "19", "20", "21", "22", "23"));
         }
     }
 
@@ -137,7 +137,7 @@ class FoundationIntegrationTest extends IntegrationTestSupport {
             }
             assertThat(tables).contains("organizations", "memberships", "invitations",
                     "audit_event", "event_publication", "idempotency_keys", "labor_policies",
-                    "org_holidays", "conflict_rule_settings", "support_access_grants");
+                    "org_holidays", "conflict_rule_settings", "support_access_grants", "retention_policies");
         }
     }
 

@@ -42,7 +42,9 @@ function SettingsTabs() {
     ...(atLeast(org.role, 'ADMIN') ? [{ to: '/definicoes', label: 'Empresa', end: true }] : []),
     ...(atLeast(org.role, 'MANAGER') ? [{ to: '/definicoes/equipa', label: 'Equipa e acessos' }] : []),
     { to: '/definicoes/conta', label: 'A minha conta' },
-    ...(atLeast(org.role, 'ADMIN') ? [{ to: '/definicoes/regras', label: 'Regras e suporte' }] : []),
+    ...(atLeast(org.role, 'MANAGER')
+      ? [{ to: '/definicoes/regras', label: atLeast(org.role, 'ADMIN') ? 'Regras e suporte' : 'Conservação de dados' }]
+      : []),
     ...(atLeast(org.role, 'ADMIN') ? [{ to: '/definicoes/auditoria', label: 'Auditoria' }] : []),
   ]
   return (

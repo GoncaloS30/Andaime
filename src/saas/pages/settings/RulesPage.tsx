@@ -11,10 +11,13 @@ import {
   useHolidayAction,
   useHolidays,
   useLaborPolicy,
+  useRetentionPolicy,
   useSaveLaborPolicy,
+  useSaveRetentionPolicy,
   useSupportAction,
   useSupportGrants,
   type LaborPolicy,
+  type RetentionPolicy,
 } from '../../api/admin'
 import { errorMessage, isApiError } from '../../api/http'
 import { atLeast } from '../../api/types'
@@ -27,16 +30,21 @@ const hours = (min: number | null) => (min === null ? '' : String(Math.round((mi
 const minutes = (h: string) => Math.round(Number(h.replace(',', '.')) * 60)
 const when = new Intl.DateTimeFormat('pt-PT', { dateStyle: 'short', timeStyle: 'short' })
 
-/** Definições → Regras e suporte: política laboral, feriados da empresa e acesso temporário do suporte. */
+/**
+ * Definições → Regras e suporte: política laboral, feriados da empresa, conservação de dados e acesso temporário do
+ * suporte. Os gestores só vêem a conservação de dados, sem poder alterar.
+ */
 export function RulesPage() {
   const org = useActiveOrg()
-  if (!atLeast(org.role, 'ADMIN')) return <Navigate to="/definicoes/conta" replace />
+  if (!atLeast(org.role, 'MANAGER')) return <Navigate to="/definicoes/conta" replace />
+  const admin = atLeast(org.role, 'ADMIN')
   return (
     <SettingsFrame>
       <div className="flex flex-col gap-5">
-        <PolicyPanel />
-        <HolidaysPanel />
-        <SupportPanel />
+        {admin && <PolicyPanel />}
+        {admin && <HolidaysPanel />}
+        <RetentionPanel readOnly={!admin} />
+        {admin && <SupportPanel />}
       </div>
     </SettingsFrame>
   )
@@ -110,6 +118,92 @@ function PolicyForm({ policy }: { policy: LaborPolicy }) {
           Guardar política
         </Button>
         {policy.effectiveFrom && <span className="ml-3 text-xs text-ink-3">Em vigor desde {formatDate(policy.effectiveFrom)}</span>}
+      </div>
+    </form>
+  )
+}
+
+const MONTH_CHOICES = [3, 6, 12, 18, 24, 36, 48, 60, 72, 84, 96, 108, 120]
+const months = (n: number) => (n === 1 ? '1 mês' : n % 12 === 0 ? `${n} meses (${n / 12} ${n === 12 ? 'ano' : 'anos'})` : `${n} meses`)
+/** Garante que o valor gravado aparece nas opções, mesmo que não seja um dos prazos sugeridos. */
+const choices = (values: number[], current: number | null | undefined, max: number) =>
+  [...new Set([...values.filter((v) => v <= max), ...(current ? [current] : [])])].sort((a, b) => a - b)
+
+function RetentionPanel({ readOnly }: { readOnly: boolean }) {
+  const org = useActiveOrg()
+  const retention = useRetentionPolicy(org.id)
+  return (
+    <Panel
+      title="Conservação de dados"
+      description="Durante quanto tempo o Andaime guarda dados pessoais que já não são precisos. A limpeza corre todas as noites. Confirme com o seu jurista ou contabilista os prazos mínimos legais (por exemplo, registos de tempo de trabalho e documentos fiscais) antes de os encurtar."
+    >
+      {retention.isPending ? (
+        <SkeletonRows rows={2} />
+      ) : retention.isError ? (
+        <ErrorState onRetry={() => void retention.refetch()} />
+      ) : (
+        <RetentionForm key={retention.data.version} policy={retention.data} readOnly={readOnly} />
+      )}
+    </Panel>
+  )
+}
+
+function RetentionForm({ policy, readOnly }: { policy: RetentionPolicy; readOnly: boolean }) {
+  const org = useActiveOrg()
+  const save = useSaveRetentionPolicy(org.id)
+  const [anonymize, setAnonymize] = useState(policy.anonymizeAfterMonths ? String(policy.anonymizeAfterMonths) : 'off')
+  const [notifications, setNotifications] = useState(String(policy.notificationsAfterMonths))
+  const fe = isApiError(save.error) ? save.error.fieldErrors : {}
+  return (
+    <form
+      className="grid gap-4 sm:grid-cols-2"
+      onSubmit={(e) => {
+        e.preventDefault()
+        save
+          .mutateAsync({
+            anonymizeAfterMonths: anonymize === 'off' ? null : Number(anonymize),
+            notificationsAfterMonths: Number(notifications),
+            version: policy.version,
+          })
+          .then(() => toast.success('Conservação de dados atualizada'))
+          .catch((err: unknown) => toast.error(errorMessage(err)))
+      }}
+    >
+      <Field
+        label="Anonimizar ex-trabalhadores arquivados há mais de"
+        error={fe.anonymizeAfterMonths}
+        hint="Apaga nome, contactos, contratos, fotografia e ficheiros dos documentos; ficam as horas e o planeamento, sem identificação. É irreversível."
+      >
+        {(p) => (
+          <Select {...p} value={anonymize} disabled={readOnly} onChange={(e) => setAnonymize(e.target.value)}>
+            <option value="off">Desligado (só manualmente)</option>
+            {choices(MONTH_CHOICES, policy.anonymizeAfterMonths, 120).map((n) => (
+              <option key={n} value={n}>
+                {months(n)}
+              </option>
+            ))}
+          </Select>
+        )}
+      </Field>
+      <Field label="Apagar notificações com mais de" error={fe.notificationsAfterMonths} hint="Avisos da aplicação já antigos, lidos ou não.">
+        {(p) => (
+          <Select {...p} value={notifications} disabled={readOnly} onChange={(e) => setNotifications(e.target.value)}>
+            {choices([1, ...MONTH_CHOICES], policy.notificationsAfterMonths, 60).map((n) => (
+              <option key={n} value={n}>
+                {months(n)}
+              </option>
+            ))}
+          </Select>
+        )}
+      </Field>
+      <div className="sm:col-span-2">
+        {readOnly ? (
+          <p className="text-xs text-ink-3">Só a administração da empresa pode alterar estes prazos.</p>
+        ) : (
+          <Button type="submit" variant="primary" loading={save.isPending}>
+            Guardar conservação
+          </Button>
+        )}
       </div>
     </form>
   )

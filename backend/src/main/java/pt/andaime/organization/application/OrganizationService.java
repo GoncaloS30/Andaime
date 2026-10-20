@@ -75,6 +75,8 @@ public class OrganizationService {
                 INSERT INTO conflict_rule_settings (organization_id, rule, severity)
                 VALUES (?, ?, ?)
                 """, organizationId, rule, defaultSeverity(rule)));
+        // Conservação de dados com os valores por omissão (anonimização a 12 meses, notificações a 12 meses).
+        jdbcTemplate.update("INSERT INTO retention_policies (organization_id) VALUES (?)", organizationId);
         // Catálogo inicial de tipos de documento e exigências (configurável depois pela empresa).
         jdbcTemplate.query("SELECT app.seed_document_types(?)", resultSet -> { }, organizationId);
         jdbcTemplate.update("""

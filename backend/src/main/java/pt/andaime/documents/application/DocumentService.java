@@ -346,6 +346,10 @@ public class DocumentService {
                 SELECT storage_key, filename, content_type, size_bytes FROM document_versions WHERE id = ? AND document_id = ?
                 """, (resultSet, rowNumber) -> new Object[] {resultSet.getString(1), resultSet.getString(2), resultSet.getString(3),
                 resultSet.getLong(4)}, versionId, documentId).stream().findFirst().orElseThrow(DocumentService::notFound);
+        if (row[0] == null) {
+            // Ficheiro apagado na anonimização do trabalhador (RGPD).
+            throw new ApiException(HttpStatus.GONE, "document-purged", "O ficheiro foi apagado e já não está disponível.");
+        }
         auditLog.record("document.downloaded", "document", documentId, Map.of("versionId", versionId.toString()));
         return new Download((String) row[1], (String) row[2], (Long) row[3], storage.open((String) row[0]));
     }

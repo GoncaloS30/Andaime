@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import pt.andaime.audit.AuditLog;
 import pt.andaime.audit.Changes;
+import pt.andaime.documents.DocumentPurge;
 import pt.andaime.shared.api.ApiException;
 import pt.andaime.shared.api.PageView;
 import pt.andaime.shared.storage.PhotoStorage;
@@ -53,10 +54,13 @@ public class EmployeeService {
     private final AuditLog auditLog;
     private final JsonMapper jsonMapper;
     private final PhotoStorage photos;
+    private final DocumentPurge documents;
     private final Clock clock;
 
-    public EmployeeService(JdbcTemplate jdbcTemplate, AuditLog auditLog, JsonMapper jsonMapper, PhotoStorage photos, Clock clock) {
+    public EmployeeService(JdbcTemplate jdbcTemplate, AuditLog auditLog, JsonMapper jsonMapper, PhotoStorage photos,
+            DocumentPurge documents, Clock clock) {
         this.photos = photos;
+        this.documents = documents;
         this.jdbcTemplate = jdbcTemplate;
         this.auditLog = auditLog;
         this.jsonMapper = jsonMapper;
@@ -229,22 +233,62 @@ public class EmployeeService {
 
     /**
      * RGPD: apaga os dados pessoais de um ex-trabalhador arquivado (nome, contactos, nacionalidade, morada, tamanhos,
-     * competências, notas, custo, contratos). Ficam o número, a categoria e o histórico de horas e planeamento, sem
-     * identificação. A conta ligada perde o acesso à empresa; os documentos ficam arquivados. Irreversível.
+     * competências, notas, custo, contratos, fotografia e ficheiros dos documentos). Ficam o número, a categoria e o
+     * histórico de horas e planeamento, sem identificação. A conta ligada perde o acesso à empresa. Irreversível.
      */
     @Transactional
     public EmployeeDetail anonymize(UUID employeeId) {
         OrgRole.require(OrgRole.ADMIN);
         get(employeeId);
         lockEmployee(employeeId);
-        var state = jdbcTemplate.queryForObject("SELECT archived_at IS NOT NULL, anonymized_at IS NOT NULL FROM employees WHERE id = ?",
-                (resultSet, rowNumber) -> new boolean[] {resultSet.getBoolean(1), resultSet.getBoolean(2)}, employeeId);
+        var state = anonymizationState(employeeId);
         if (!state[0]) {
             throw new ApiException(HttpStatus.CONFLICT, "not-archived", "Arquive o trabalhador antes de o anonimizar.");
         }
         if (state[1]) {
             throw new ApiException(HttpStatus.CONFLICT, "already-anonymized", "Este trabalhador já foi anonimizado.");
         }
+        erasePersonalData(employeeId);
+        auditLog.record("employee.anonymized", "employee", employeeId);
+        return get(employeeId);
+    }
+
+    /**
+     * Conservação de dados: anonimiza os ex-trabalhadores arquivados antes de {@code cutoff}, na transação e na
+     * organização correntes. Não exige papel (corre na tarefa diária, sem utilizador no pedido); quem chama é
+     * responsável por isso. Fichas ligadas à conta do dono ficam de fora, para não bloquear o acesso à empresa.
+     */
+    @Transactional
+    public int anonymizeArchivedBefore(OffsetDateTime cutoff) {
+        var due = jdbcTemplate.queryForList("""
+                SELECT employee.id FROM employees employee
+                WHERE employee.archived_at < ? AND employee.anonymized_at IS NULL
+                  AND NOT EXISTS (SELECT 1 FROM memberships account
+                                  WHERE account.organization_id = employee.organization_id AND account.employee_id = employee.id
+                                    AND account.role = 'OWNER' AND account.status = 'ACTIVE')
+                ORDER BY employee.archived_at, employee.id
+                """, UUID.class, cutoff);
+        int anonymized = 0;
+        for (var employeeId : due) {
+            lockEmployee(employeeId);
+            var state = anonymizationState(employeeId);
+            if (!state[0] || state[1]) {
+                continue;
+            }
+            erasePersonalData(employeeId);
+            auditLog.record("employee.anonymized", "employee", employeeId, Map.of("automatic", true));
+            anonymized++;
+        }
+        return anonymized;
+    }
+
+    /** {arquivado, anonimizado}. */
+    private boolean[] anonymizationState(UUID employeeId) {
+        return jdbcTemplate.queryForObject("SELECT archived_at IS NOT NULL, anonymized_at IS NOT NULL FROM employees WHERE id = ?",
+                (resultSet, rowNumber) -> new boolean[] {resultSet.getBoolean(1), resultSet.getBoolean(2)}, employeeId);
+    }
+
+    private void erasePersonalData(UUID employeeId) {
         jdbcTemplate.update("UPDATE employees SET full_name = 'Ex-trabalhador ' || number, phone = NULL, email = NULL,"
                 + " nationality = NULL, home_city = NULL, hire_date = NULL, hourly_cost = NULL, skills = '{}', sizes = '{}'::jsonb,"
                 + " notes = NULL, anonymized_at = now(), version = version + 1 WHERE id = ?", employeeId);
@@ -254,9 +298,7 @@ public class EmployeeService {
                 employeeId);
         jdbcTemplate.update("DELETE FROM employee_contracts WHERE employee_id = ?", employeeId);
         jdbcTemplate.update("UPDATE memberships SET status = 'DISABLED' WHERE employee_id = ? AND status = 'ACTIVE'", employeeId);
-        jdbcTemplate.update("UPDATE documents SET archived_at = coalesce(archived_at, now()) WHERE employee_id = ?", employeeId);
-        auditLog.record("employee.anonymized", "employee", employeeId);
-        return get(employeeId);
+        documents.purgeEmployee(employeeId);
     }
 
     @Transactional
