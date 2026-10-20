@@ -70,7 +70,7 @@ jobs:
       # API real com a empresa de demonstração (credenciais locais de infra/.env.example), usada pelos testes de acessibilidade.
       - name: Arrancar a API
         run: |
-          nohup java -jar backend/target/andaime-api-0.1.0-SNAPSHOT.jar --spring.profiles.active=local             --logging.structured.format.console= --andaime.seed.demo.enabled=true             --andaime.seed.demo.owner-email=demo@andaime.test             --andaime.seed.demo.owner-password=demo-local-andaime-2026 > api.log 2>&1 &
+          nohup java -jar backend/target/andaime-api-0.1.0-SNAPSHOT.jar --spring.profiles.active=local             --logging.structured.format.console= --andaime.seed.demo.enabled=true             --andaime.seed.demo.owner-email=demo@andaime.test             --andaime.seed.demo.owner-password=demo-local-andaime-2026             --andaime.rate-limit.auth-per-minute=1000 > api.log 2>&1 &
           for i in $(seq 1 60); do curl -sf http://localhost:8088/actuator/health/readiness && exit 0; sleep 3; done
           cat api.log; exit 1
       - run: npm ci

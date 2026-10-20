@@ -184,6 +184,23 @@ Com acesso de suporte, qualquer escrita devolve 403 `support-read-only`. `/actua
 - Avisos por email: pedidos e decisões de ausência, folhas devolvidas e documentos a caducar/caducados seguem também por email, depois do commit, para quem os tem ligados (fila na tabela `notifications`, `SKIP LOCKED`, recuo 2–16 min, desiste à 5.ª tentativa).
 - Antivírus: com `andaime.antivirus.mode=clamd` (por omissão no perfil `prod`), documentos e fotos são analisados pelo clamd antes de irem para o armazenamento: 422 `file-infected`; 503 `antivirus-unavailable` se o clamd não responder (falha fechada). Os documentos guardam `scan_status` (`CLEAN` ou `NOT_SCANNED`).
 
+## Verificação em dois passos (TOTP)
+
+| Método | Caminho | Quem | Descrição |
+|---|---|---|---|
+| GET | `/api/me/2fa` | autenticado | `{enabled, pending, recoveryCodesRemaining}` (nunca devolve o segredo) |
+| POST | `/api/me/2fa/setup` | autenticado | Segredo pendente de 20 bytes → `{secret (base32), otpauthUri}`; 409 `two-factor-enabled` |
+| POST | `/api/me/2fa/confirm` | autenticado | `{code}` → ativa e devolve `{recoveryCodes: [10]}` uma única vez; 400 `invalid-code`; 409 `two-factor-not-started` |
+| POST | `/api/me/2fa/disable` | autenticado | `{password, code}` (código da aplicação ou de recuperação) → 204; 400 `invalid-password` / `invalid-code` |
+| POST | `/api/auth/login` | público | Com 2FA ativa responde 200 `{"twoFactorRequired": true}` sem autenticar (estado pendente de 5 min numa sessão nova) |
+| POST | `/api/auth/login/2fa` | público (com login pendente) | `{code}` ou `{recoveryCode}` → sessão autenticada como num login normal; 401 `invalid-code` / `two-factor-expired`; 429 bloqueado |
+| GET | `/api/me` | autenticado | Novos campos `twoFactorEnabled`, `twoFactorSetupRequired` |
+| PATCH | `/api/orgs/{orgId}` | ADMIN+ | Novo campo `requireAdmin2fa` |
+
+- TOTP RFC 6238 (HMAC-SHA1, 30 s, 6 dígitos, janela ±1), cada passo só pode ser usado uma vez; segredo cifrado com AES-256-GCM (`andaime.security.totp-key`, obrigatória do ambiente em produção — mudá-la invalida as 2FA ativas); códigos de recuperação de uso único guardados só como hash com sal.
+- Códigos errados contam para o mesmo bloqueio por email que as palavras-passe; com 2FA, a palavra-passe certa só limpa o bloqueio depois do código.
+- A política `requireAdmin2fa` é, por agora, um aviso permanente no frontend para donos/administradores sem 2FA (a API não bloqueia).
+
 ## Feriados nacionais
 
 | Método | Caminho | Quem | Descrição |
