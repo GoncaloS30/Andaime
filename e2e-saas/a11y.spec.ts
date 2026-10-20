@@ -23,6 +23,8 @@ const PAGES = [
   '/ausencias',
   '/documentos',
   '/equipamentos',
+  '/mapas',
+  '/relatorios',
   '/definicoes',
   '/definicoes/equipa',
   '/definicoes/regras',

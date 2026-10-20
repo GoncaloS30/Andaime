@@ -1,6 +1,5 @@
-import type { PhotoRef } from './photos'
-
-export type { PhotoRef } from './photos'
+/** Fotografia servida pela API (endereço relativo, com verificação de acesso no servidor). */
+export type PhotoRef = string
 /** Modelo de domínio do Andaime. Sem React nem estado: só formas de dados. */
 
 export type ID = string

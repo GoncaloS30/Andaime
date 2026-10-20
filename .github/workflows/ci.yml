@@ -48,31 +48,8 @@ jobs:
           path: dist
           retention-days: 7
 
-  e2e:
-    name: E2E e acessibilidade (Playwright)
-    runs-on: ubuntu-latest
-    timeout-minutes: 40
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
-      # Os testes correm no Microsoft Edge (canal msedge), como em desenvolvimento.
-      - run: npx playwright install --with-deps msedge
-      - run: npx playwright test
-      - uses: actions/upload-artifact@v7
-        if: failure()
-        with:
-          name: playwright-report
-          path: |
-            playwright-report
-            test-results
-          retention-days: 7
-
   e2e-saas:
-    name: E2E full-stack (API real, PostgreSQL, Mailpit, S3)
+    name: E2E e acessibilidade (API real, PostgreSQL, Mailpit, S3)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:

@@ -167,6 +167,22 @@ Todas sob `/api/orgs/{orgId}`.
 
 Com acesso de suporte, qualquer escrita devolve 403 `support-read-only`. `/actuator/**` (exceto health) responde 403 na porta pública.
 
-## F6 (planeado)
+## F6 — Mapas e relatórios
 
-Ver `docs/backend/arquitetura.md` (Ecrã → API) e o plano aprovado. Cada fase acrescenta aqui a sua tabela quando é implementada.
+Todas sob `/api/orgs/{orgId}/reporting`; requerem gestor (OWNER, ADMIN ou MANAGER). As consultas usam RLS e devolvem durações em minutos.
+
+| Método | Caminho | Descrição |
+|---|---|---|
+| GET | `/weekly-map?week&template=equipa\|obra\|horas\|erp&teamId&siteId&employeeId&clientId` | Read model semanal; equipa/obra usam planeamento e horas/ERP usam exclusivamente factos aprovados |
+| GET | `/overview?from&to` | Totais do planeamento: minutos, atribuições, pessoas, equipas, obras e viaturas |
+| GET | `/hours?groupBy=employee\|team\|site\|week&from&to` | Horas aprovadas, normais e extra, agregadas em SQL |
+| GET | `/planned-vs-actual?from&to` | Planeado no intervalo contra histórico importado e horas aprovadas |
+| GET | `/vehicles?from&to` | Utilização, pessoas, obras, dias e pico de ocupantes por viatura |
+| GET | `/documents` | Contagem da projeção documental por estado |
+| GET | `/team-distribution?from&to` | Distribuição de minutos, pessoas, obras e dias por equipa |
+| GET | `/exports/weekly-map.xlsx?week&template=…` | XLSX síncrono com Apache POI SXSSF; limite de 20 000 linhas |
+| POST | `/exports` | Cria exportação persistente: `{week,template,teamId?,siteId?,employeeId?,clientId?}` → 202 e job `PENDING` |
+| GET | `/exports/{id}` | Estado `PENDING`, `RUNNING`, `READY`, `FAILED` ou `EXPIRED` |
+| GET | `/exports/{id}/download` | Ficheiro quando `READY`; 409 enquanto não estiver pronto e 410 depois de expirar |
+
+Os jobs reclamam trabalho atomicamente com `FOR UPDATE SKIP LOCKED`, recuperam execuções abandonadas após 15 minutos e expiram ao fim de 24 horas. A exportação assíncrona aceita até 200 000 linhas; acima disso responde 413 `report-too-large`. F4 (aprovar/reabrir folhas) e F5 (carregar, verificar, arquivar documentos e o job de validades) publicam factos idempotentes através de `ReportingProjection`; rascunhos e documentos arquivados não entram no read model.

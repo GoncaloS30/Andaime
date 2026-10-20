@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import pt.andaime.audit.AuditLog;
+import pt.andaime.reporting.ReportingProjection;
 import pt.andaime.shared.api.ApiException;
 import pt.andaime.shared.tenant.OrgRole;
 import pt.andaime.shared.tenant.TenantContext;
@@ -40,12 +41,15 @@ public class TimesheetService {
     private final TimekeepingRepository repository;
     private final JdbcTemplate jdbcTemplate;
     private final AuditLog auditLog;
+    private final ReportingProjection reporting;
     private final Clock clock;
 
-    public TimesheetService(TimekeepingRepository repository, JdbcTemplate jdbcTemplate, AuditLog auditLog, Clock clock) {
+    public TimesheetService(TimekeepingRepository repository, JdbcTemplate jdbcTemplate, AuditLog auditLog,
+            ReportingProjection reporting, Clock clock) {
         this.repository = repository;
         this.jdbcTemplate = jdbcTemplate;
         this.auditLog = auditLog;
+        this.reporting = reporting;
         this.clock = clock;
     }
 
@@ -201,7 +205,47 @@ public class TimesheetService {
             changes.put("note", note.strip());
         }
         auditLog.record("timesheet." + action, "timesheet", id, changes);
+        if (next.equals("APPROVED")) {
+            projectApproved(employeeId, monday);
+        } else if (status.equals("APPROVED")) {
+            removeProjection(employeeId, monday);
+        }
         return detail(employeeId, monday);
+    }
+
+    // --- relatórios: só horas aprovadas -------------------------------------------------------------
+
+    /**
+     * Publica nos relatórios os registos da semana aprovada, com a divisão normal/extra da política laboral: em cada
+     * dia, as horas normais vão para os primeiros registos (por ordem de entrada) e o resto é extra.
+     */
+    private void projectApproved(UUID employeeId, LocalDate monday) {
+        var self = new TimekeepingRepository.Scope("entry.employee_id = ?", List.of(employeeId));
+        var entries = repository.entries(monday, monday.plusDays(6), self, employeeId, null).stream()
+                .filter(e -> e.status().equals("CLOSED")).sorted(java.util.Comparator.comparing(EntryView::startedAt)).toList();
+        var week = HoursCalculator.week(monday, closed(entries), repository.policy(monday).policy());
+        var normalLeft = new HashMap<LocalDate, Integer>();
+        week.days().forEach(day -> normalLeft.put(day.date(), day.normalMin()));
+        var code = jdbcTemplate.query("SELECT normal_code FROM labor_policies WHERE country IS NULL AND effective_during @> ?::date",
+                (resultSet, rowNumber) -> resultSet.getString(1), monday.plusDays(6)).stream().findFirst().orElse("800");
+        var approvedAt = clock.instant();
+        for (var entry : entries) {
+            var worked = entry.workedMin() == null ? 0 : entry.workedMin();
+            var normal = Math.min(worked, normalLeft.getOrDefault(entry.workDate(), 0));
+            normalLeft.merge(entry.workDate(), -normal, Integer::sum);
+            var team = jdbcTemplate.query("""
+                    SELECT team_id FROM team_members WHERE employee_id = ? AND joined_on <= ? AND (left_on IS NULL OR left_on >= ?)
+                    ORDER BY joined_on DESC LIMIT 1
+                    """, (resultSet, rowNumber) -> resultSet.getObject(1, UUID.class), employeeId, entry.workDate(), entry.workDate())
+                    .stream().findFirst().orElse(null);
+            reporting.approvedTime(new ReportingProjection.ApprovedTime(entry.id(), employeeId, entry.siteId(), team,
+                    entry.workDate(), entry.startLocal(), entry.endLocal(), worked, normal, worked - normal, code, approvedAt));
+        }
+    }
+
+    private void removeProjection(UUID employeeId, LocalDate monday) {
+        jdbcTemplate.queryForList("SELECT id FROM time_entries WHERE employee_id = ? AND work_date BETWEEN ? AND ?", UUID.class,
+                employeeId, monday, monday.plusDays(6)).forEach(reporting::removeApprovedTime);
     }
 
     // --- auxiliares ----------------------------------------------------------------------------------

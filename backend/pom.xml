@@ -23,6 +23,7 @@
 		<bouncycastle.version>1.86</bouncycastle.version>
 		<awssdk.version>2.56.0</awssdk.version>
 		<tika.version>4.1.0</tika.version>
+		<apache-poi.version>5.5.1</apache-poi.version>
 	</properties>
 
 	<dependencies>
@@ -93,6 +94,12 @@
 		<dependency>
 			<groupId>software.amazon.awssdk</groupId>
 			<artifactId>url-connection-client</artifactId>
+		</dependency>
+		<!-- Mapas semanais em Excel gerados no servidor (F6) -->
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-ooxml</artifactId>
+			<version>${apache-poi.version}</version>
 		</dependency>
 		<!-- Deteção do tipo real dos ficheiros carregados (não confia na extensão nem no navegador) -->
 		<dependency>

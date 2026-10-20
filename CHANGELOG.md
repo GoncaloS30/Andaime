@@ -15,10 +15,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-PT/1.1.0/); 
 - Documentos com ficheiros reais (armazenamento S3 privado), versões, exigências por país, conformidade e alertas de validade; ausências com impacto explícito no planeamento; fardamento e EPI com stock e registo de entregas; notificações na aplicação em tempo real.
 - Acesso de suporte temporário, só de leitura e auditado, autorizado pela empresa; ponto sem rede no telemóvel; política laboral e feriados editáveis; anonimização de ex-trabalhadores; documentos das viaturas.
 - Operação: backups com restauro testado, runbooks, checklist de deploy e rollback; teste de carga com 1000 trabalhadores; E2E full-stack e acessibilidade (WCAG 2.1 AA) no CI.
+- Mapas semanais (equipa, obra, horas, ERP) e relatórios calculados no servidor a partir de planeamento e horas aprovadas; Excel gerado no servidor, com exportação em segundo plano para volumes grandes; importador do histórico Lyrical.
 - Viaturas: frota com alertas de seguro, inspeção e manutenção, indisponibilidades e viatura por equipa aplicada ao planeamento.
 - Regra de proteção do `main` pronta a aplicar (`.github/protecao-main.json`).
 
 ### Alterado
+- O protótipo local (dados no navegador, fotos de demonstração, Excel no cliente) foi retirado; a aplicação usa só a API.
 - Planeamento e folhas de horas até 4–5× mais rápidos com centenas de trabalhadores; respostas comprimidas.
 - Acessibilidade: nomes acessíveis, links, contraste e navegação por teclado corrigidos em vários ecrãs.
 - Métricas e endpoints de gestão deixam de estar acessíveis na porta pública.
