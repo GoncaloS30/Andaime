@@ -1,6 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, isApiError } from './http'
-import type { AuditEntry, Invitation, InvitationPreview, Me, Member, Organization, OrgRole, Page, PlatformOrganization, SessionInfo } from './types'
+import {
+  isTwoFactorChallenge,
+  type AuditEntry,
+  type Invitation,
+  type InvitationPreview,
+  type Me,
+  type Member,
+  type Organization,
+  type OrgRole,
+  type Page,
+  type PlatformOrganization,
+  type SessionInfo,
+  type TwoFactorChallenge,
+  type TwoFactorSetup,
+  type TwoFactorStatus,
+} from './types'
 
 /**
  * Fachada de dados: os componentes usam estes hooks e nunca chamam `fetch` diretamente.
@@ -10,6 +25,7 @@ import type { AuditEntry, Invitation, InvitationPreview, Me, Member, Organizatio
 export const keys = {
   me: ['me'] as const,
   sessions: ['me', 'sessions'] as const,
+  twoFactor: ['me', '2fa'] as const,
   org: (orgId: string) => ['org', orgId] as const,
   members: (orgId: string) => ['org', orgId, 'members'] as const,
   invitations: (orgId: string) => ['org', orgId, 'invitations'] as const,
@@ -36,10 +52,24 @@ export function useMe() {
   })
 }
 
+/** Passo da palavra-passe: devolve o utilizador ou, com verificação em dois passos, o pedido do código. */
 export function useLogin() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (body: { email: string; password: string }) => api<Me>('/auth/login', { method: 'POST', body }),
+    mutationFn: (body: { email: string; password: string }) => api<Me | TwoFactorChallenge>('/auth/login', { method: 'POST', body }),
+    onSuccess: (result) => {
+      if (isTwoFactorChallenge(result)) return
+      qc.clear()
+      qc.setQueryData(keys.me, result)
+    },
+  })
+}
+
+/** Segundo passo do login: código da aplicação ou código de recuperação. */
+export function useLoginSecondFactor() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { code: string } | { recoveryCode: string }) => api<Me>('/auth/login/2fa', { method: 'POST', body }),
     onSuccess: (me) => {
       qc.clear()
       qc.setQueryData(keys.me, me)
@@ -93,6 +123,34 @@ export function useSelectOrganization() {
   })
 }
 
+// --- verificação em dois passos --------------------------------------------------------
+
+export const useTwoFactorStatus = () => useQuery({ queryKey: keys.twoFactor, queryFn: () => api<TwoFactorStatus>('/me/2fa') })
+
+export const useSetupTwoFactor = () => useMutation({ mutationFn: () => api<TwoFactorSetup>('/me/2fa/setup', { method: 'POST' }) })
+
+export function useConfirmTwoFactor() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (code: string) => api<{ recoveryCodes: string[] }>('/me/2fa/confirm', { method: 'POST', body: { code } }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: keys.twoFactor })
+      void qc.invalidateQueries({ queryKey: keys.me, exact: true })
+    },
+  })
+}
+
+export function useDisableTwoFactor() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { password: string; code: string }) => api<void>('/me/2fa/disable', { method: 'POST', body }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: keys.twoFactor })
+      void qc.invalidateQueries({ queryKey: keys.me, exact: true })
+    },
+  })
+}
+
 export const useSessions = () => useQuery({ queryKey: keys.sessions, queryFn: () => api<SessionInfo[]>('/me/sessions') })
 
 export function useRevokeSession() {
@@ -119,7 +177,14 @@ export const useOrganization = (orgId: string) => useQuery({ queryKey: keys.org(
 export function useUpdateOrganization(orgId: string) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (body: { name: string; legalName: string | null; taxId: string | null; timezone: string; version: number }) =>
+    mutationFn: (body: {
+      name: string
+      legalName: string | null
+      taxId: string | null
+      timezone: string
+      requireAdmin2fa?: boolean
+      version: number
+    }) =>
       api<Organization>(`/orgs/${orgId}`, { method: 'PATCH', body }),
     onSuccess: (org) => {
       qc.setQueryData(keys.org(orgId), org)

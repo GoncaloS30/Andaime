@@ -25,7 +25,7 @@ import jakarta.servlet.http.HttpServletResponse;
 final class AuthRateLimitFilter extends OncePerRequestFilter {
 
     private static final Set<String> LIMITED = Set.of(
-            "/api/auth/signup", "/api/auth/login", "/api/auth/verify-email",
+            "/api/auth/signup", "/api/auth/login", "/api/auth/login/2fa", "/api/auth/verify-email",
             "/api/auth/password/forgot", "/api/auth/password/reset");
 
     private final int perMinute;

@@ -11,6 +11,7 @@
 | `andaime.platform-datasource.*` | sim | Papel `andaime_platform` (BYPASSRLS, só leitura/estado de organizações) |
 | `ANDAIME_STORAGE_ENDPOINT` / `_REGION` / `_BUCKET` | sim | S3 privado |
 | `ANDAIME_STORAGE_ACCESS_KEY` / `_SECRET_KEY` | sim | Sem valor por omissão em `prod` |
+| `ANDAIME_TOTP_KEY` | sim | Chave AES-256 (base64, 32 bytes; `openssl rand -base64 32`) que cifra os segredos da verificação em dois passos. Sem valor por omissão fora dos perfis `local`/`test`; trocá-la invalida a 2FA já configurada |
 | `ANDAIME_MAIL_HOST` / `_PORT` | sim | SMTP transacional |
 | `ANDAIME_MANAGEMENT_PORT` | não (8098) | Métricas internas |
 

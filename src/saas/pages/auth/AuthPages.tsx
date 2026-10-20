@@ -2,8 +2,9 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { Button, buttonStyles } from '@/ui/Button'
 import { Field, Input } from '@/ui/Field'
-import { useForgotPassword, useLogin, useResetPassword, useSignup, useVerifyEmail } from '../../api/hooks'
+import { useForgotPassword, useLogin, useLoginSecondFactor, useResetPassword, useSignup, useVerifyEmail } from '../../api/hooks'
 import { errorMessage, isApiError } from '../../api/http'
+import { isTwoFactorChallenge } from '../../api/types'
 import { AuthLayout, EMAIL_PATTERN, FormError, FormNotice, passwordProblem } from './AuthLayout'
 
 function safeNext(value: string | null): string {
@@ -16,10 +17,37 @@ export function LoginPage() {
   const login = useLogin()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [secondStep, setSecondStep] = useState(false)
+  const [expired, setExpired] = useState(false)
+  const done = () => navigate(safeNext(params.get('next')), { replace: true })
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
-    login.mutate({ email: email.trim(), password }, { onSuccess: () => navigate(safeNext(params.get('next')), { replace: true }) })
+    setExpired(false)
+    login.mutate(
+      { email: email.trim(), password },
+      {
+        onSuccess: (result) => {
+          if (isTwoFactorChallenge(result)) {
+            setPassword('')
+            setSecondStep(true)
+          } else done()
+        },
+      },
+    )
+  }
+
+  if (secondStep) {
+    return (
+      <SecondFactorStep
+        onSuccess={done}
+        onRestart={(why) => {
+          setSecondStep(false)
+          setExpired(why === 'expired')
+          login.reset()
+        }}
+      />
+    )
   }
 
   const error = login.error
@@ -45,7 +73,7 @@ export function LoginPage() {
     >
       <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
         {params.get('sessao') === 'expirada' && <FormNotice>A sessão terminou. Entre novamente para continuar.</FormNotice>}
-        <FormError message={message} />
+        <FormError message={expired ? 'O tempo para introduzir o código terminou. Entre novamente.' : message} />
         <Field label="Email">
           {(p) => <Input {...p} type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoFocus />}
         </Field>
@@ -60,6 +88,102 @@ export function LoginPage() {
         <Link to="/recuperar" className="self-center text-sm text-pinho hover:underline">
           Esqueci-me da palavra-passe
         </Link>
+      </form>
+    </AuthLayout>
+  )
+}
+
+/** Segundo passo do login: código de 6 dígitos da aplicação ou um código de recuperação. */
+function SecondFactorStep({ onSuccess, onRestart }: { onSuccess: () => void; onRestart: (why: 'expired' | 'back') => void }) {
+  const verify = useLoginSecondFactor()
+  const [recovery, setRecovery] = useState(false)
+  const [code, setCode] = useState('')
+  const compact = recovery ? code.trim() : code.replace(/\s/g, '')
+  const ready = recovery ? compact.replace(/[^a-z0-9]/gi, '').length >= 12 : /^\d{6}$/.test(compact)
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault()
+    if (!ready) return
+    verify.mutate(recovery ? { recoveryCode: compact } : { code: compact }, {
+      onSuccess,
+      onError: (error) => {
+        if (isApiError(error, 'two-factor-expired')) onRestart('expired')
+        else setCode('')
+      },
+    })
+  }
+
+  const error = verify.error
+  const message = isApiError(error, 'rate-limited')
+    ? `Demasiadas tentativas. Tente de novo dentro de ${Math.ceil((error.retryAfter ?? 60) / 60)} min.`
+    : isApiError(error, 'invalid-code')
+      ? recovery
+        ? 'Código de recuperação inválido ou já usado.'
+        : 'Código inválido ou já usado. Aguarde pelo código seguinte na aplicação.'
+      : error
+        ? errorMessage(error)
+        : null
+
+  return (
+    <AuthLayout
+      title="Verificação em dois passos"
+      description={
+        recovery
+          ? 'Introduza um dos códigos de recuperação que guardou ao ativar a verificação. Cada código só funciona uma vez.'
+          : 'Introduza o código de 6 dígitos da sua aplicação autenticadora.'
+      }
+    >
+      <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
+        <FormError message={message} />
+        {recovery ? (
+          <Field key="recovery" label="Código de recuperação" hint="Por exemplo: abcd-efgh-jkmn">
+            {(p) => (
+              <Input
+                {...p}
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                className="font-mono"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                autoFocus
+              />
+            )}
+          </Field>
+        ) : (
+          <Field key="totp" label="Código">
+            {(p) => (
+              <Input
+                {...p}
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]*"
+                maxLength={7}
+                className="font-mono tracking-[0.3em]"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                autoFocus
+              />
+            )}
+          </Field>
+        )}
+        <Button type="submit" variant="primary" size="lg" loading={verify.isPending} disabled={!ready}>
+          Verificar e entrar
+        </Button>
+        <button
+          type="button"
+          className="self-center text-sm text-pinho hover:underline"
+          onClick={() => {
+            setRecovery(!recovery)
+            setCode('')
+            verify.reset()
+          }}
+        >
+          {recovery ? 'Usar o código da aplicação' : 'Usar código de recuperação'}
+        </button>
+        <button type="button" className="self-center text-sm text-ink-3 hover:underline" onClick={() => onRestart('back')}>
+          Voltar ao início
+        </button>
       </form>
     </AuthLayout>
   )

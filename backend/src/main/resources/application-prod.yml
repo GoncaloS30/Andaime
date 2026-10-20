@@ -30,3 +30,7 @@ andaime:
     host: ${ANDAIME_ANTIVIRUS_HOST:clamav}
     port: ${ANDAIME_ANTIVIRUS_PORT:3310}
     timeout-ms: ${ANDAIME_ANTIVIRUS_TIMEOUT_MS:30000}
+  # Chave dos segredos TOTP: obrigatória e sempre do ambiente (sem valor por omissão).
+  # Trocá-la sem recifrar user_totp invalida a verificação em dois passos de todas as contas.
+  security:
+    totp-key: ${ANDAIME_TOTP_KEY}

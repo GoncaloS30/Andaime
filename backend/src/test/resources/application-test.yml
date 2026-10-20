@@ -19,6 +19,9 @@ andaime:
   # PublicHolidaysIntegrationTest, que os liga explicitamente.
   holidays:
     national-in-hours: false
+  security:
+    # Chave só de testes (pública no repositório).
+    totp-key: MNe6SJChUDzTHoQKf/l27oUE+y8Nj6snOKB80YRraMM=
 
 springdoc:
   api-docs:

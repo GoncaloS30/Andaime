@@ -1,5 +1,5 @@
-import { Download, MailPlus, Monitor, RotateCw, Trash2, UserX } from 'lucide-react'
-import { useState, type FormEvent, type ReactNode } from 'react'
+import { Copy, Download, MailPlus, Monitor, RotateCw, ShieldCheck, Trash2, UserX } from 'lucide-react'
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { NavLink, Navigate, useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { cn } from '@/lib/cn'
@@ -13,7 +13,9 @@ import {
   useAudit,
   useChangeMemberRole,
   useChangePassword,
+  useConfirmTwoFactor,
   useDeactivateMember,
+  useDisableTwoFactor,
   useInvitations,
   useInvite,
   useMembers,
@@ -22,6 +24,8 @@ import {
   useRevokeInvitation,
   useRevokeSession,
   useSessions,
+  useSetupTwoFactor,
+  useTwoFactorStatus,
   useUpdateOrganization,
   useUpdateProfile,
 } from '../../api/hooks'
@@ -84,16 +88,34 @@ export function SettingsFrame({ children }: { children: ReactNode }) {
 
 function OrganizationForm({ org }: { org: Organization }) {
   const update = useUpdateOrganization(org.id)
-  const [form, setForm] = useState({ name: org.name, legalName: org.legalName ?? '', taxId: org.taxId ?? '', timezone: org.timezone })
+  const [form, setForm] = useState({
+    name: org.name,
+    legalName: org.legalName ?? '',
+    taxId: org.taxId ?? '',
+    timezone: org.timezone,
+    requireAdmin2fa: org.requireAdmin2fa,
+  })
   const server = update.error && isApiError(update.error) ? update.error.fieldErrors : {}
   const nameError = form.name.trim().length < 2 ? 'Indique o nome da empresa.' : null
-  const dirty = form.name !== org.name || form.legalName !== (org.legalName ?? '') || form.taxId !== (org.taxId ?? '') || form.timezone !== org.timezone
+  const dirty =
+    form.name !== org.name ||
+    form.legalName !== (org.legalName ?? '') ||
+    form.taxId !== (org.taxId ?? '') ||
+    form.timezone !== org.timezone ||
+    form.requireAdmin2fa !== org.requireAdmin2fa
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
     if (nameError) return
     update.mutate(
-      { name: form.name.trim(), legalName: form.legalName.trim() || null, taxId: form.taxId.trim() || null, timezone: form.timezone, version: org.version },
+      {
+        name: form.name.trim(),
+        legalName: form.legalName.trim() || null,
+        taxId: form.taxId.trim() || null,
+        timezone: form.timezone,
+        requireAdmin2fa: form.requireAdmin2fa,
+        version: org.version,
+      },
       { onSuccess: () => toast.success('Dados da empresa guardados') },
     )
   }
@@ -134,6 +156,12 @@ function OrganizationForm({ org }: { org: Organization }) {
           )}
         </Field>
       </div>
+      <Switch
+        checked={form.requireAdmin2fa}
+        onChange={(requireAdmin2fa) => setForm({ ...form, requireAdmin2fa })}
+        label="Exigir verificação em dois passos a donos e administradores"
+        description="Quem ainda não a tiver ativa continua a entrar, mas vê um aviso permanente até a ativar em «A minha conta»."
+      />
       <div>
         <Button type="submit" variant="primary" loading={update.isPending} disabled={!dirty}>
           Guardar alterações
@@ -594,6 +622,275 @@ function SessionsPanel() {
   )
 }
 
+// --- Verificação em dois passos ------------------------------------------------------
+
+/** Agrupa a chave em blocos de 4 para facilitar a introdução manual. */
+function groupSecret(secret: string) {
+  return secret.match(/.{1,4}/g)?.join(' ') ?? secret
+}
+
+async function copyText(text: string, success: string) {
+  try {
+    await navigator.clipboard.writeText(text)
+    toast.success(success)
+  } catch {
+    toast.error('Não foi possível copiar. Selecione o texto e copie manualmente.')
+  }
+}
+
+function RecoveryCodes({ codes, onDone }: { codes: string[]; onDone: () => void }) {
+  return (
+    <div className="flex max-w-xl flex-col gap-4 p-4">
+      <p role="status" className="rounded-md border border-ok/30 bg-ok-soft px-3 py-2 text-sm text-ok">
+        Verificação em dois passos ativa.
+      </p>
+      <div className="text-sm text-ink-2">
+        <p className="font-medium text-ink">Guarde estes códigos de recuperação num local seguro.</p>
+        <p className="mt-1">
+          Servem para entrar se perder o telemóvel. Cada código só funciona uma vez e <strong>não voltam a ser mostrados</strong>.
+        </p>
+      </div>
+      <ol className="grid grid-cols-2 gap-x-6 gap-y-1.5 rounded-md border border-line bg-cal px-4 py-3 font-mono text-sm text-ink sm:max-w-sm">
+        {codes.map((code) => (
+          <li key={code}>{code}</li>
+        ))}
+      </ol>
+      <div className="flex flex-wrap gap-2">
+        <Button variant="secondary" icon={<Copy className="size-4" />} onClick={() => void copyText(codes.join('\n'), 'Códigos copiados')}>
+          Copiar códigos
+        </Button>
+        <Button variant="primary" onClick={onDone}>
+          Já guardei os códigos
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function TwoFactorSetupForm({ onCancel, onConfirmed }: { onCancel: () => void; onConfirmed: (codes: string[]) => void }) {
+  const setup = useSetupTwoFactor()
+  const confirm = useConfirmTwoFactor()
+  const [code, setCode] = useState('')
+  const { mutate: start } = setup
+  useEffect(() => start(), [start])
+  const compact = code.replace(/\s/g, '')
+  const valid = /^\d{6}$/.test(compact)
+
+  if (setup.isPending || setup.isIdle) return <SkeletonRows rows={3} />
+  if (setup.isError)
+    return (
+      <div className="flex flex-col gap-3 p-4">
+        <FormError message={errorMessage(setup.error)} />
+        <div>
+          <Button variant="ghost" onClick={onCancel}>
+            Voltar
+          </Button>
+        </div>
+      </div>
+    )
+
+  const { secret, otpauthUri } = setup.data
+  return (
+    <form
+      className="flex max-w-xl flex-col gap-4 p-4"
+      noValidate
+      onSubmit={(event) => {
+        event.preventDefault()
+        if (!valid) return
+        confirm.mutate(compact, { onSuccess: (result) => onConfirmed(result.recoveryCodes), onError: () => setCode('') })
+      }}
+    >
+      <ol className="flex list-decimal flex-col gap-3 pl-5 text-sm text-ink-2">
+        <li>Instale uma aplicação autenticadora no telemóvel (por exemplo Google Authenticator, Microsoft Authenticator ou 1Password).</li>
+        <li>
+          Na aplicação, adicione uma conta e escolha introduzir uma chave (tipo «baseada no tempo»). Use esta chave:
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <code className="rounded-md border border-line bg-cal px-3 py-1.5 font-mono text-sm tracking-wide break-all text-ink">{groupSecret(secret)}</code>
+            <Button variant="ghost" size="sm" icon={<Copy className="size-4" />} onClick={() => void copyText(secret, 'Chave copiada')}>
+              Copiar
+            </Button>
+          </div>
+          <p className="mt-2">
+            Se estiver no telemóvel, também pode{' '}
+            <a href={otpauthUri} className="font-medium text-pinho hover:underline">
+              abrir diretamente na aplicação autenticadora
+            </a>
+            .
+          </p>
+          <details className="mt-2 text-xs text-ink-3">
+            <summary className="cursor-pointer">Ver a ligação completa (otpauth)</summary>
+            <code className="mt-1 block font-mono break-all">{otpauthUri}</code>
+          </details>
+        </li>
+        <li>Introduza o código de 6 dígitos que a aplicação mostra.</li>
+      </ol>
+      <FormError
+        message={
+          isApiError(confirm.error, 'invalid-code')
+            ? 'Código inválido. Confirme que a hora do telemóvel está certa e use o código atual.'
+            : confirm.error
+              ? errorMessage(confirm.error)
+              : null
+        }
+      />
+      <Field label="Código da aplicação">
+        {(p) => (
+          <Input
+            {...p}
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={7}
+            className="max-w-40 font-mono tracking-[0.3em]"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+          />
+        )}
+      </Field>
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" variant="primary" loading={confirm.isPending} disabled={!valid}>
+          Ativar verificação
+        </Button>
+        <Button variant="ghost" onClick={onCancel}>
+          Cancelar
+        </Button>
+      </div>
+    </form>
+  )
+}
+
+function DisableTwoFactorDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const disable = useDisableTwoFactor()
+  const [password, setPassword] = useState('')
+  const [code, setCode] = useState('')
+  const close = (next: boolean) => {
+    if (!next) {
+      setPassword('')
+      setCode('')
+      disable.reset()
+    }
+    onOpenChange(next)
+  }
+  const submit = (event: FormEvent) => {
+    event.preventDefault()
+    if (!password || !code.trim()) return
+    disable.mutate(
+      { password, code: code.trim() },
+      {
+        onSuccess: () => {
+          toast.success('Verificação em dois passos desativada')
+          close(false)
+        },
+      },
+    )
+  }
+  const message = isApiError(disable.error, 'invalid-password')
+    ? 'A palavra-passe atual está incorreta.'
+    : isApiError(disable.error, 'invalid-code')
+      ? 'Código inválido ou já usado.'
+      : disable.error
+        ? errorMessage(disable.error)
+        : null
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={close}
+      title="Desativar verificação em dois passos"
+      description="A conta fica protegida só pela palavra-passe. Confirme com a palavra-passe e um código."
+      footer={
+        <>
+          <Button variant="ghost" onClick={() => close(false)}>
+            Cancelar
+          </Button>
+          <Button type="submit" form="desativar-2fa" variant="danger" loading={disable.isPending} disabled={!password || !code.trim()}>
+            Desativar
+          </Button>
+        </>
+      }
+    >
+      <form id="desativar-2fa" onSubmit={submit} className="flex flex-col gap-4" noValidate>
+        <FormError message={message} />
+        <Field label="Palavra-passe atual">
+          {(p) => <Input {...p} type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />}
+        </Field>
+        <Field label="Código" hint="O código de 6 dígitos da aplicação ou um código de recuperação.">
+          {(p) => <Input {...p} autoComplete="one-time-code" className="font-mono" value={code} onChange={(e) => setCode(e.target.value)} />}
+        </Field>
+      </form>
+    </Dialog>
+  )
+}
+
+function TwoFactorPanel() {
+  const { me } = useSession()
+  const status = useTwoFactorStatus()
+  const [mode, setMode] = useState<'idle' | 'setup' | 'codes'>('idle')
+  const [codes, setCodes] = useState<string[]>([])
+  const [disabling, setDisabling] = useState(false)
+  const remaining = status.data?.recoveryCodesRemaining ?? 0
+
+  return (
+    <Panel
+      id="dois-passos"
+      title="Verificação em dois passos"
+      description="Além da palavra-passe, pede um código da aplicação autenticadora do telemóvel ao entrar."
+      flush
+    >
+      {mode === 'codes' ? (
+        <RecoveryCodes
+          codes={codes}
+          onDone={() => {
+            setCodes([])
+            setMode('idle')
+          }}
+        />
+      ) : mode === 'setup' ? (
+        <TwoFactorSetupForm
+          onCancel={() => setMode('idle')}
+          onConfirmed={(recoveryCodes) => {
+            setCodes(recoveryCodes)
+            setMode('codes')
+          }}
+        />
+      ) : status.isPending ? (
+        <SkeletonRows rows={1} />
+      ) : status.isError ? (
+        <ErrorState onRetry={() => void status.refetch()} />
+      ) : status.data.enabled ? (
+        <div className="flex flex-wrap items-center gap-3 p-4">
+          <ShieldCheck className="size-5 shrink-0 text-ok" aria-hidden />
+          <div className="min-w-0 flex-1 text-sm">
+            <p className="font-medium text-ink">
+              Ativa
+              <Badge tone="ok" className="ml-2">
+                Conta protegida
+              </Badge>
+            </p>
+            <p className={remaining <= 2 ? 'text-tijolo-ink' : 'text-ink-3'}>
+              {remaining === 1 ? 'Resta 1 código de recuperação.' : `Restam ${remaining} códigos de recuperação.`}
+              {remaining <= 2 && ' Desative e volte a ativar para gerar novos.'}
+            </p>
+          </div>
+          <Button variant="secondary" onClick={() => setDisabling(true)}>
+            Desativar
+          </Button>
+          <DisableTwoFactorDialog open={disabling} onOpenChange={setDisabling} />
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-center gap-3 p-4">
+          <p className="min-w-0 flex-1 text-sm text-ink-3">
+            {me.twoFactorSetupRequired
+              ? 'A sua empresa exige verificação em dois passos para donos e administradores.'
+              : 'Ainda não está ativa. Recomendada para quem gere a empresa.'}
+          </p>
+          <Button variant="primary" onClick={() => setMode('setup')}>
+            Ativar
+          </Button>
+        </div>
+      )}
+    </Panel>
+  )
+}
+
 export function AccountSections() {
   return (
     <div className="flex flex-col gap-5">
@@ -603,6 +900,7 @@ export function AccountSections() {
       <Panel title="Palavra-passe">
         <PasswordForm />
       </Panel>
+      <TwoFactorPanel />
       <EmailNoticesPanel />
       <MyDataPanel />
       <SessionsPanel />

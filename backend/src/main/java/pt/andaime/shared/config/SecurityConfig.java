@@ -51,7 +51,7 @@ class SecurityConfig {
                         .requestMatchers("/actuator/**").denyAll()
                         .requestMatchers("/api/docs/**").permitAll()
                         .requestMatchers("/api/auth/csrf", "/api/auth/signup",
-                                "/api/auth/verify-email", "/api/auth/login",
+                                "/api/auth/verify-email", "/api/auth/login", "/api/auth/login/2fa",
                                 "/api/auth/password/forgot", "/api/auth/password/reset").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/invitations/*").permitAll()
                         .anyRequest().authenticated())

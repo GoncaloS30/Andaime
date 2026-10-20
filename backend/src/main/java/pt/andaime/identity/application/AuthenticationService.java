@@ -17,10 +17,13 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import pt.andaime.identity.UserPrincipal;
 import pt.andaime.shared.api.ApiException;
 import pt.andaime.shared.api.RateLimitedException;
 
@@ -35,6 +38,8 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final IdentityMailGateway mailGateway;
+    private final TwoFactorService twoFactorService;
+    private final UserDetailsService userDetailsService;
     private final Clock clock;
 
     public AuthenticationService(
@@ -42,11 +47,15 @@ public class AuthenticationService {
             PasswordEncoder passwordEncoder,
             AuthenticationManager authenticationManager,
             IdentityMailGateway mailGateway,
+            TwoFactorService twoFactorService,
+            UserDetailsService userDetailsService,
             Clock clock) {
         this.jdbcTemplate = jdbcTemplate;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.mailGateway = mailGateway;
+        this.twoFactorService = twoFactorService;
+        this.userDetailsService = userDetailsService;
         this.clock = clock;
     }
 
@@ -93,21 +102,71 @@ public class AuthenticationService {
                 """, userIds.getFirst());
     }
 
+    /** Resultado do passo da palavra-passe: sessão autenticada ou segundo passo pendente. */
+    public sealed interface LoginStep {
+    }
+
+    public record Authenticated(Authentication authentication) implements LoginStep {
+    }
+
+    /** Palavra-passe certa, mas falta o código: nada fica autenticado ainda. */
+    public record SecondFactorRequired(UUID userId, String email) implements LoginStep {
+    }
+
     @Transactional(noRollbackFor = ApiException.class)
-    public Authentication login(String rawEmail, String password) {
+    public LoginStep login(String rawEmail, String password) {
         var email = normalize(rawEmail);
         enforceThrottle(email);
+        UserPrincipal principal;
         try {
             var authentication = authenticationManager.authenticate(
                     UsernamePasswordAuthenticationToken.unauthenticated(email, password));
-            jdbcTemplate.update("DELETE FROM login_throttle WHERE email_key = ?", email);
-            // A sessão é persistida no PostgreSQL: nunca guardar lá o hash da palavra-passe.
-            var principal = ((pt.andaime.identity.UserPrincipal) authentication.getPrincipal()).withoutPassword();
-            return UsernamePasswordAuthenticationToken.authenticated(principal, null, principal.getAuthorities());
+            principal = (UserPrincipal) authentication.getPrincipal();
         } catch (AuthenticationException exception) {
             recordFailure(email);
             throw new ApiException(HttpStatus.UNAUTHORIZED, "unauthenticated", "Email ou palavra-passe inválidos.");
         }
+        if (twoFactorService.isEnabled(principal.id())) {
+            // A palavra-passe certa não limpa o bloqueio: só o login completo (com código) o faz,
+            // senão cada nova entrada da palavra-passe dava mais tentativas de código.
+            return new SecondFactorRequired(principal.id(), principal.email());
+        }
+        jdbcTemplate.update("DELETE FROM login_throttle WHERE email_key = ?", email);
+        return new Authenticated(authenticated(principal));
+    }
+
+    /**
+     * Segundo passo do login: um código da aplicação ou um código de recuperação. As falhas
+     * contam para o mesmo bloqueio por email que as palavras-passe erradas.
+     */
+    @Transactional(noRollbackFor = ApiException.class)
+    public Authentication completeSecondFactor(UUID userId, String rawEmail, String code, String recoveryCode) {
+        var email = normalize(rawEmail);
+        enforceThrottle(email);
+        UserPrincipal principal;
+        try {
+            principal = (UserPrincipal) userDetailsService.loadUserByUsername(email);
+        } catch (UsernameNotFoundException exception) {
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "unauthenticated", "Email ou palavra-passe inválidos.");
+        }
+        if (!principal.id().equals(userId) || !principal.isEnabled()) {
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "unauthenticated", "Email ou palavra-passe inválidos.");
+        }
+        var valid = code != null && !code.isBlank()
+                ? twoFactorService.verifyTotp(userId, code)
+                : twoFactorService.useRecoveryCode(userId, recoveryCode);
+        if (!valid) {
+            recordFailure(email);
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "invalid-code", "O código não é válido ou já foi usado.");
+        }
+        jdbcTemplate.update("DELETE FROM login_throttle WHERE email_key = ?", email);
+        return authenticated(principal);
+    }
+
+    private static Authentication authenticated(UserPrincipal principal) {
+        // A sessão é persistida no PostgreSQL: nunca guardar lá o hash da palavra-passe.
+        var withoutPassword = principal.withoutPassword();
+        return UsernamePasswordAuthenticationToken.authenticated(withoutPassword, null, withoutPassword.getAuthorities());
     }
 
     @Transactional

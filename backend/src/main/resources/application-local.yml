@@ -9,3 +9,8 @@ springdoc:
     enabled: true
   swagger-ui:
     enabled: true
+
+andaime:
+  security:
+    # CHAVE DE DESENVOLVIMENTO, pública no repositório: NUNCA usar fora do perfil local.
+    totp-key: ${ANDAIME_TOTP_KEY:xXhgaxjZviEv8Ol7kugbIm19umd7g4IPR5HxpgMVkEM=}

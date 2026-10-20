@@ -89,13 +89,14 @@ public class OrganizationService {
                 """, organizationId, userId, organizationId);
 
         return new OrganizationView(organizationId, name.strip(), blankToNull(legalName),
-                blankToNull(taxId), country, timezone, "EUR", "ACTIVE", 0);
+                blankToNull(taxId), country, timezone, "EUR", "ACTIVE", false, 0);
     }
 
     @Transactional(readOnly = true)
     public OrganizationView get(UUID organizationId) {
         return jdbcTemplate.query("""
-                SELECT id, name, legal_name, tax_id, country, default_timezone, currency, status, version
+                SELECT id, name, legal_name, tax_id, country, default_timezone, currency, status,
+                       require_admin_2fa, version
                 FROM organizations WHERE id = ?
                 """, (resultSet, rowNumber) -> new OrganizationView(
                 resultSet.getObject("id", UUID.class),
@@ -106,6 +107,7 @@ public class OrganizationService {
                 resultSet.getString("default_timezone"),
                 resultSet.getString("currency"),
                 resultSet.getString("status"),
+                resultSet.getBoolean("require_admin_2fa"),
                 resultSet.getInt("version")), organizationId).stream().findFirst()
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "not-found", "A organização não foi encontrada."));
     }
@@ -117,15 +119,17 @@ public class OrganizationService {
             String legalName,
             String taxId,
             String timezone,
+            Boolean requireAdmin2fa,
             int expectedVersion) {
         OrgRole.require(OrgRole.ADMIN);
         var before = get(organizationId);
         var updated = jdbcTemplate.update("""
                 UPDATE organizations
-                SET name = ?, legal_name = ?, tax_id = ?, default_timezone = ?, version = version + 1
+                SET name = ?, legal_name = ?, tax_id = ?, default_timezone = ?,
+                    require_admin_2fa = COALESCE(?, require_admin_2fa), version = version + 1
                 WHERE id = ? AND version = ?
                 """, name.strip(), blankToNull(legalName), blankToNull(taxId), timezone,
-                organizationId, expectedVersion);
+                requireAdmin2fa, organizationId, expectedVersion);
         if (updated == 0) {
             throw new ApiException(HttpStatus.CONFLICT, "stale",
                     "A organização foi alterada por outra pessoa. Recarregue e tente de novo.");
@@ -141,6 +145,9 @@ public class OrganizationService {
         diff(changes, "legalName", before.legalName(), after.legalName());
         diff(changes, "taxId", before.taxId(), after.taxId());
         diff(changes, "timezone", before.timezone(), after.timezone());
+        if (before.requireAdmin2fa() != after.requireAdmin2fa()) {
+            changes.put("requireAdmin2fa", Map.of("from", before.requireAdmin2fa(), "to", after.requireAdmin2fa()));
+        }
         return changes;
     }
 

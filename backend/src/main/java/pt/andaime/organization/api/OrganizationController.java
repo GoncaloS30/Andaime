@@ -68,7 +68,7 @@ public class OrganizationController {
     @PatchMapping("/{orgId}")
     OrganizationView update(@PathVariable UUID orgId, @Valid @RequestBody UpdateOrganizationRequest request) {
         return organizationService.update(orgId, request.name(), request.legalName(), request.taxId(),
-                timezone(request.timezone()), request.version());
+                timezone(request.timezone()), request.requireAdmin2fa(), request.version());
     }
 
     private String timezone(String value) {
@@ -93,6 +93,8 @@ public class OrganizationController {
             @Size(max = 200) String legalName,
             @Size(max = 40) String taxId,
             @Size(max = 80) String timezone,
+            /** Opcional: ausente mantém o valor atual. */
+            Boolean requireAdmin2fa,
             @NotNull Integer version) {
     }
 }

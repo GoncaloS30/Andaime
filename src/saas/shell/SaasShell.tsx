@@ -1,4 +1,4 @@
-import { Building2, Check, ChevronsUpDown, LogOut, Menu as MenuIcon, Plus, Settings, ShieldCheck, UserRound } from 'lucide-react'
+import { Building2, Check, ChevronsUpDown, LogOut, Menu as MenuIcon, Plus, Settings, ShieldAlert, ShieldCheck, UserRound } from 'lucide-react'
 import { Suspense, useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate, useNavigation } from 'react-router'
 import { toast } from 'sonner'
@@ -252,6 +252,31 @@ function SupportBanner() {
   )
 }
 
+/**
+ * A empresa exige verificação em dois passos a donos/administradores e esta conta não a tem.
+ * A API não bloqueia (a política é aplicada por este aviso permanente, até ser ativada).
+ */
+function TwoFactorRequiredBanner() {
+  const { me } = useSession()
+  const location = useLocation()
+  if (!me.twoFactorSetupRequired) return null
+  return (
+    <div role="status" className="border-b border-tijolo/30 bg-tijolo-soft px-4 py-2.5 text-sm text-tijolo-ink lg:px-7">
+      <ShieldAlert className="mr-1.5 inline size-4 align-text-bottom" aria-hidden />
+      A sua empresa exige <strong>verificação em dois passos</strong> para donos e administradores.{' '}
+      {location.pathname === '/definicoes/conta' ? (
+        <a href="#dois-passos" className="font-medium underline underline-offset-2">
+          Ativar agora
+        </a>
+      ) : (
+        <NavLink to="/definicoes/conta#dois-passos" className="font-medium underline underline-offset-2">
+          Ativar agora
+        </NavLink>
+      )}
+    </div>
+  )
+}
+
 export function SaasShell() {
   const location = useLocation()
   const loading = useNavigation().state === 'loading'
@@ -275,6 +300,7 @@ export function SaasShell() {
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar />
         <SupportBanner />
+        <TwoFactorRequiredBanner />
         <main id="conteudo" tabIndex={-1} aria-busy={loading || undefined} className="flex-1 px-4 pt-5 pb-28 focus:outline-none sm:px-5 md:pb-10 lg:px-7">
           <Suspense fallback={<SkeletonRows rows={8} />}>
             <Outlet />

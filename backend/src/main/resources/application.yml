@@ -65,6 +65,11 @@ andaime:
     host: ${ANDAIME_ANTIVIRUS_HOST:localhost}
     port: ${ANDAIME_ANTIVIRUS_PORT:59310}
     timeout-ms: ${ANDAIME_ANTIVIRUS_TIMEOUT_MS:30000}
+  security:
+    # Chave AES-256 (base64, 32 bytes) que cifra os segredos da verificação em dois passos.
+    # Sem valor por omissão: só os perfis local e test têm uma chave de desenvolvimento; noutro
+    # perfil a aplicação não arranca sem ANDAIME_TOTP_KEY (gerar com: openssl rand -base64 32).
+    totp-key: ${ANDAIME_TOTP_KEY:}
 
 management:
   endpoints:

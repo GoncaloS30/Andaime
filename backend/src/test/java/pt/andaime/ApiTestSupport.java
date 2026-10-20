@@ -42,8 +42,12 @@ abstract class ApiTestSupport extends IntegrationTestSupport {
     }
 
     Session newUser(String prefixOrEmail) throws Exception {
+        return newUser(prefixOrEmail, "Palavra-passe-" + UUID.randomUUID());
+    }
+
+    /** Cria, confirma e autentica uma conta com a palavra-passe indicada. */
+    Session newUser(String prefixOrEmail, String password) throws Exception {
         var email = prefixOrEmail.contains("@") ? prefixOrEmail : uniqueEmail(prefixOrEmail);
-        var password = "Palavra-passe-" + UUID.randomUUID();
         var csrf = csrf(null);
         mockMvc.perform(post("/api/auth/signup").cookie(csrf.csrfCookie()).header("X-XSRF-TOKEN", csrf.csrfToken())
                         .contentType("application/json")

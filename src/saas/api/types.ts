@@ -11,6 +11,32 @@ export interface Me {
   memberships: { id: string; orgId: string; orgName: string; role: OrgRole; supportUntil: string | null }[]
   activeOrgId: string | null
   platformAdmin: boolean
+  /** Verificação em dois passos ativa nesta conta. */
+  twoFactorEnabled: boolean
+  /** Uma empresa onde é dono/administrador exige verificação em dois passos e esta conta não a tem. */
+  twoFactorSetupRequired: boolean
+}
+
+/** Resposta do login quando falta o segundo passo (palavra-passe certa, sessão ainda não autenticada). */
+export interface TwoFactorChallenge {
+  twoFactorRequired: true
+}
+
+export function isTwoFactorChallenge(value: Me | TwoFactorChallenge): value is TwoFactorChallenge {
+  return 'twoFactorRequired' in value && value.twoFactorRequired === true
+}
+
+export interface TwoFactorStatus {
+  enabled: boolean
+  /** Configuração iniciada mas ainda não confirmada com um código. */
+  pending: boolean
+  recoveryCodesRemaining: number
+}
+
+export interface TwoFactorSetup {
+  /** Chave em Base32 para introduzir manualmente na aplicação autenticadora. */
+  secret: string
+  otpauthUri: string
 }
 
 export interface Organization {
@@ -22,6 +48,8 @@ export interface Organization {
   timezone: string
   currency: string
   status: 'ACTIVE' | 'SUSPENDED'
+  /** Donos e administradores devem ter a verificação em dois passos ativa. */
+  requireAdmin2fa: boolean
   version: number
 }
 

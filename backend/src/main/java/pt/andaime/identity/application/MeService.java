@@ -56,11 +56,29 @@ public class MeService {
                 Boolean.class,
                 principal.id()));
 
+        var twoFactorEnabled = Boolean.TRUE.equals(jdbcTemplate.queryForObject(
+                "SELECT EXISTS (SELECT 1 FROM user_totp WHERE user_id = ? AND enabled_at IS NOT NULL)",
+                Boolean.class,
+                principal.id()));
+        var requiredByOrganization = !twoFactorEnabled && Boolean.TRUE.equals(jdbcTemplate.queryForObject("""
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM memberships membership
+                    JOIN organizations organization ON organization.id = membership.organization_id
+                    WHERE membership.user_id = ?
+                      AND membership.status = 'ACTIVE'
+                      AND membership.role IN ('OWNER', 'ADMIN')
+                      AND organization.require_admin_2fa
+                )
+                """, Boolean.class, principal.id()));
+
         return new MeView(
                 new MeView.UserView(user.id(), user.email(), user.displayName(), user.locale()),
                 memberships,
                 user.lastActiveOrgId(),
-                platformAdmin);
+                platformAdmin,
+                twoFactorEnabled,
+                requiredByOrganization);
     }
 
     @Transactional
