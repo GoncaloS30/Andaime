@@ -3,6 +3,7 @@ import { expect, test, type Page } from '@playwright/test'
 const MAILPIT = process.env.ANDAIME_MAILPIT_URL ?? 'http://localhost:58035'
 const run = Date.now().toString(36)
 const PASSWORD = `E2E-local-${run}-palavra`
+const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64')
 
 async function verificationLink(page: Page, to: string): Promise<string> {
   let token: string | undefined
@@ -56,13 +57,6 @@ test('registar trabalhadores, formar uma equipa e criar uma obra com encarregado
     await drawer.getByRole('button', { name: 'Registar trabalhador' }).click()
     await expect(page.getByRole('heading', { name: name! })).toBeVisible()
   }
-  // Fotografia (ficha da Ana, a última criada): guardada no armazenamento e servida pela API.
-  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64')
-  await page.locator('input[type=file]').setInputFiles({ name: 'ana.png', mimeType: 'image/png', buffer: png })
-  await expect(page.getByRole('button', { name: 'Mudar fotografia de Ana Pedreira' })).toBeVisible()
-  const photo = page.locator('header img').first()
-  await expect(photo).toHaveAttribute('src', /\/employees\/.+\/photo\?v=/)
-  await expect.poll(() => photo.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth)).toBe(1)
   await page.goto('/trabalhadores')
   await expect(page.getByRole('link', { name: /Ana Pedreira/ })).toBeVisible()
   await expect(page.getByText('N.º 2')).toBeVisible()
@@ -88,16 +82,32 @@ test('registar trabalhadores, formar uma equipa e criar uma obra com encarregado
   await page.getByLabel('Encarregado').selectOption({ label: 'Rui Encarregado · Encarregado' })
   await page.getByLabel('Limite de horas').fill('1000')
   await page.getByLabel('Horas já realizadas antes do Andaime').fill('900')
+  await page.getByLabel('Latitude').fill('38.7223')
+  await page.getByLabel('Longitude').fill('-9.1393')
   await page.getByRole('button', { name: 'Criar obra' }).click()
   await expect(page.getByRole('heading', { name: 'Edifício E2E' })).toBeVisible()
   await expect(page.getByText('Atenção · 90 %')).toBeVisible()
   await expect(page.getByText('Inclui só as horas importadas')).toHaveCount(0)
 
-  // Persistido no servidor: aparece após recarregar e o percurso em equipas da trabalhadora tem a equipa.
-  await page.reload()
+  // Fotografia da obra: upload real para S3 e miniatura no mapa.
+  await page.locator('input[type="file"]').setInputFiles({ name: 'obra.png', mimeType: 'image/png', buffer: PNG })
+  await expect(page.getByText('Fotografia atualizada')).toBeVisible()
+  await expect(page.locator('header img[src*="/sites/"][src*="/photo?v="]')).toBeVisible()
+  await page.goto('/mapa')
+  await expect(page.locator('.leaflet-marker-icon img[src*="/sites/"][src*="/photo?v="]')).toBeVisible()
+
+  // Persistido no servidor: reaparece ao navegar e o percurso em equipas da trabalhadora tem a equipa.
+  await page.goto('/obras')
+  await page.getByRole('link', { name: /Edifício E2E/ }).click()
   await expect(page.getByRole('heading', { name: 'Edifício E2E' })).toBeVisible()
   await page.goto('/trabalhadores')
   await page.getByRole('link', { name: /Ana Pedreira/ }).click()
+  await page.locator('input[type="file"]').setInputFiles({ name: 'ana.png', mimeType: 'image/png', buffer: PNG })
+  await expect(page.getByText('Fotografia atualizada')).toBeVisible()
+  await expect(page.locator('header img[src*="/employees/"][src*="/photo?v="]')).toBeVisible()
+  await page.getByRole('button', { name: 'Remover fotografia de Ana Pedreira' }).click()
+  await expect(page.getByText('Fotografia removida')).toBeVisible()
+  await expect(page.locator('header img[src*="/employees/"][src*="/photo?v="]')).toHaveCount(0)
   await page.getByRole('tab', { name: 'Equipas' }).click()
   await expect(page.getByRole('tabpanel').getByText('Estrutura E2E')).toBeVisible()
   await page.getByRole('tab', { name: 'Histórico' }).click()

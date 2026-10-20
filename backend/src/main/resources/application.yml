@@ -64,6 +64,7 @@ andaime:
     mode: ${ANDAIME_ANTIVIRUS_MODE:off}
     host: ${ANDAIME_ANTIVIRUS_HOST:localhost}
     port: ${ANDAIME_ANTIVIRUS_PORT:59310}
+    timeout-ms: ${ANDAIME_ANTIVIRUS_TIMEOUT_MS:30000}
 
 management:
   endpoints:

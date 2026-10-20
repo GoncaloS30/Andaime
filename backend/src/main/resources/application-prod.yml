@@ -29,3 +29,4 @@ andaime:
     mode: ${ANDAIME_ANTIVIRUS_MODE:clamd}
     host: ${ANDAIME_ANTIVIRUS_HOST:clamav}
     port: ${ANDAIME_ANTIVIRUS_PORT:3310}
+    timeout-ms: ${ANDAIME_ANTIVIRUS_TIMEOUT_MS:30000}

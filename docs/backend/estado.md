@@ -305,13 +305,15 @@ npm run e2e:saas → 5 passed: + documentos com ficheiro real, entregas de EPI e
 Verificação real:
 
 ```text
-./mvnw verify → 68 testes, 0 falhas (inclui NotificationEmailIntegrationTest, PhotoIntegrationTest, FileScannerTest)
-npm run typecheck · npm run lint → sem erros · npm test → 31 testes
-npm run e2e:saas → 26 passed (o cenário de trabalhadores carrega e mostra uma fotografia)
+./mvnw verify (WSL, JDK 21) → 68 testes, 0 falhas, BUILD SUCCESS
+npm run typecheck → sem erros · npm run lint → sem erros · npm test → 31 testes, 0 falhas
+npm run build → 2222 módulos transformados, build concluído
+npm run e2e:saas → 26 passed (1.3m; fotografias de trabalhador e obra, remoção e miniatura no mapa)
+EICAR enviado por INSTREAM ao clamd real → stream: Eicar-Test-Signature FOUND
 ```
 
-O antivírus foi testado contra um clamd simulado (limpo, EICAR encontrado, indisponível); falta um teste manual com o
-ClamAV real (`docker compose --profile antivirus up -d clamav` e carregar o ficheiro EICAR).
+O antivírus foi testado contra um clamd simulado (limpo, EICAR encontrado, indisponível) e manualmente contra o
+ClamAV real iniciado pelo perfil Compose `antivirus`.
 
 ## F6 — Mapas e relatórios (concluída em 2026-10-20)
 

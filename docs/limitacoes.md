@@ -1,5 +1,15 @@
 # Limitações conhecidas
 
+## Aplicação SaaS atual
+
+- O antivírus está desligado por omissão no desenvolvimento. Para testar uploads analisados é necessário iniciar o
+  perfil Compose `antivirus` e definir `ANDAIME_ANTIVIRUS_MODE=clamd`; nesse modo, a indisponibilidade do ClamAV
+  impede o upload.
+- As fotografias de trabalhadores e obras aceitam JPEG, PNG e WebP até 5 MB. Não há recorte nem redimensionamento no
+  servidor; o ficheiro original é guardado no armazenamento privado e servido pela API a utilizadores autorizados.
+- A integração com ClamAV reduz o risco de ficheiros maliciosos, mas não substitui regras de conteúdo, atualizações de
+  assinaturas, monitorização nem testes de segurança independentes.
+
 > **Arquivo histórico:** o protótipo local foi removido em F6. A aplicação executável usa a API e PostgreSQL. A lista abaixo documenta limitações que existiam no protótipo e não deve ser lida como o estado atual; ver [backend/estado.md](backend/estado.md).
 
 ## Natureza do protótipo

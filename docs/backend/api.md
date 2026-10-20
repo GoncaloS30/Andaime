@@ -25,7 +25,11 @@ O contrato vivo é o OpenAPI gerado pelo backend: `http://localhost:8088/api/doc
 | 403 | `forbidden`, `csrf`, `organization-suspended`, `invitation-email-mismatch` |
 | 404 | `not-found` (inclui recursos de outra empresa) |
 | 409 | `stale`, `conflict`, `planning-conflicts`, `confirmation-required`, `last-owner`, `already-member`, `insufficient-stock` |
+| 413 | `file-too-large` |
+| 415 | `unsupported-type`, `file-type` |
+| 422 | `file-infected` |
 | 429 | `rate-limited` (com `Retry-After`) |
+| 503 | `antivirus-unavailable` |
 
 ## F1 — Identidade e organizações
 

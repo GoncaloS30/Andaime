@@ -2,6 +2,7 @@ import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { apiPost } from './helpers'
 
 /**
  * Acessibilidade (WCAG 2.1 AA) dos ecrãs reais, com a empresa de demonstração da semente
@@ -10,6 +11,13 @@ import { join } from 'node:path'
 const EMAIL = process.env.ANDAIME_SEED_DEMO_OWNER_EMAIL ?? 'demo@andaime.test'
 const PASSWORD = process.env.ANDAIME_SEED_DEMO_OWNER_PASSWORD ?? 'demo-local-andaime-2026'
 const STATE = join(tmpdir(), `andaime-a11y-${process.pid}.json`)
+
+function previousMonday(): string {
+  const date = new Date()
+  const sinceMonday = (date.getDay() + 6) % 7
+  date.setDate(date.getDate() - sinceMonday - 7)
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
 
 const PAGES = [
   '/',
@@ -53,6 +61,25 @@ test.describe('acessibilidade dos ecrãs reais', () => {
     await page.getByRole('button', { name: 'Entrar', exact: true }).click()
     await expect(page).not.toHaveURL(/\/entrar/)
     await expect(page.getByRole('navigation').first()).toBeVisible()
+    // A análise da gaveta da folha não depende da antiguidade da semente: se a semana anterior estiver vazia,
+    // cria um registo manual real e idempotente para essa execução.
+    const me = (await (await page.request.get('/api/me')).json()) as { activeOrgId: string }
+    const week = previousMonday()
+    const sheets = await page.request.get(`/api/orgs/${me.activeOrgId}/timesheets?week=${week}`)
+    const rows = (await sheets.json()) as unknown[]
+    if (rows.length === 0) {
+      const employees = (await (await page.request.get(`/api/orgs/${me.activeOrgId}/employees?status=ACTIVE&size=1`)).json()) as { items: { id: string }[] }
+      const sites = (await (await page.request.get(`/api/orgs/${me.activeOrgId}/sites?status=ACTIVE`)).json()) as { id: string }[]
+      await apiPost(page, `/orgs/${me.activeOrgId}/time-entries`, {
+        employeeId: employees.items[0]!.id,
+        siteId: sites[0]!.id,
+        date: week,
+        start: '08:00',
+        end: '16:00',
+        breakMin: 60,
+        reason: 'Preparação do teste de acessibilidade',
+      })
+    }
     await context.storageState({ path: STATE })
     await context.close()
   })
