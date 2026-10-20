@@ -46,6 +46,33 @@ class PlanningIntegrationTest extends ApiTestSupport {
                 """.formatted(employee, site, date, start, end, extra);
     }
 
+    @Test
+    void oTrabalhadorVeAsSuasAtribuicoesComObraColegasEEncarregado() throws Exception {
+        var owner = newUser("dono-agenda-propria");
+        var orgId = createOrganization(owner, "Atribuições próprias");
+        var ana = employee(owner, orgId, "Ana Própria", "Pedreiro");
+        var rui = employee(owner, orgId, "Rui Colega", "Servente");
+        var siteId = site(owner, orgId, "Obra do Rio");
+        perform(owner, post("/api/orgs/{orgId}/planning/commands", orgId).content("""
+                {"kind":"SCHEDULE","employeeIds":["%s","%s"],"siteId":"%s","from":"%s","to":"%s","weekdays":[1],
+                 "start":"08:00","end":"17:00","foremanEmployeeId":"%s"}""".formatted(ana, rui, siteId, MONDAY, MONDAY, rui)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.created").value(2));
+        var worker = joinAs(owner, orgId, "WORKER", "trabalhadora-propria");
+        linkEmployee(owner, orgId, worker, ana);
+
+        var mine = body(perform(worker, get("/api/orgs/{orgId}/me/assignments", orgId)
+                .param("from", MONDAY.toString()).param("to", MONDAY.plusDays(6).toString())).andExpect(status().isOk()));
+        assertThat(JsonPath.<List<String>>read(mine, "$[*].site.name")).containsExactly("Obra do Rio");
+        assertThat(JsonPath.<List<String>>read(mine, "$[0].colleagues")).containsExactly("Rui Colega");
+        assertThat((String) JsonPath.read(mine, "$[0].start")).startsWith("08:00");
+
+        // O dono não tem ficha de trabalhador: não tem atribuições próprias. Período demasiado longo é recusado.
+        perform(owner, get("/api/orgs/{orgId}/me/assignments", orgId).param("from", MONDAY.toString())
+                .param("to", MONDAY.plusDays(6).toString())).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+        perform(worker, get("/api/orgs/{orgId}/me/assignments", orgId).param("from", MONDAY.toString())
+                .param("to", MONDAY.plusDays(90).toString())).andExpect(status().isBadRequest());
+    }
+
     private String board(Session user, UUID orgId) throws Exception {
         return body(perform(user, get("/api/orgs/{orgId}/planning/board", orgId)
                 .param("from", MONDAY.toString()).param("to", MONDAY.plusDays(13).toString())).andExpect(status().isOk()));

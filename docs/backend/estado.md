@@ -456,6 +456,15 @@ Primeira fase das lacunas face à V3.1 (análise em `lacunas-v31.md`, não versi
   - diálogo com pré-visualização e impressão A4 (`@page folha`).
 - **Verificação:** `SiteScheduleTest` (4), `WorkforceSitesIntegrationTest` (5), `OperationsIntegrationTest` (3, alargado), `ModularityTest`, Vitest SaaS (7). `tsc` e `eslint` limpos.
 
+### F8.2 — app do trabalhador: os meus dias (2026-10-20)
+
+- **`GET /api/orgs/{orgId}/me/assignments?from&to`** (até 62 dias):
+  - devolve as atribuições da própria pessoa com a obra (código, nome, morada, coordenadas, cor), o horário, a equipa, a viatura, o encarregado (da obra ou da equipa) e os colegas na mesma obra nesse dia;
+  - o trabalhador continua sem acesso direto a obras e viaturas;
+  - uma conta sem ficha de trabalhador recebe uma lista vazia.
+- **Frontend:** painel "Os meus dias" na app do trabalhador, com hoje e os 13 dias seguintes, "Hoje" e "Amanhã" destacados e a morada a abrir no mapa. O ponto e "Esta semana" já existiam.
+- **Verificação:** `PlanningIntegrationTest` com um teste novo (âmbito, colegas, período máximo); `tsc` e `eslint` limpos.
+
 ### Ainda não feito (decisões ou serviços externos)
 
 - Deploy real: escolher e contratar fornecedores, DNS, segredos e TLS — passos em

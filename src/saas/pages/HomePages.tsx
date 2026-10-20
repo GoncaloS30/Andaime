@@ -12,6 +12,7 @@ import { useEmployees, useSites, useTeams } from '../api/workforce'
 import { useActiveOrg, useSession } from '../session'
 import { WorkerSections } from './operations/WorkerSections'
 import { DelayBadge } from './sites/SitesPages'
+import { MySchedule } from './timekeeping/MySchedule'
 import { WorkerClock } from './timekeeping/WorkerClock'
 
 /**
@@ -193,6 +194,7 @@ export function WorkerHome() {
           <h1 className="font-expanded text-xl font-semibold text-ink">Olá, {me.user.displayName.split(' ')[0]}</h1>
         </div>
         <WorkerClock />
+        <MySchedule />
         <WorkerSections />
         <Link to="/definicoes/conta" className={buttonStyles('secondary')}>
           A minha conta

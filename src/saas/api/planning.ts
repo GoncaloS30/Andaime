@@ -124,6 +124,30 @@ export const useBoard = (orgId: string, from: string, to: string) =>
     placeholderData: keepPreviousData,
   })
 
+/** Uma atribuição da própria pessoa, já com a obra, a viatura, o encarregado e os colegas (app do trabalhador). */
+export interface MyAssignment {
+  id: string
+  date: string
+  start: string
+  end: string
+  breakMin: number
+  plannedMin: number
+  foreman: boolean
+  note: string | null
+  site: { id: string; code: string; name: string; address: string | null; city: string | null; latitude: number | null; longitude: number | null; color: string }
+  teamName: string | null
+  vehicle: { id: string; plate: string; make: string | null; model: string | null } | null
+  foremanName: string | null
+  colleagues: string[]
+}
+
+export const useMyAssignments = (orgId: string, from: string, to: string, enabled = true) =>
+  useQuery({
+    queryKey: ['org', orgId, 'me', 'assignments', from, to],
+    queryFn: () => api<MyAssignment[]>(`${base(orgId)}/me/assignments?from=${from}&to=${to}`),
+    enabled,
+  })
+
 export const useChangeSets = (orgId: string, enabled = true) =>
   useQuery({
     queryKey: ['org', orgId, 'planning', 'change-sets'],
