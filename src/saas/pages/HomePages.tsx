@@ -11,6 +11,7 @@ import { atLeast, ORG_ROLE_LABEL } from '../api/types'
 import { useEmployees, useSites, useTeams } from '../api/workforce'
 import { useActiveOrg, useSession } from '../session'
 import { WorkerSections } from './operations/WorkerSections'
+import { DelayBadge } from './sites/SitesPages'
 import { WorkerClock } from './timekeeping/WorkerClock'
 
 /**
@@ -85,10 +86,25 @@ export function ManagerHome() {
     teams: teams.data?.length ?? 0,
     sites: sites.data?.length ?? 0,
   }
+  const late = (sites.data ?? []).filter((s) => s.delayWorkdays > 0 && !s.archived).sort((a, b) => b.delayWorkdays - a.delayWorkdays)
 
   return (
     <>
       <PageHeader eyebrow={org.name} title={`Olá, ${me.user.displayName.split(' ')[0]}`} description="Configure a empresa e a equipa. Os módulos operacionais vão sendo ligados ao servidor por fases." />
+      {late.length > 0 && (
+        <Panel className="mb-5" title="Obras atrasadas" description="A previsão de fim já passa o fim contratual.">
+          <ul className="divide-y divide-line-2 px-4">
+            {late.map((s) => (
+              <li key={s.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                <Link to={`/obras/${s.id}`} className="min-w-0 truncate text-pinho hover:underline">
+                  <span className="font-mono text-xs">{s.code}</span> {s.name}
+                </Link>
+                <DelayBadge site={s} />
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      )}
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <Panel title="Primeiros passos">
           <ol className="divide-y divide-line-2 px-4">

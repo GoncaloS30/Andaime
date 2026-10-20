@@ -26,6 +26,13 @@ import { useActiveOrg } from '../../session'
 
 const MONTH = new Intl.DateTimeFormat('pt-PT', { month: 'long', year: 'numeric', timeZone: 'UTC' })
 
+/** Nota sob o tipo, como no Lyrical: ajuda a escolher entre Licença, Assunto pessoal e Outra. */
+const KIND_HINT: Partial<Record<AbsenceKind, string>> = {
+  LEAVE: 'Parentalidade, casamento, luto ou outra licença prevista na lei ou no contrato.',
+  PERSONAL: 'Falta pontual por motivo pessoal (consulta, tribunal, assunto familiar).',
+  OTHER: 'Qualquer ausência que não caiba nos outros tipos. Explique na nota.',
+}
+
 function monthRange(anchor: string): [string, string] {
   const [y, m] = anchor.split('-').map(Number) as [number, number]
   const first = new Date(Date.UTC(y, m - 1, 1))
@@ -314,7 +321,7 @@ export function RequestAbsenceDialog({ onClose, onBehalf = false }: { onClose: (
             )}
           </Field>
         )}
-        <Field label="Tipo" className="sm:col-span-2">
+        <Field label="Tipo" className="sm:col-span-2" hint={KIND_HINT[kind]}>
           {(p) => (
             <Select {...p} value={kind} onChange={(e) => setKind(e.target.value as AbsenceKind)}>
               {(Object.keys(ABSENCE_KIND_LABEL) as AbsenceKind[]).map((k) => (

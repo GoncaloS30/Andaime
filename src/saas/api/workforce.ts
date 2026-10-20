@@ -149,7 +149,12 @@ export interface SiteSummary {
   longitude: number | null
   color: string
   startDate: string | null
+  /** Previsão de fim (o que se espera agora). */
   endDate: string | null
+  /** Fim contratual (o que foi acordado com o cliente). */
+  contractEndDate: string | null
+  /** Dias úteis em que a previsão passa o fim contratual (0 = sem atraso). */
+  delayWorkdays: number
   client: Ref | null
   foreman: Ref | null
   openIssues: number
@@ -184,6 +189,7 @@ export interface SiteInput {
   status?: SiteStatus
   startDate?: string | null
   endDate?: string | null
+  contractEndDate?: string | null
   hourLimitMin?: number | null
   baselineRealizedMin?: number
   baselineApprovedMin?: number

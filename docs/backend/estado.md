@@ -443,6 +443,19 @@ npm run typecheck · npm run lint → sem erros · npm test → 36 testes
 npm run e2e:saas → 26 passed (API com ClamAV real ligado)
 ```
 
+### F8.1 — obras, ausências e EPI (2026-10-20)
+
+Primeira fase das lacunas face à V3.1 (análise em `lacunas-v31.md`, não versionada):
+
+- **Fim contratual** (V26): `sites.contract_end_date`, separado da previsão de fim (`end_date`). `SiteSchedule.delayWorkdays` (porta do protótipo) devolve o atraso em dias úteis na lista e na ficha. O frontend mostra o selo "Atrasada · N dias úteis" e o painel "Obras atrasadas" no início do gestor.
+- **Licença** (V27): tipo de ausência `LEAVE`, com nota explicativa por tipo no formulário.
+- **Artigos sem acentos** (V28): extensão `unaccent` e `app.fold_name` (IMMUTABLE) no índice único de `equipment_items`. O 409 `name-taken` traz `existingId`. Em "Fardamento e EPI", "Entregar artigo novo" cria ou reaproveita o artigo e abre logo a entrega.
+- **Folha de entrega:**
+  - `Holding.lastDeliveredOn`;
+  - `GET /equipment/holdings/{employeeId}/sheet.xlsx` (POI, A4 vertical, no âmbito de `holdings`);
+  - diálogo com pré-visualização e impressão A4 (`@page folha`).
+- **Verificação:** `SiteScheduleTest` (4), `WorkforceSitesIntegrationTest` (5), `OperationsIntegrationTest` (3, alargado), `ModularityTest`, Vitest SaaS (7). `tsc` e `eslint` limpos.
+
 ### Ainda não feito (decisões ou serviços externos)
 
 - Deploy real: escolher e contratar fornecedores, DNS, segredos e TLS — passos em

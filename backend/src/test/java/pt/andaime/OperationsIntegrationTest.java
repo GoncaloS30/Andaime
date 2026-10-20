@@ -178,6 +178,10 @@ class OperationsIntegrationTest extends ApiTestSupport {
                 {"kind":"VACATION","startsOn":"%s","endsOn":"%s","note":"Casamento"}""".formatted(NEXT_MONDAY, NEXT_MONDAY.plusDays(4))))
                 .andExpect(status().isCreated()));
         var absenceId = JsonPath.<String>read(requested, "$.id");
+        // Tipo Licença (V27), noutro período para não sobrepor.
+        perform(worker, post("/api/orgs/{orgId}/absences", orgId).content("""
+                {"kind":"LEAVE","startsOn":"%s","endsOn":"%s","note":"Licença de casamento"}""".formatted(NEXT_MONDAY.plusDays(14), NEXT_MONDAY.plusDays(15))))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.kind").value("LEAVE"));
         perform(worker, post("/api/orgs/{orgId}/absences", orgId).content("""
                 {"kind":"PERSONAL","startsOn":"%s","endsOn":"%s"}""".formatted(NEXT_MONDAY.plusDays(2), NEXT_MONDAY.plusDays(2))))
                 .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("overlap"));
@@ -235,9 +239,11 @@ class OperationsIntegrationTest extends ApiTestSupport {
         var boots = JsonPath.<String>read(body(perform(owner, post("/api/orgs/{orgId}/equipment/items", orgId).content("""
                 {"name":"Botas de segurança","category":"PPE","tracking":"STOCK","size":"42","minStock":5}"""))
                 .andExpect(status().isCreated())), "$.id");
+        // Sem olhar a acentos nem maiúsculas; o 409 indica o artigo existente para a interface o reaproveitar.
         perform(owner, post("/api/orgs/{orgId}/equipment/items", orgId).content("""
-                {"name":"botas de segurança","category":"PPE","tracking":"STOCK","size":"42"}"""))
-                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("name-taken"));
+                {"name":"  BOTAS de seguranca ","category":"PPE","tracking":"STOCK","size":"42"}"""))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("name-taken"))
+                .andExpect(jsonPath("$.existingId").value(boots));
         perform(owner, post("/api/orgs/{orgId}/equipment/receive", orgId).content("{\"itemId\":\"%s\",\"quantity\":10}".formatted(boots)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.onHand").value(10));
         perform(owner, post("/api/orgs/{orgId}/equipment/deliver", orgId).content("""
@@ -278,6 +284,19 @@ class OperationsIntegrationTest extends ApiTestSupport {
         var mine = body(perform(worker, get("/api/orgs/{orgId}/equipment/holdings/{e}", orgId, ana)).andExpect(status().isOk()));
         assertThat(JsonPath.<List<String>>read(mine, "$[*].itemName")).containsExactly("Botas de segurança", "Capacete");
         assertThat(JsonPath.<List<String>>read(mine, "$[1].serials")).containsExactly("C-1");
+        assertThat(JsonPath.<List<String>>read(mine, "$[*].lastDeliveredOn")).containsOnly(TODAY.toString());
+        // Folha de entrega para assinar, em Excel, no mesmo âmbito (a própria vê a sua; não a de outros).
+        var started = perform(worker, get("/api/orgs/{orgId}/equipment/holdings/{e}/sheet.xlsx", orgId, ana))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.request().asyncStarted()).andReturn();
+        var sheet = mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch(started))
+                .andExpect(status().isOk()).andReturn().getResponse();
+        try (var workbook = new org.apache.poi.xssf.usermodel.XSSFWorkbook(new java.io.ByteArrayInputStream(sheet.getContentAsByteArray()))) {
+            var text = new java.util.ArrayList<String>();
+            workbook.getSheetAt(0).forEach(row -> row.forEach(cell -> text.add(cell.toString())));
+            assertThat(text).contains("Ana EPI", "Botas de segurança", "Capacete", "C-1");
+            assertThat(text).anyMatch(t -> t.startsWith("Assinatura do trabalhador"));
+        }
+        perform(worker, get("/api/orgs/{orgId}/equipment/holdings/{e}/sheet.xlsx", orgId, rui)).andExpect(status().isNotFound());
         perform(worker, get("/api/orgs/{orgId}/equipment/holdings/{e}", orgId, rui)).andExpect(status().isNotFound());
         perform(worker, post("/api/orgs/{orgId}/equipment/deliver", orgId).content("{}")).andExpect(status().isForbidden());
 

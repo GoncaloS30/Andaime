@@ -25,6 +25,7 @@ interface State {
   status: SiteStatus | ''
   startDate: string
   endDate: string
+  contractEndDate: string
   limitHours: string
   realizedHours: string
   approvedHours: string
@@ -51,6 +52,7 @@ function initial(site?: SiteDetail): State {
     status: site?.status ?? '',
     startDate: site?.startDate ?? '',
     endDate: site?.endDate ?? '',
+    contractEndDate: site?.contractEndDate ?? '',
     limitHours: hoursOf(site?.hourLimitMin),
     realizedHours: hoursOf(site?.baselineRealizedMin),
     approvedHours: hoursOf(site?.baselineApprovedMin),
@@ -108,6 +110,7 @@ export function SiteForm({
           ? 'Coordenadas inválidas.'
           : null,
     endDate: f.startDate && f.endDate && f.endDate < f.startDate ? 'Anterior ao início.' : null,
+    contractEndDate: f.startDate && f.contractEndDate && f.contractEndDate < f.startDate ? 'Anterior ao início.' : null,
     limit: limit !== null && !(limit >= 1) ? 'Indique um limite positivo ou deixe vazio.' : null,
     baseline: approved > realized ? 'As aprovadas não podem exceder as realizadas.' : null,
   }
@@ -130,6 +133,7 @@ export function SiteForm({
       status: f.status || undefined,
       startDate: f.startDate || null,
       endDate: f.endDate || null,
+      contractEndDate: f.contractEndDate || null,
       hourLimitMin: limit === null ? null : Math.round(limit * 60),
       baselineRealizedMin: Math.round(realized * 60),
       baselineApprovedMin: Math.round(approved * 60),
@@ -182,7 +186,15 @@ export function SiteForm({
         <Field label="Início" optional>
           {(p) => <Input {...p} type="date" value={f.startDate} onChange={(e) => set('startDate', e.target.value)} />}
         </Field>
-        <Field label="Fim previsto" optional error={err('endDate')}>
+        <Field label="Fim contratual" optional hint="A data acordada com o cliente." error={err('contractEndDate')}>
+          {(p) => <Input {...p} type="date" value={f.contractEndDate} onChange={(e) => set('contractEndDate', e.target.value)} />}
+        </Field>
+        <Field
+          label="Previsão de fim"
+          optional
+          hint={f.contractEndDate && f.endDate > f.contractEndDate ? 'Depois do fim contratual: a obra aparece como atrasada.' : 'Quando se espera acabar agora.'}
+          error={err('endDate')}
+        >
           {(p) => <Input {...p} type="date" value={f.endDate} onChange={(e) => set('endDate', e.target.value)} />}
         </Field>
         <Field label="Descrição" optional className="sm:col-span-2">

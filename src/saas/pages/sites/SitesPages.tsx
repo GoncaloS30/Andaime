@@ -59,6 +59,16 @@ function MetricsNote({ m }: { m: SiteMetricsDto }) {
   return <p className="text-xs text-ink-3">Inclui só as horas importadas na criação da obra. As horas registadas no Andaime entram com a fase F4.</p>
 }
 
+/** Aviso de atraso: a previsão de fim passa o fim contratual (dias úteis, calculados no servidor). */
+export function DelayBadge({ site, className }: { site: { delayWorkdays: number; contractEndDate: string | null }; className?: string }) {
+  if (!site.delayWorkdays) return null
+  return (
+    <Badge tone="danger" className={className} title={`A previsão de fim passa o fim contratual (${formatDate(site.contractEndDate)})`}>
+      Atrasada · {site.delayWorkdays} {site.delayWorkdays === 1 ? 'dia útil' : 'dias úteis'}
+    </Badge>
+  )
+}
+
 export function SitesPage() {
   const org = useActiveOrg()
   const manager = atLeast(org.role, 'MANAGER')
@@ -200,6 +210,7 @@ export function SitesPage() {
                         {SITE_STATUS_LABEL[s.status]}
                       </Badge>
                       {s.openIssues > 0 && <Badge tone="warn">{s.openIssues} ocorrência{s.openIssues > 1 ? 's' : ''}</Badge>}
+                      <DelayBadge site={s} />
                     </span>
                     <span className="truncate text-ink-3">{s.foreman?.name ?? 'Sem encarregado'}</span>
                   </div>
@@ -247,6 +258,7 @@ export function SitesPage() {
                       <Badge tone={SITE_STATUS_TONE[s.status]} dot>
                         {SITE_STATUS_LABEL[s.status]}
                       </Badge>
+                      <DelayBadge site={s} className="ml-1" />
                     </td>
                     <td className="text-xs">{s.foreman?.name ?? <span className="text-ink-3">—</span>}</td>
                     <td>
@@ -557,7 +569,10 @@ export function SiteDetailPage() {
               <Detail label="Diretor de obra">{s.director?.name ?? '—'}</Detail>
               <Detail label="Encarregado">{s.foreman ? manager ? <Link className="text-pinho hover:underline" to={`/trabalhadores/${s.foreman.id}`}>{s.foreman.name}</Link> : s.foreman.name : '—'}</Detail>
               <Detail label="Início">{formatDate(s.startDate)}</Detail>
-              <Detail label="Fim previsto">{formatDate(s.endDate)}</Detail>
+              <Detail label="Fim contratual">{formatDate(s.contractEndDate)}</Detail>
+              <Detail label="Previsão de fim">
+                {formatDate(s.endDate)} <DelayBadge site={s} className="ml-1" />
+              </Detail>
               <Detail label="Ordem ERP">{s.erpOrder ?? '—'}</Detail>
             </dl>
             {s.description && <p className="border-t border-line-2 px-4 py-3 text-sm text-ink-2">{s.description}</p>}

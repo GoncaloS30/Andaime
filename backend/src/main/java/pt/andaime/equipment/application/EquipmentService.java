@@ -30,6 +30,12 @@ import pt.andaime.shared.tenant.TenantContext;
 public class EquipmentService {
 
     static final Set<String> CATEGORIES = Set.of("PPE", "UNIFORM", "TOOL");
+    static final Map<String, String> CATEGORY_LABEL = Map.of("PPE", "EPI", "UNIFORM", "Fardamento", "TOOL", "Ferramenta");
+
+    /** Dados da folha de entrega para assinar: a empresa, a pessoa e o que tem em seu poder. */
+    public record DeliverySheet(String organizationName, String employeeName, String employeeNumber, String category,
+            java.time.LocalDate issuedOn, List<Holding> holdings) {
+    }
 
     public record ItemView(UUID id, String name, String category, String tracking, String size, int minStock, int onHand,
             int assigned, boolean low, boolean archived, int version) {
@@ -45,7 +51,9 @@ public class EquipmentService {
             String employeeName, String note, String userName, Instant occurredAt) {
     }
 
-    public record Holding(UUID itemId, String itemName, String category, String size, int quantity, List<String> serials) {
+    /** {@code lastDeliveredOn}: dia (no fuso da empresa) da última entrega deste artigo à pessoa; vai para a folha de entrega. */
+    public record Holding(UUID itemId, String itemName, String category, String size, int quantity, List<String> serials,
+            java.time.LocalDate lastDeliveredOn) {
     }
 
     public record Movement(UUID itemId, UUID employeeId, Integer quantity, UUID unitId, List<String> serials, String condition,
@@ -99,6 +107,16 @@ public class EquipmentService {
         var min = input.minStock() == null ? 0 : input.minStock();
         if (min < 0 || min > 100000) {
             throw invalid("minStock", "Stock mínimo inválido.");
+        }
+        // Mesmo nome (sem acentos nem maiúsculas) e tamanho: devolve o artigo existente para a interface o reaproveitar.
+        var existing = jdbcTemplate.query("""
+                SELECT id FROM equipment_items
+                WHERE app.fold_name(name) = app.fold_name(?) AND coalesce(size, '') = coalesce(?, '') AND archived_at IS NULL
+                  AND (?::uuid IS NULL OR id <> ?::uuid)
+                """, (resultSet, rowNumber) -> resultSet.getObject(1, UUID.class), name, size, id, id).stream().findFirst();
+        if (existing.isPresent()) {
+            throw new ApiException(HttpStatus.CONFLICT, "name-taken", "Já existe um artigo com esse nome e tamanho.")
+                    .with("existingId", existing.get());
         }
         try {
             if (id == null) {
@@ -275,6 +293,21 @@ public class EquipmentService {
         return holdings(input.employeeId());
     }
 
+    /** Folha de entrega: mesmo âmbito que {@link #holdings(UUID)}; artigos ordenados pela data de entrega. */
+    @Transactional(readOnly = true)
+    public DeliverySheet deliverySheet(UUID employeeId) {
+        var held = new ArrayList<>(holdings(employeeId));
+        held.sort(java.util.Comparator.comparing(Holding::lastDeliveredOn, java.util.Comparator.nullsFirst(java.util.Comparator.naturalOrder()))
+                .thenComparing(Holding::itemName));
+        return jdbcTemplate.query("""
+                SELECT organization.name, employee.full_name, employee.number, employee.category
+                FROM employees employee JOIN organizations organization ON organization.id = employee.organization_id
+                WHERE employee.id = ?
+                """, (resultSet, rowNumber) -> new DeliverySheet(resultSet.getString(1), resultSet.getString(2),
+                resultSet.getString(3), resultSet.getString(4), java.time.LocalDate.now(TenantContext.zone()), List.copyOf(held)),
+                employeeId).stream().findFirst().orElseThrow(EquipmentService::notFound);
+    }
+
     /** O que um trabalhador tem em seu poder (gestor: todos; encarregado: a sua equipa; trabalhador: ele próprio). */
     @Transactional(readOnly = true)
     public List<Holding> holdings(UUID employeeId) {
@@ -290,10 +323,12 @@ public class EquipmentService {
                 throw notFound();
             }
         }
+        var zone = TenantContext.zone().getId();
         var result = new ArrayList<Holding>();
         jdbcTemplate.query("""
                 SELECT item.id, item.name, item.category, item.size,
-                       sum(CASE movement.kind WHEN 'DELIVER' THEN movement.quantity ELSE -movement.quantity END) AS quantity
+                       sum(CASE movement.kind WHEN 'DELIVER' THEN movement.quantity ELSE -movement.quantity END) AS quantity,
+                       (max(movement.occurred_at) FILTER (WHERE movement.kind = 'DELIVER') AT TIME ZONE ?)::date AS delivered_on
                 FROM equipment_movements movement
                 JOIN equipment_items item ON item.organization_id = movement.organization_id AND item.id = movement.item_id
                 WHERE movement.employee_id = ? AND item.tracking = 'STOCK' AND movement.kind IN ('DELIVER', 'RETURN', 'DAMAGED', 'LOST')
@@ -302,18 +337,22 @@ public class EquipmentService {
                 ORDER BY item.name
                 """, resultSet -> {
             result.add(new Holding(resultSet.getObject(1, UUID.class), resultSet.getString(2), resultSet.getString(3),
-                    resultSet.getString(4), resultSet.getInt(5), List.of()));
-        }, employeeId);
+                    resultSet.getString(4), resultSet.getInt(5), List.of(), resultSet.getObject(6, java.time.LocalDate.class)));
+        }, zone, employeeId);
         var serials = new LinkedHashMap<UUID, Object[]>();
         jdbcTemplate.query("""
-                SELECT item.id, item.name, item.category, item.size, unit.serial
+                SELECT item.id, item.name, item.category, item.size, unit.serial,
+                       (SELECT (max(movement.occurred_at) AT TIME ZONE ?)::date FROM equipment_movements movement
+                        WHERE movement.organization_id = unit.organization_id AND movement.unit_id = unit.id
+                          AND movement.kind = 'DELIVER') AS delivered_on
                 FROM equipment_units unit
                 JOIN equipment_items item ON item.organization_id = unit.organization_id AND item.id = unit.item_id
                 WHERE unit.holder_employee_id = ? AND unit.status = 'ASSIGNED' ORDER BY item.name, unit.serial
                 """, resultSet -> {
             var entry = serials.computeIfAbsent(resultSet.getObject(1, UUID.class), k -> {
                 try {
-                    return new Object[] {resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), new ArrayList<String>()};
+                    return new Object[] {resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), new ArrayList<String>(),
+                        resultSet.getObject(6, java.time.LocalDate.class)};
                 } catch (java.sql.SQLException exception) {
                     throw new IllegalStateException(exception);
                 }
@@ -321,11 +360,12 @@ public class EquipmentService {
             @SuppressWarnings("unchecked")
             var list = (List<String>) entry[3];
             list.add(resultSet.getString(5));
-        }, employeeId);
+        }, zone, employeeId);
         serials.forEach((id, entry) -> {
             @SuppressWarnings("unchecked")
             var list = (List<String>) entry[3];
-            result.add(new Holding(id, (String) entry[0], (String) entry[1], (String) entry[2], list.size(), List.copyOf(list)));
+            result.add(new Holding(id, (String) entry[0], (String) entry[1], (String) entry[2], list.size(), List.copyOf(list),
+                    (java.time.LocalDate) entry[4]));
         });
         return result;
     }

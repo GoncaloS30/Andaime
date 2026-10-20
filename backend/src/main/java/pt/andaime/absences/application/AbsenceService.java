@@ -36,9 +36,9 @@ import pt.andaime.shared.tenant.TenantContext;
 @Service
 public class AbsenceService {
 
-    static final Set<String> KINDS = Set.of("VACATION", "SICK", "TRAINING", "PERSONAL", "OTHER");
+    static final Set<String> KINDS = Set.of("VACATION", "SICK", "TRAINING", "PERSONAL", "LEAVE", "OTHER");
     static final Map<String, String> KIND_LABEL = Map.of("VACATION", "Férias", "SICK", "Doença", "TRAINING", "Formação",
-            "PERSONAL", "Assunto pessoal", "OTHER", "Outra");
+            "PERSONAL", "Assunto pessoal", "LEAVE", "Licença", "OTHER", "Outra");
 
     public record AbsenceView(UUID id, UUID employeeId, String employeeName, String kind, LocalDate startsOn, LocalDate endsOn,
             Integer partialMinutes, String status, String note, String requestedBy, String decidedBy, Instant decidedAt,

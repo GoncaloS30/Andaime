@@ -1,4 +1,4 @@
-import { ArrowDownToLine, HardHat, PackagePlus, Plus, Undo2 } from 'lucide-react'
+import { ArrowDownToLine, FileSignature, HardHat, PackagePlus, Plus, Undo2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/cn'
@@ -8,7 +8,7 @@ import { Field, Input, Select, Textarea } from '@/ui/Field'
 import { PageHeader, Panel } from '@/ui/Layout'
 import { Dialog } from '@/ui/Overlay'
 import { EmptyState, ErrorState, SkeletonRows } from '@/ui/States'
-import { errorMessage } from '../../api/http'
+import { ApiError, errorMessage } from '../../api/http'
 import {
   CATEGORY_LABEL,
   MOVEMENT_LABEL,
@@ -23,6 +23,10 @@ import {
 } from '../../api/operations'
 import { useEmployeeOptions } from '../../api/workforce'
 import { useActiveOrg } from '../../session'
+import { DeliverySheetDialog } from './DeliverySheet'
+
+/** Nome comparável como no servidor (app.fold_name): sem acentos, maiúsculas nem espaços nas pontas. */
+const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().trim()
 
 type Mode = 'receive' | 'adjust' | 'deliver' | 'return'
 
@@ -32,7 +36,9 @@ export function EquipmentPage() {
   const items = useEquipmentItems(org.id)
   const movements = useMovements(org.id)
   const employees = useEmployeeOptions(org.id)
-  const [creating, setCreating] = useState(false)
+  // Artigo novo: do botão do topo, ou a partir de uma pessoa (cria ou reaproveita e abre logo a entrega).
+  const [creating, setCreating] = useState<{ deliverTo?: string } | null>(null)
+  const [sheet, setSheet] = useState(false)
   const [moving, setMoving] = useState<{ mode: Mode; item?: EquipmentItem; employeeId?: string } | null>(null)
   const [holder, setHolder] = useState('')
   const holdings = useHoldings(org.id, holder || null)
@@ -47,7 +53,7 @@ export function EquipmentPage() {
             <Button icon={<ArrowDownToLine className="size-4" />} onClick={() => setMoving({ mode: 'deliver' })}>
               Entregar
             </Button>
-            <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => setCreating(true)}>
+            <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => setCreating({})}>
               Novo artigo
             </Button>
           </div>
@@ -60,7 +66,7 @@ export function EquipmentPage() {
           ) : items.isError ? (
             <ErrorState onRetry={() => void items.refetch()}>{errorMessage(items.error)}</ErrorState>
           ) : items.data.length === 0 ? (
-            <EmptyState icon={<HardHat />} title="Sem artigos" action={<Button variant="primary" onClick={() => setCreating(true)}>Criar artigo</Button>}>
+            <EmptyState icon={<HardHat />} title="Sem artigos" action={<Button variant="primary" onClick={() => setCreating({})}>Criar artigo</Button>}>
               Registe botas, coletes, capacetes e ferramentas para controlar o stock e o que cada pessoa tem.
             </EmptyState>
           ) : (
@@ -125,6 +131,7 @@ export function EquipmentPage() {
                 ) : (holdings.data ?? []).length === 0 ? (
                   <p className="text-sm text-ink-3">Não tem nada em seu poder.</p>
                 ) : (
+                  <>
                   <ul className="flex flex-col gap-1.5">
                     {holdings.data!.map((h) => (
                       <li key={h.itemId} className="flex items-center justify-between gap-2 text-sm">
@@ -144,7 +151,16 @@ export function EquipmentPage() {
                       </li>
                     ))}
                   </ul>
+                  </>
                 )}
+                <div className="mt-3 flex flex-wrap gap-2 border-t border-line-2 pt-3">
+                  <Button size="sm" icon={<FileSignature className="size-4" />} disabled={!holdings.data} onClick={() => setSheet(true)}>
+                    Folha de entrega
+                  </Button>
+                  <Button size="sm" variant="ghost" icon={<Plus className="size-4" />} onClick={() => setCreating({ deliverTo: holder })}>
+                    Entregar artigo novo
+                  </Button>
+                </div>
               </div>
             )}
           </Panel>
@@ -169,13 +185,36 @@ export function EquipmentPage() {
           </Panel>
         </div>
       </div>
-      {creating && <NewItemDialog onClose={() => setCreating(false)} />}
+      {creating && (
+        <NewItemDialog
+          items={items.data ?? []}
+          delivering={!!creating.deliverTo}
+          onClose={() => setCreating(null)}
+          onReady={(item) => {
+            const to = creating.deliverTo
+            setCreating(null)
+            if (to && item) setMoving({ mode: 'deliver', item, employeeId: to })
+          }}
+        />
+      )}
+      {sheet && holder && holdings.data && (() => {
+        const e = employees.data?.items.find((x) => x.id === holder)
+        return (
+          <DeliverySheetDialog
+            orgId={org.id}
+            orgName={org.name}
+            employee={{ id: holder, name: e?.fullName ?? '', number: e?.number, category: e?.category }}
+            holdings={holdings.data}
+            onClose={() => setSheet(false)}
+          />
+        )
+      })()}
       {moving && <MovementDialog key={`${moving.mode}-${moving.item?.id ?? ''}`} {...moving} items={items.data ?? []} onClose={() => setMoving(null)} />}
     </div>
   )
 }
 
-function NewItemDialog({ onClose }: { onClose: () => void }) {
+function NewItemDialog({ items, delivering, onClose, onReady }: { items: EquipmentItem[]; delivering: boolean; onClose: () => void; onReady: (item?: EquipmentItem) => void }) {
   const org = useActiveOrg()
   const action = useEquipmentAction(org.id)
   const [name, setName] = useState('')
@@ -183,6 +222,25 @@ function NewItemDialog({ onClose }: { onClose: () => void }) {
   const [tracking, setTracking] = useState<'STOCK' | 'SERIAL'>('STOCK')
   const [size, setSize] = useState('')
   const [minStock, setMinStock] = useState('0')
+  // Mesmo nome (sem acentos nem maiúsculas) e tamanho: usa-se o artigo que já existe em vez de criar outro.
+  const match = name.trim().length >= 2 ? items.find((i) => fold(i.name) === fold(name) && (i.size ?? '') === size.trim()) : undefined
+  const create = () =>
+    action.mutate(
+      { action: 'create', name: name.trim(), category, tracking, size: size.trim() || undefined, minStock: Number(minStock) || 0 },
+      {
+        onSuccess: (data) => {
+          toast.success('Artigo criado')
+          onReady(data as EquipmentItem)
+        },
+        onError: (e) => {
+          const existing = e instanceof ApiError && e.code === 'name-taken' ? items.find((i) => i.id === e.details.existingId) : undefined
+          if (existing) {
+            toast.info(`${existing.name} já estava no catálogo`, { description: 'Usámos o artigo que já existia.' })
+            onReady(existing)
+          } else toast.error(errorMessage(e))
+        },
+      },
+    )
   return (
     <Dialog
       open
@@ -197,20 +255,17 @@ function NewItemDialog({ onClose }: { onClose: () => void }) {
             variant="primary"
             disabled={name.trim().length < 2}
             loading={action.isPending}
-            onClick={() =>
-              action.mutate(
-                { action: 'create', name: name.trim(), category, tracking, size: size.trim() || undefined, minStock: Number(minStock) || 0 },
-                { onSuccess: () => (toast.success('Artigo criado'), onClose()), onError: (e) => toast.error(errorMessage(e)) },
-              )
-            }
+            onClick={() => (match ? onReady(match) : create())}
           >
-            Criar
+            {match ? (delivering ? 'Usar e entregar' : 'Usar o existente') : delivering ? 'Criar e entregar' : 'Criar'}
           </Button>
         </div>
       }
     >
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Nome" className="sm:col-span-2">{(p) => <Input {...p} value={name} onChange={(e) => setName(e.target.value)} placeholder="Botas de segurança" />}</Field>
+        <Field label="Nome" className="sm:col-span-2" hint={match ? `Já existe no catálogo: ${match.name}${match.size ? ` (${match.size})` : ''}. Vai ser usado esse.` : undefined}>
+          {(p) => <Input {...p} value={name} onChange={(e) => setName(e.target.value)} placeholder="Botas de segurança" />}
+        </Field>
         <Field label="Categoria">
           {(p) => (
             <Select {...p} value={category} onChange={(e) => setCategory(e.target.value as EquipmentCategory)}>

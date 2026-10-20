@@ -3,7 +3,11 @@ package pt.andaime.equipment.api;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.http.CacheControl;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -14,7 +18,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import pt.andaime.equipment.application.DeliverySheetWorkbook;
 import pt.andaime.equipment.application.EquipmentService;
 import pt.andaime.equipment.application.EquipmentService.Holding;
 import pt.andaime.equipment.application.EquipmentService.ItemInput;
@@ -28,8 +34,10 @@ import pt.andaime.equipment.application.EquipmentService.UnitView;
 public class EquipmentController {
 
     private final EquipmentService equipment;
+    private final DeliverySheetWorkbook sheets;
 
-    public EquipmentController(EquipmentService equipment) {
+    public EquipmentController(EquipmentService equipment, DeliverySheetWorkbook sheets) {
+        this.sheets = sheets;
         this.equipment = equipment;
     }
 
@@ -83,6 +91,18 @@ public class EquipmentController {
     @GetMapping("/holdings/{employeeId}")
     List<Holding> holdings(@PathVariable UUID orgId, @PathVariable UUID employeeId) {
         return equipment.holdings(employeeId);
+    }
+
+    @GetMapping("/holdings/{employeeId}/sheet.xlsx")
+    ResponseEntity<StreamingResponseBody> deliverySheet(@PathVariable UUID orgId, @PathVariable UUID employeeId) {
+        var data = equipment.deliverySheet(employeeId);
+        StreamingResponseBody body = output -> sheets.write(output, data);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .cacheControl(CacheControl.noStore())
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
+                        .filename("folha-entrega-" + data.employeeNumber() + "-" + data.issuedOn() + ".xlsx").build().toString())
+                .body(body);
     }
 
     @GetMapping("/movements")

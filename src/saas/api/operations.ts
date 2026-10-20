@@ -161,7 +161,7 @@ export const downloadUrl = (orgId: string, documentId: string, versionId: string
 
 // --- ausências ------------------------------------------------------------------------------------
 
-export type AbsenceKind = 'VACATION' | 'SICK' | 'TRAINING' | 'PERSONAL' | 'OTHER'
+export type AbsenceKind = 'VACATION' | 'SICK' | 'TRAINING' | 'PERSONAL' | 'LEAVE' | 'OTHER'
 export type AbsenceStatus = 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'CANCELLED'
 
 export interface Absence {
@@ -191,7 +191,7 @@ export interface ImpactItem {
   plannedMin: number
 }
 
-export const ABSENCE_KIND_LABEL: Record<AbsenceKind, string> = { VACATION: 'Férias', SICK: 'Doença', TRAINING: 'Formação', PERSONAL: 'Assunto pessoal', OTHER: 'Outra' }
+export const ABSENCE_KIND_LABEL: Record<AbsenceKind, string> = { VACATION: 'Férias', SICK: 'Doença', TRAINING: 'Formação', PERSONAL: 'Assunto pessoal', LEAVE: 'Licença', OTHER: 'Outra' }
 export const ABSENCE_STATUS_LABEL: Record<AbsenceStatus, string> = { REQUESTED: 'Pedida', APPROVED: 'Aprovada', REJECTED: 'Recusada', CANCELLED: 'Cancelada' }
 export const ABSENCE_STATUS_TONE: Record<AbsenceStatus, 'info' | 'ok' | 'danger' | 'neutral'> = { REQUESTED: 'info', APPROVED: 'ok', REJECTED: 'danger', CANCELLED: 'neutral' }
 
@@ -264,6 +264,8 @@ export interface Holding {
   size: string | null
   quantity: number
   serials: string[]
+  /** Dia da última entrega deste artigo à pessoa (para a folha de entrega). */
+  lastDeliveredOn: string | null
 }
 
 export interface EquipmentMovement {
