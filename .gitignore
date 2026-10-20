@@ -20,3 +20,4 @@ infra/.env.*.local
 
 # Backups locais (scripts/ops/backup.sh)
 backups/
+.claude/worktrees/

@@ -477,6 +477,25 @@ Primeira fase das lacunas face à V3.1 (análise em `lacunas-v31.md`, não versi
 - **"Como correu a semana"** nos mapas semanais: horas por dia (realizadas cheias, planeadas tracejadas), por obra e por pessoa, com tabela.
 - **Verificação:** `TimekeepingIntegrationTest` (grelha: ajustar, criar, anular, motivo obrigatório; totais por dia; dimensões inválidas); `tsc` e `eslint` limpos.
 
+### F8.6 — agenda e mapa de férias (2026-10-21)
+
+- **Agenda (V31):**
+  - tabela `calendar_events` para os eventos próprios da empresa;
+  - o módulo `calendar` dá `GET /calendar?month=AAAA-MM` com os itens já normalizados da grelha de segunda a domingo: ausências aprovadas (férias destacadas), início, fim contratual e previsão de fim das obras (com aviso de atraso), validades de documentos, seguros e inspeções até hoje + 60 dias, feriados nacionais e da empresa, e eventos;
+  - `POST` e `DELETE /calendar/events` ficam para o gestor, com auditoria.
+- **Âmbito:**
+  - o gestor vê tudo;
+  - o encarregado vê a sua equipa e as suas obras, sem viaturas;
+  - o trabalhador vê as suas ausências, os feriados e os eventos;
+  - a doença só aparece como tal ao gestor e ao próprio (falta confirmar, ver "dados de saúde" abaixo).
+- **Mapa de férias:** `GET /absences/year?year=` dá os períodos por pessoa recortados ao ano. Os dias úteis de férias não contam os dias de descanso da política laboral em vigor nem os feriados (`WorkingDays`, com testes).
+- **Frontend:** página Agenda (camadas, grelha do mês, lista por dia no telemóvel, "Novo evento") e separador "Mapa do ano" nas Ausências (padrão e etiqueta por tipo, linha de hoje, períodos acessíveis por teclado).
+- **Verificação:** `CalendarIntegrationTest` (2), `WorkingDaysTest` (6), `MonthGridTest` (2), `ModularityTest`, Vitest `agendaGrid` (4). `tsc` e `eslint` limpos.
+- **Fica para depois:**
+  - Google Calendar e colunas de sincronização;
+  - feriados pelo país de cada obra (hoje usa o país da empresa);
+  - ex-trabalhadores no mapa do ano.
+
 ### Ainda não feito (decisões ou serviços externos)
 
 - Deploy real: escolher e contratar fornecedores, DNS, segredos e TLS — passos em
