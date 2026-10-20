@@ -1,0 +1,32 @@
+# Ensaio local da stack de produção (NUNCA usar em produção). Acrescenta ao compose.prod.yaml um SMTP de teste
+# (Mailpit) e um S3 local (SeaweedFS, credenciais só de desenvolvimento), para verificar o deploy sem contas externas.
+# Usado por scripts/ops/prod-smoke.sh; ver docs/operacao/deploy.md, "Ensaio local".
+
+services:
+  backend:
+    depends_on:
+      mailpit:
+        condition: service_started
+      objectstore:
+        condition: service_started
+
+  mailpit:
+    image: axllent/mailpit:v1.27.8
+    environment:
+      # Aceita qualquer utilizador/palavra-passe SMTP sem TLS (o backend autentica-se como em produção).
+      MP_SMTP_AUTH_ACCEPT_ANY: "1"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "1"
+    ports:
+      - "127.0.0.1:${ANDAIME_SMOKE_MAILPIT_PORT:-18425}:8025"
+    networks: [edge]
+
+  objectstore:
+    image: chrislusf/seaweedfs:4.48
+    command: server -s3 -dir=/data -s3.config=/etc/seaweedfs/s3.json
+    volumes:
+      - objectstore-data:/data
+      - ./objectstore/s3.json:/etc/seaweedfs/s3.json:ro
+    networks: [edge]
+
+volumes:
+  objectstore-data:

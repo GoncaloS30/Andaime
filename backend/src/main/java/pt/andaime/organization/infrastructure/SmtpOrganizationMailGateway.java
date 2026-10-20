@@ -21,17 +21,21 @@ final class SmtpOrganizationMailGateway implements OrganizationMailGateway {
 
     private final JavaMailSender mailSender;
     private final String publicUrl;
+    private final String from;
 
     SmtpOrganizationMailGateway(
             JavaMailSender mailSender,
-            @Value("${andaime.public-url:http://localhost:5173}") String publicUrl) {
+            @Value("${andaime.public-url:http://localhost:5173}") String publicUrl,
+            @Value("${andaime.mail.from}") String from) {
         this.mailSender = mailSender;
         this.publicUrl = publicUrl;
+        this.from = from;
     }
 
     @Override
     public void sendInvitation(String email, String organizationName, String inviterName, String role, String token) {
         var message = new SimpleMailMessage();
+        message.setFrom(from);
         message.setTo(email);
         message.setSubject("Convite para " + organizationName + " no Andaime");
         message.setText(inviterName + " convidou-o para a empresa " + organizationName

@@ -1,0 +1,28 @@
+# Contexto da imagem do frontend (infra/web/Dockerfile, contexto = raiz). O backend tem o seu próprio contexto.
+.git
+.github
+.claude
+.worktrees
+.idea
+.vscode
+node_modules
+dist
+dist-e2e
+coverage
+test-results
+playwright-report
+backups
+fotos-originais
+backend
+docs
+scripts
+*.md
+*.local
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Do infra só entra a configuração do nginx.
+infra/*
+!infra/web

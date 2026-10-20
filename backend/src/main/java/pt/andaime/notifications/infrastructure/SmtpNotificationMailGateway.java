@@ -12,12 +12,15 @@ final class SmtpNotificationMailGateway implements NotificationMailGateway {
 
     private final JavaMailSender mailSender;
     private final String publicUrl;
+    private final String from;
 
     SmtpNotificationMailGateway(
             JavaMailSender mailSender,
-            @Value("${andaime.public-url:http://localhost:5173}") String publicUrl) {
+            @Value("${andaime.public-url:http://localhost:5173}") String publicUrl,
+            @Value("${andaime.mail.from}") String from) {
         this.mailSender = mailSender;
         this.publicUrl = publicUrl;
+        this.from = from;
     }
 
     @Override
@@ -32,6 +35,7 @@ final class SmtpNotificationMailGateway implements NotificationMailGateway {
                 .append("\n\n--\nRecebe este email porque tem os avisos por email ligados na empresa ")
                 .append(mail.organizationName()).append(". Pode desligá-los em «A minha conta».");
         var message = new SimpleMailMessage();
+        message.setFrom(from);
         message.setTo(mail.to());
         message.setSubject(mail.title() + " · " + mail.organizationName());
         message.setText(text.toString());

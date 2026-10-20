@@ -1,0 +1,181 @@
+# Andaime em produção numa VM com Docker (ver docs/operacao/deploy.md, secção "Produção com Docker Compose").
+#
+#   cp infra/.env.prod.example infra/.env.prod      # preencher; o .env.prod nunca entra no git
+#   docker compose -f infra/compose.prod.yaml --env-file infra/.env.prod up -d --build
+#
+# Só o serviço web publica uma porta (HTTP, 8080 por omissão em 127.0.0.1). O TLS termina à frente: no balanceador
+# do fornecedor ou no Caddy opcional deste ficheiro (perfil "caddy"). O backend, o PostgreSQL e o ClamAV ficam só
+# na rede interna. O armazenamento de documentos é um S3 gerido (fora deste ficheiro): ver .env.prod.example.
+#
+# Nenhum segredo está aqui: as variáveis com ${VAR:?…} são obrigatórias e o Compose recusa arrancar sem elas.
+
+name: andaime-prod
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "20m"
+    max-file: "5"
+
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: infra/web/Dockerfile
+    image: ${ANDAIME_WEB_IMAGE:-andaime-web}:${ANDAIME_VERSION:-latest}
+    environment:
+      ANDAIME_BACKEND: backend:8088
+    ports:
+      # Atrás de um balanceador externo: ANDAIME_HTTP_BIND = IP privado da VM (ou 0.0.0.0 com firewall).
+      - "${ANDAIME_HTTP_BIND:-127.0.0.1}:${ANDAIME_HTTP_PORT:-8080}:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks: [edge]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    restart: unless-stopped
+    logging: *logging
+
+  backend:
+    build:
+      context: ../backend
+    image: ${ANDAIME_API_IMAGE:-andaime-api}:${ANDAIME_VERSION:-latest}
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      # Endereço público (links nos emails: verificação, reposição de palavra-passe, convites).
+      ANDAIME_PUBLICURL: ${ANDAIME_PUBLIC_URL:?defina ANDAIME_PUBLIC_URL (ex. https://app.exemplo.pt)}
+
+      # Base de dados: três papéis com palavras-passe distintas (criados por postgres/init-prod/00-roles.sh).
+      ANDAIME_DATABASE_URL: ${ANDAIME_DATABASE_URL:-jdbc:postgresql://postgres:5432/andaime}
+      ANDAIME_DATABASE_OWNER: andaime_owner
+      ANDAIME_DATABASE_OWNER_PASSWORD: ${ANDAIME_DATABASE_OWNER_PASSWORD:?defina ANDAIME_DATABASE_OWNER_PASSWORD}
+      ANDAIME_DATABASE_USER: andaime_app
+      ANDAIME_DATABASE_PASSWORD: ${ANDAIME_DATABASE_PASSWORD:?defina ANDAIME_DATABASE_PASSWORD}
+      ANDAIME_PLATFORMDATASOURCE_USERNAME: andaime_platform
+      ANDAIME_PLATFORMDATASOURCE_PASSWORD: ${ANDAIME_PLATFORM_DATABASE_PASSWORD:?defina ANDAIME_PLATFORM_DATABASE_PASSWORD}
+
+      # Email transacional (SMTP com autenticação; STARTTLS obrigatório na porta 587).
+      ANDAIME_MAIL_HOST: ${ANDAIME_MAIL_HOST:?defina ANDAIME_MAIL_HOST}
+      ANDAIME_MAIL_PORT: ${ANDAIME_MAIL_PORT:-587}
+      SPRING_MAIL_USERNAME: ${ANDAIME_MAIL_USERNAME:?defina ANDAIME_MAIL_USERNAME}
+      SPRING_MAIL_PASSWORD: ${ANDAIME_MAIL_PASSWORD:?defina ANDAIME_MAIL_PASSWORD}
+      # Remetente (cabeçalho From e envelope) de todos os emails.
+      ANDAIME_MAIL_FROM: ${ANDAIME_MAIL_FROM:?defina ANDAIME_MAIL_FROM (remetente verificado no fornecedor)}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: "true"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: ${ANDAIME_MAIL_STARTTLS:-true}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_REQUIRED: ${ANDAIME_MAIL_STARTTLS:-true}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_CONNECTIONTIMEOUT: "10000"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_TIMEOUT: "10000"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_WRITETIMEOUT: "10000"
+
+      # Documentos: S3 gerido (bucket privado, na UE). Acesso em estilo de caminho (path-style).
+      ANDAIME_STORAGE_ENDPOINT: ${ANDAIME_STORAGE_ENDPOINT:?defina ANDAIME_STORAGE_ENDPOINT}
+      ANDAIME_STORAGE_REGION: ${ANDAIME_STORAGE_REGION:?defina ANDAIME_STORAGE_REGION}
+      ANDAIME_STORAGE_BUCKET: ${ANDAIME_STORAGE_BUCKET:?defina ANDAIME_STORAGE_BUCKET}
+      ANDAIME_STORAGE_ACCESS_KEY: ${ANDAIME_STORAGE_ACCESS_KEY:?defina ANDAIME_STORAGE_ACCESS_KEY}
+      ANDAIME_STORAGE_SECRET_KEY: ${ANDAIME_STORAGE_SECRET_KEY:?defina ANDAIME_STORAGE_SECRET_KEY}
+
+      # Antivírus (falha fechada: sem clamd, os uploads são recusados).
+      ANDAIME_ANTIVIRUS_MODE: ${ANDAIME_ANTIVIRUS_MODE:-clamd}
+      ANDAIME_ANTIVIRUS_HOST: ${ANDAIME_ANTIVIRUS_HOST:-clamav}
+      ANDAIME_ANTIVIRUS_PORT: ${ANDAIME_ANTIVIRUS_PORT:-3310}
+      ANDAIME_ANTIVIRUS_TIMEOUT_MS: ${ANDAIME_ANTIVIRUS_TIMEOUT_MS:-30000}
+
+      # Cookie de sessão Secure (só false num ensaio local sem TLS).
+      SERVER_SERVLET_SESSION_COOKIE_SECURE: ${ANDAIME_COOKIE_SECURE:-true}
+      # Porta de gestão (Prometheus): só na rede interna, nunca publicada nem encaminhada pelo nginx.
+      ANDAIME_MANAGEMENT_PORT: "8098"
+
+      # Chave de cifra dos segredos TOTP (2FA). Introduzida pela funcionalidade de 2FA; já obrigatória aqui para que
+      # o deploy não arranque sem ela quando essa versão chegar. Gerar com: openssl rand -base64 32
+      ANDAIME_TOTP_KEY: ${ANDAIME_TOTP_KEY:?defina ANDAIME_TOTP_KEY (openssl rand -base64 32)}
+
+      JAVA_TOOL_OPTIONS: ${ANDAIME_JAVA_OPTS:--XX:+ExitOnOutOfMemoryError}
+    healthcheck:
+      # Com o perfil prod, o Actuator (incluindo o health) só existe na porta de gestão 8098, não na 8088.
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://127.0.0.1:8098/actuator/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 120s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      clamav:
+        condition: service_started
+    networks: [edge, data]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    restart: unless-stopped
+    logging: *logging
+
+  postgres:
+    image: postgres:18.6-alpine
+    environment:
+      POSTGRES_DB: andaime
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD (superutilizador; só para operação)}
+      # Lidas só na primeira inicialização (volume vazio) por postgres/init-prod/00-roles.sh.
+      ANDAIME_DATABASE_OWNER_PASSWORD: ${ANDAIME_DATABASE_OWNER_PASSWORD:?defina ANDAIME_DATABASE_OWNER_PASSWORD}
+      ANDAIME_DATABASE_PASSWORD: ${ANDAIME_DATABASE_PASSWORD:?defina ANDAIME_DATABASE_PASSWORD}
+      ANDAIME_PLATFORM_DATABASE_PASSWORD: ${ANDAIME_PLATFORM_DATABASE_PASSWORD:?defina ANDAIME_PLATFORM_DATABASE_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql
+      - ./postgres/init-prod:/docker-entrypoint-initdb.d:ro
+    shm_size: 256mb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d andaime"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [data]
+    restart: unless-stopped
+    logging: *logging
+
+  # Antivírus dos ficheiros carregados. Na primeira vez descarrega as assinaturas (alguns minutos) e usa ~1,5 GB de
+  # RAM; o volume guarda as assinaturas entre reinícios. O freshclam do contentor atualiza-as sozinho.
+  clamav:
+    image: clamav/clamav:1.4.6
+    volumes:
+      - clamav-data:/var/lib/clamav
+    networks: [edge]
+    restart: unless-stopped
+    logging: *logging
+
+  # TLS automático (Let's Encrypt) quando não há balanceador do fornecedor:
+  #   docker compose -f infra/compose.prod.yaml --env-file infra/.env.prod --profile caddy up -d
+  # Requer DNS de ANDAIME_DOMAIN a apontar para a VM e as portas 80/443 abertas.
+  caddy:
+    image: caddy:2.11.7-alpine
+    profiles: [caddy]
+    environment:
+      ANDAIME_DOMAIN: ${ANDAIME_DOMAIN:-}
+      ANDAIME_ACME_EMAIL: ${ANDAIME_ACME_EMAIL:-}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      web:
+        condition: service_healthy
+    networks: [edge]
+    restart: unless-stopped
+    logging: *logging
+
+networks:
+  # Rede do proxy, backend e ClamAV (com saída para a Internet: S3, SMTP, assinaturas do ClamAV).
+  edge:
+  # Rede só da base de dados: sem saída para a Internet.
+  data:
+    internal: true
+
+volumes:
+  postgres-data:
+  clamav-data:
+  caddy-data:
+  caddy-config:

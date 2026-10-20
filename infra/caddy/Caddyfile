@@ -1,0 +1,14 @@
+# TLS do Andaime com Caddy (perfil "caddy" de infra/compose.prod.yaml): certificado Let's Encrypt automático
+# para ANDAIME_DOMAIN e proxy para o nginx (serviço web). O Caddy envia X-Forwarded-For/Proto/Host; o nginx
+# confia neles porque o Caddy está na rede Docker privada.
+{
+	email {$ANDAIME_ACME_EMAIL}
+}
+
+{$ANDAIME_DOMAIN} {
+	# Sem "encode": o nginx já comprime e a compressão aqui atrasaria os eventos SSE.
+	reverse_proxy web:8080 {
+		# Notificações (SSE): enviar cada evento logo que chega.
+		flush_interval -1
+	}
+}

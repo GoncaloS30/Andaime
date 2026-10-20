@@ -19,8 +19,10 @@ springdoc:
   swagger-ui:
     enabled: false
 
-# Em produção as credenciais do armazenamento vêm sempre do ambiente (sem valores por omissão).
+# Em produção as credenciais do armazenamento e o remetente dos emails vêm sempre do ambiente (sem valores por omissão).
 andaime:
+  mail:
+    from: ${ANDAIME_MAIL_FROM}
   storage:
     access-key: ${ANDAIME_STORAGE_ACCESS_KEY}
     secret-key: ${ANDAIME_STORAGE_SECRET_KEY}

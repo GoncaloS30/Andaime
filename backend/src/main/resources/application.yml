@@ -52,6 +52,9 @@ spring:
       enabled: true
 
 andaime:
+  # Remetente (cabeçalho From) de todos os emails; sem ele, os fornecedores de SMTP recusam ou reescrevem a mensagem.
+  mail:
+    from: ${ANDAIME_MAIL_FROM:Andaime <nao-responder@andaime.test>}
   storage:
     endpoint: ${ANDAIME_STORAGE_ENDPOINT:http://localhost:59010}
     region: ${ANDAIME_STORAGE_REGION:eu-west-1}

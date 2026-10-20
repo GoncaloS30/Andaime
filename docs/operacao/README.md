@@ -4,7 +4,7 @@ Guias para pôr o Andaime em produção e mantê-lo. **Nenhum deploy nem recurso
 
 | Guia | Para quê |
 |---|---|
-| [deploy.md](deploy.md) | Checklist antes, durante e depois de cada versão; variáveis de ambiente; migrações e rollback |
+| [deploy.md](deploy.md) | Produção com Docker Compose (`infra/compose.prod.yaml`) passo a passo; checklist antes, durante e depois de cada versão; variáveis de ambiente; migrações e rollback |
 | [backups.md](backups.md) | Backups da base de dados e dos ficheiros, restauro testado, objetivos de recuperação |
 | [incidentes.md](incidentes.md) | Runbooks: API em baixo, base de dados, suspeita de fuga entre empresas, acesso de suporte, segredos |
 | [carga.md](carga.md) | Teste de carga com 1000 trabalhadores e 90 dias: método e resultados |
