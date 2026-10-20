@@ -26,7 +26,7 @@ test('planear uma semana: atribuir, ver o conflito bloqueado, anular e ligar uma
   const dialog = page.getByRole('dialog')
   await dialog.getByLabel('Obra', { exact: true }).selectOption({ label: 'OB-E2E-001 · Obra Norte' })
   await dialog.getByRole('button', { name: 'Atribuir' }).click()
-  await expect(page.getByRole('button', { name: /OB-E2E-001 08:00–17:00, 8 h/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /OB-E2E-001 08:00–17:00\s*, 8 h/ })).toBeVisible()
 
   // Sobreposição noutra obra: o servidor bloqueia e nada é gravado.
   await page.getByRole('button', { name: `Atribuir Ana Planeada em ${d}/${m}/${monday.slice(0, 4)}` }).click()

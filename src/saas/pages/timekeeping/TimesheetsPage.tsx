@@ -326,8 +326,8 @@ function SheetDrawer({ employeeId, week, onClose }: { employeeId: string | null;
                         <li key={e.id} className="flex items-center justify-between gap-2 rounded-sm bg-surface px-2 py-1 text-sm">
                           <span className="tabular">
                             <span className="font-mono text-xs font-semibold">{e.siteCode}</span> {hhmm(e.startLocal)}–{e.endLocal ? hhmm(e.endLocal) : '…'}
-                            {e.breakMin > 0 && <span className="text-ink-3"> · pausa {e.breakMin} min</span>}
-                            <span className="text-ink-3"> · {SOURCE_LABEL[e.source]}</span>
+                            {e.breakMin > 0 && <span className="text-ink-2"> · pausa {e.breakMin} min</span>}
+                            <span className="text-ink-2"> · {SOURCE_LABEL[e.source]}</span>
                             {e.status === 'OPEN' && <Badge tone="danger" className="ml-1">Sem saída</Badge>}
                           </span>
                           <span className="flex items-center gap-1">

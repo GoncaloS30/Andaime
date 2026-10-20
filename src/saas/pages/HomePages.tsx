@@ -97,7 +97,7 @@ export function ManagerHome() {
             <Step done title="Empresa criada">
               {org.name} · o seu papel: {ORG_ROLE_LABEL[org.role].toLowerCase()}.{' '}
               {atLeast(org.role, 'ADMIN') && (
-                <Link to="/definicoes" className="text-pinho hover:underline">
+                <Link to="/definicoes" className="text-pinho underline underline-offset-2">
                   Rever dados da empresa
                 </Link>
               )}
@@ -109,7 +109,7 @@ export function ManagerHome() {
                 <>
                   {activeMembers ?? 1} {activeMembers === 1 ? 'membro ativo' : 'membros ativos'}.{' '}
                   {atLeast(org.role, 'ADMIN') && (
-                    <Link to="/definicoes/equipa" className="text-pinho hover:underline">
+                    <Link to="/definicoes/equipa" className="text-pinho underline underline-offset-2">
                       Convidar gestores, encarregados e trabalhadores
                     </Link>
                   )}

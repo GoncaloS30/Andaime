@@ -14,10 +14,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-PT/1.1.0/); 
 - Horas: ponto na app do trabalhador (à prova de repetições), registos e correções com histórico, presenças confirmadas pelo encarregado, horas normais e extra pela política da empresa, folhas semanais com submeter/aprovar/devolver/reabrir e semanas aprovadas fechadas.
 - Documentos com ficheiros reais (armazenamento S3 privado), versões, exigências por país, conformidade e alertas de validade; ausências com impacto explícito no planeamento; fardamento e EPI com stock e registo de entregas; notificações na aplicação em tempo real.
 - Acesso de suporte temporário, só de leitura e auditado, autorizado pela empresa; ponto sem rede no telemóvel; política laboral e feriados editáveis; anonimização de ex-trabalhadores; documentos das viaturas.
+- Operação: backups com restauro testado, runbooks, checklist de deploy e rollback; teste de carga com 1000 trabalhadores; E2E full-stack e acessibilidade (WCAG 2.1 AA) no CI.
 - Viaturas: frota com alertas de seguro, inspeção e manutenção, indisponibilidades e viatura por equipa aplicada ao planeamento.
 - Regra de proteção do `main` pronta a aplicar (`.github/protecao-main.json`).
 
 ### Alterado
+- Planeamento e folhas de horas até 4–5× mais rápidos com centenas de trabalhadores; respostas comprimidas.
+- Acessibilidade: nomes acessíveis, links, contraste e navegação por teclado corrigidos em vários ecrãs.
 - Métricas e endpoints de gestão deixam de estar acessíveis na porta pública.
 - O modo demonstração (guião, palco, menu Demonstração, troca livre de papel) deixa de fazer parte da aplicação; o protótipo só arranca com `npm run dev:prototipo` e nos testes E2E antigos.
 

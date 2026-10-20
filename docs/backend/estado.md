@@ -23,7 +23,7 @@ Plano completo: secções "Arquitetura", "Modelo", "Endpoints" e "Sequência" em
 | F4 — Horas e aprovações | ✅ concluída em 2026-10-19 |
 | F5 — Documentos, ausências, equipamentos, notificações | ✅ concluída em 2026-10-19 |
 | F6 — Mapas e relatórios | ⏳ |
-| F7 — Hardening | 🔄 lote A concluído em 2026-10-20 (produto e segurança); lote B (operação e qualidade) em curso |
+| F7 — Hardening | ✅ concluída em 2026-10-20 (lote A: produto e segurança; lote B: operação e qualidade) |
 
 ## Ajustes ao plano
 
@@ -327,6 +327,43 @@ npm run e2e:saas → 6 passed: + regras da empresa, ponto com o navegador offlin
   anonimização
 ```
 
+### Lote B — operação e qualidade (concluído em 2026-10-20)
+
+- **E2E full-stack no CI** (job novo): PostgreSQL, Mailpit e SeaweedFS pelo Compose, API real com a empresa de
+  demonstração e todos os testes `e2e-saas` em cada PR.
+- **Acessibilidade (WCAG 2.1 AA, axe)**: 16 ecrãs do gestor + ficha do trabalhador, diálogo de escala e folha de
+  horas, com a empresa de demonstração. Corrigido: nomes acessíveis dos blocos do planeamento, da troca de empresa e
+  do botão de conta (texto visível incluído), links no meio do texto sublinhados, lista com scroll acessível por
+  teclado, contraste nos registos da folha de horas. (O teste chegou a passar por engano no ecrã de login; agora
+  confirma que está no ecrã pedido.)
+- **Teste de carga** (k6, 1000 trabalhadores, 90 dias): encontrou deteção de conflitos e folhas de horas quadráticas e
+  índices em falta; depois das correções, p95 do quadro 1,53 s → 0,35 s e das folhas 1,56 s → 0,30 s, 0 % de erros.
+  Ver `docs/operacao/carga.md`.
+- **Backups**: `scripts/ops/backup.sh` (dump custom, papéis, ficheiros, contagens, SHA-256) e
+  `scripts/ops/restore-test.sh` (restauro numa base temporária com verificação de contagens, migrações, RLS e
+  permissões) — executados com sucesso.
+- **Runbooks** em `docs/operacao/`: deploy com checklist, migrações *expand/contract* e rollback, backups e WAL,
+  incidentes (API, base de dados, suspeita de fuga entre empresas, suporte, conta comprometida, segredos).
+- Respostas JSON comprimidas (gzip); **V18_2** com índices de desempenho.
+
+Verificação real:
+
+```text
+./mvnw verify → 59 testes, 0 falhas · npm run typecheck · npm run lint → sem erros · npm test → 182 testes
+npm run e2e:saas → 23 passed (7 cenários + 16 ecrãs e 1 conjunto de diálogos sem violações sérias de acessibilidade)
+k6 (20 gestores, 60 s) → 0 % erros; p95 quadro 0,35 s, folhas 0,30 s, trabalhadores 0,12 s, obras 0,14 s
+restore-test.sh → contagens iguais, 19 migrações, RLS e permissões ok, 103 ficheiros legíveis
+```
+
+### Ainda não feito (decisões ou serviços externos)
+
+- Deploy real (sem autorização para criar recursos) e teste de intrusão externo.
+- Antivírus (ClamAV) aos uploads; análise de vulnerabilidades das dependências Java.
+- Notificações por email; fotos de trabalhadores/obras no armazenamento; vistas mensal/por obra e planeamento
+  dedicado no telemóvel (existiam no protótipo).
+- Tipos TypeScript gerados do OpenAPI.
+- Validação jurídica (retenção, RGPD, regras laborais e documentos por país).
+
 ## Comandos
 
 ```bash
@@ -342,8 +379,10 @@ wsl -d Ubuntu -- bash -lc "export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64; 
 npm run dev
 # Protótipo antigo (só referência e testes dos módulos por migrar)
 npm run dev:prototipo
-# E2E de ponta a ponta (API + Postgres + Mailpit a correr)
+# E2E de ponta a ponta (API com a semente de demonstração + Postgres + Mailpit + objectstore a correr)
 npm run e2e:saas
+# Backups e teste de restauro (no WSL)
+scripts/ops/backup.sh backups/hoje && scripts/ops/restore-test.sh backups/hoje
 # Empresa de demonstração no PostgreSQL local (idempotente; nunca em prod). Valores em infra/.env.example
 wsl -d Ubuntu -- bash -lc "cd /mnt/c/Users/Utilizador/IdeaProjects/Andaime/backend && ./mvnw spring-boot:run -Dspring-boot.run.profiles=local -Dspring-boot.run.arguments='--andaime.seed.demo.enabled=true --andaime.seed.demo.owner-email=demo@andaime.test --andaime.seed.demo.owner-password=…'"
 ```

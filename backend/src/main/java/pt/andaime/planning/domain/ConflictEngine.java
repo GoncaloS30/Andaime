@@ -124,6 +124,8 @@ public final class ConflictEngine {
     // --- trabalhador -----------------------------------------------------------------------
 
     private static void byEmployee(Snapshot s, List<Assignment> upcoming, List<Conflict> out) {
+        // Indexado por trabalhador uma vez: a procura de sobreposições fica linear no número de atribuições.
+        var perEmployee = upcoming.stream().collect(Collectors.groupingBy(Assignment::employeeId));
         var byEmployeeDate = upcoming.stream().collect(Collectors.groupingBy(
                 a -> a.employeeId() + "|" + a.date(), LinkedHashMap::new, Collectors.toList()));
         var overlapsReported = new LinkedHashSet<String>();
@@ -161,7 +163,7 @@ public final class ConflictEngine {
             }
 
             // Sobreposição: compara períodos absolutos (inclui turnos que passam a meia-noite).
-            var sorted = new ArrayList<>(employeeAssignmentsAround(upcoming, first.employeeId(), date));
+            var sorted = new ArrayList<>(employeeAssignmentsAround(perEmployee.get(first.employeeId()), date));
             sorted.sort(Comparator.comparing(Assignment::periodStart));
             for (int i = 0; i < sorted.size(); i++) {
                 for (int j = i + 1; j < sorted.size(); j++) {
@@ -195,10 +197,9 @@ public final class ConflictEngine {
         }
     }
 
-    private static List<Assignment> employeeAssignmentsAround(List<Assignment> all, UUID employeeId, LocalDate date) {
+    private static List<Assignment> employeeAssignmentsAround(List<Assignment> ofEmployee, LocalDate date) {
         // Inclui a véspera e o dia seguinte por causa dos turnos noturnos.
-        return all.stream().filter(a -> a.employeeId().equals(employeeId)
-                && !a.date().isBefore(date.minusDays(1)) && !a.date().isAfter(date.plusDays(1))).toList();
+        return ofEmployee.stream().filter(a -> !a.date().isBefore(date.minusDays(1)) && !a.date().isAfter(date.plusDays(1))).toList();
     }
 
     // --- viatura ---------------------------------------------------------------------------
