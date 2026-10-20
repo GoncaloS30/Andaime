@@ -24,3 +24,8 @@ andaime:
   storage:
     access-key: ${ANDAIME_STORAGE_ACCESS_KEY}
     secret-key: ${ANDAIME_STORAGE_SECRET_KEY}
+  # Em produção o antivírus está ligado por omissão; desligar exige ANDAIME_ANTIVIRUS_MODE=off explícito.
+  antivirus:
+    mode: ${ANDAIME_ANTIVIRUS_MODE:clamd}
+    host: ${ANDAIME_ANTIVIRUS_HOST:clamav}
+    port: ${ANDAIME_ANTIVIRUS_PORT:3310}

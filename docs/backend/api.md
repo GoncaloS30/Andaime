@@ -167,6 +167,19 @@ Todas sob `/api/orgs/{orgId}`.
 
 Com acesso de suporte, qualquer escrita devolve 403 `support-read-only`. `/actuator/**` (exceto health) responde 403 na porta pública.
 
+## Pós-F7 — avisos por email, fotografias e antivírus
+
+| Método | Caminho | Quem | Descrição |
+|---|---|---|---|
+| GET · PUT | `/api/orgs/{orgId}/notifications/preferences` | o próprio | `{email: boolean}`; por empresa; por omissão `true` |
+| PUT | `/api/orgs/{orgId}/employees/{id}/photo` · `/sites/{id}/photo` | gestor | Multipart `file`: JPEG, PNG ou WebP (detetado pelo conteúdo) até 5 MB → ficha com `photoUrl`; 415 `unsupported-type`, 413 `file-too-large` |
+| DELETE | `/api/orgs/{orgId}/employees/{id}/photo` · `/sites/{id}/photo` | gestor | 204 |
+| GET | `/api/orgs/{orgId}/employees/{id}/photo` · `/sites/{id}/photo` | quem vê a ficha | A imagem, `Cache-Control: private`, `nosniff`; 404 sem foto ou fora do âmbito |
+
+- `photoUrl` (listas e fichas de trabalhadores e obras) inclui `?v=` com a data da alteração; anonimizar um ex-trabalhador apaga a foto.
+- Avisos por email: pedidos e decisões de ausência, folhas devolvidas e documentos a caducar/caducados seguem também por email, depois do commit, para quem os tem ligados (fila na tabela `notifications`, `SKIP LOCKED`, recuo 2–16 min, desiste à 5.ª tentativa).
+- Antivírus: com `andaime.antivirus.mode=clamd` (por omissão no perfil `prod`), documentos e fotos são analisados pelo clamd antes de irem para o armazenamento: 422 `file-infected`; 503 `antivirus-unavailable` se o clamd não responder (falha fechada). Os documentos guardam `scan_status` (`CLEAN` ou `NOT_SCANNED`).
+
 ## F6 — Mapas e relatórios
 
 Todas sob `/api/orgs/{orgId}/reporting`; requerem gestor (OWNER, ADMIN ou MANAGER). As consultas usam RLS e devolvem durações em minutos.

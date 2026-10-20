@@ -20,6 +20,8 @@ export interface EmployeeSummary {
   status: EmployeeStatus
   archived: boolean
   team: TeamRef | null
+  /** URL autorizado da fotografia (muda quando a foto muda) ou null. */
+  photoUrl: string | null
 }
 
 export interface EmployeeDetail extends Omit<EmployeeSummary, 'archived'> {
@@ -153,6 +155,7 @@ export interface SiteSummary {
   openIssues: number
   archived: boolean
   metrics: SiteMetricsDto
+  photoUrl: string | null
 }
 
 export interface SiteDetail extends Omit<SiteSummary, 'archived'> {
@@ -496,4 +499,26 @@ export function formatDate(iso: string | null | undefined): string {
 export function minutesToHours(min: number | null | undefined): string {
   if (min === null || min === undefined) return '—'
   return `${new Intl.NumberFormat('pt-PT', { maximumFractionDigits: 1 }).format(min / 60)} h`
+}
+
+// --- fotografias -------------------------------------------------------------------------------------
+
+/** Mudar ou remover a fotografia de um trabalhador ({@code employees}) ou obra ({@code sites}); só gestores. */
+export function usePhoto(orgId: string, collection: 'employees' | 'sites', id: string) {
+  const invalidate = useInvalidate(orgId)
+  const path = `${base(orgId)}/${collection}/${id}/photo`
+  const refresh = () => invalidate(collection, 'teams', 'audit')
+  const upload = useMutation({
+    mutationFn: (file: File) => {
+      const form = new FormData()
+      form.append('file', file)
+      return api<unknown>(path, { method: 'PUT', body: form })
+    },
+    onSuccess: refresh,
+  })
+  const remove = useMutation({
+    mutationFn: () => api<void>(path, { method: 'DELETE' }),
+    onSuccess: refresh,
+  })
+  return { upload, remove }
 }

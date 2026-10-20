@@ -292,6 +292,27 @@ npm run e2e:saas → 5 passed: + documentos com ficheiro real, entregas de EPI e
 - Documentos de viaturas na interface (a API já os aceita; ecrã na ficha da viatura em F7).
 - Notificações por email (hoje só na aplicação).
 
+## Depois da F7 — avisos por email, fotografias e antivírus (2026-10-20)
+
+- **Avisos por email** (V21): ausências pedidas/decididas, folhas devolvidas e validades de documentos seguem também
+  por email, só depois do commit (outbox na tabela `notifications`, reclamação `SKIP LOCKED`, recuo exponencial,
+  5 tentativas). Cada utilizador liga/desliga por empresa em «A minha conta».
+- **Fotografias** (V22) de trabalhadores e obras no armazenamento S3 privado, servidas pela API com o âmbito da ficha;
+  tipo detetado pelo conteúdo, até 5 MB; aparecem no avatar, na ficha da obra e nos pinos do mapa. Anonimizar apaga a foto.
+- **Antivírus**: cliente clamd (INSTREAM) para documentos e fotos, ligado por omissão em `prod` e com falha fechada;
+  serviço `clamav` no Compose com o perfil `antivirus` (porta 59310). `ObjectStorage` passou para `shared.storage`.
+
+Verificação real:
+
+```text
+./mvnw verify → 68 testes, 0 falhas (inclui NotificationEmailIntegrationTest, PhotoIntegrationTest, FileScannerTest)
+npm run typecheck · npm run lint → sem erros · npm test → 31 testes
+npm run e2e:saas → 26 passed (o cenário de trabalhadores carrega e mostra uma fotografia)
+```
+
+O antivírus foi testado contra um clamd simulado (limpo, EICAR encontrado, indisponível); falta um teste manual com o
+ClamAV real (`docker compose --profile antivirus up -d clamav` e carregar o ficheiro EICAR).
+
 ## F6 — Mapas e relatórios (concluída em 2026-10-20)
 
 Feita em paralelo (ChatGPT) e integrada por Claude sobre o `main` com F7.
@@ -385,9 +406,8 @@ restore-test.sh → contagens iguais, 19 migrações, RLS e permissões ok, 103 
 ### Ainda não feito (decisões ou serviços externos)
 
 - Deploy real (sem autorização para criar recursos) e teste de intrusão externo.
-- Antivírus (ClamAV) aos uploads; análise de vulnerabilidades das dependências Java.
-- Notificações por email; fotos de trabalhadores/obras no armazenamento; vistas mensal/por obra e planeamento
-  dedicado no telemóvel (existiam no protótipo).
+- Análise de vulnerabilidades das dependências Java; teste manual do antivírus com o ClamAV real.
+- Vista mensal e planeamento dedicado no telemóvel (existiam no protótipo).
 - Tipos TypeScript gerados do OpenAPI.
 - Validação jurídica (retenção, RGPD, regras laborais e documentos por país).
 

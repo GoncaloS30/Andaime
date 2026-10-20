@@ -101,14 +101,15 @@ export async function api<T>(path: string, options: { method?: Method; body?: un
   const send = async () => {
     if (unsafe && !readCookie('XSRF-TOKEN')) await refreshCsrf()
     const headers: Record<string, string> = { Accept: 'application/json' }
-    if (options.body !== undefined) headers['Content-Type'] = 'application/json'
+    const multipart = options.body instanceof FormData
+    if (options.body !== undefined && !multipart) headers['Content-Type'] = 'application/json'
     const token = unsafe ? readCookie('XSRF-TOKEN') : undefined
     if (token) headers['X-XSRF-TOKEN'] = token
     return fetch(`/api${path}`, {
       method,
       credentials: 'same-origin',
       headers,
-      body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+      body: multipart ? (options.body as FormData) : options.body !== undefined ? JSON.stringify(options.body) : undefined,
       signal: options.signal,
     })
   }

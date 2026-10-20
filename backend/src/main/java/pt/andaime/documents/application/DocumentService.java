@@ -30,6 +30,8 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import pt.andaime.audit.AuditLog;
 import pt.andaime.notifications.Notifier;
+import pt.andaime.shared.storage.FileScanner;
+import pt.andaime.shared.storage.ObjectStorage;
 import pt.andaime.reporting.ReportingProjection;
 import pt.andaime.shared.api.ApiException;
 import pt.andaime.shared.tenant.OrgRole;
@@ -76,6 +78,7 @@ public class DocumentService {
 
     private final JdbcTemplate jdbcTemplate;
     private final ObjectStorage storage;
+    private final FileScanner scanner;
     private final AuditLog auditLog;
     private final Notifier notifier;
     private final ReportingProjection reporting;
@@ -83,11 +86,12 @@ public class DocumentService {
     private final long maxBytes;
     private final Tika tika = new Tika();
 
-    public DocumentService(JdbcTemplate jdbcTemplate, ObjectStorage storage, AuditLog auditLog, Notifier notifier,
+    public DocumentService(JdbcTemplate jdbcTemplate, ObjectStorage storage, FileScanner scanner, AuditLog auditLog, Notifier notifier,
             ReportingProjection reporting, Clock clock, @Value("${andaime.storage.max-file-bytes}") long maxBytes) {
         this.reporting = reporting;
         this.jdbcTemplate = jdbcTemplate;
         this.storage = storage;
+        this.scanner = scanner;
         this.auditLog = auditLog;
         this.notifier = notifier;
         this.clock = clock;
@@ -300,6 +304,7 @@ public class DocumentService {
             documentId = jdbcTemplate.queryForObject("INSERT INTO documents (organization_id, document_type_id, " + holderColumn
                     + ") VALUES (?, ?, ?) RETURNING id", UUID.class, organizationId, upload.typeId(), holder);
         }
+        var scan = scanner.requireClean(content);
         var versionId = UUID.randomUUID();
         var key = "org/" + organizationId + "/documents/" + documentId + "/" + versionId;
         storage.put(key, content, detected);
@@ -315,10 +320,10 @@ public class DocumentService {
         }
         jdbcTemplate.update("""
                 INSERT INTO document_versions (id, organization_id, document_id, storage_key, filename, content_type, size_bytes, sha256,
-                                               issued_on, expires_on, uploaded_by_user_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                               issued_on, expires_on, uploaded_by_user_id, scan_status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, versionId, organizationId, documentId, key, filename, detected, (long) content.length, sha256(content),
-                upload.issuedOn(), upload.expiresOn(), TenantContext.userId().orElseThrow());
+                upload.issuedOn(), upload.expiresOn(), TenantContext.userId().orElseThrow(), scan.name());
         jdbcTemplate.update("UPDATE documents SET current_version_id = ?, version = version + 1 WHERE id = ?", versionId, documentId);
         var changes = new LinkedHashMap<String, Object>();
         changes.put("type", type[2]);

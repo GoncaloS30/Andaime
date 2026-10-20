@@ -171,7 +171,7 @@ export function GeoMapPage() {
                 className="h-full"
                 selected={selected}
                 onSelect={setSelected}
-                pins={located.map((s) => ({ site: { id: s.id, code: s.code, name: s.name, color: s.color, lat: s.latitude!, lng: s.longitude! }, risk: risk(s.metrics.status) }))}
+                pins={located.map((s) => ({ site: { id: s.id, code: s.code, name: s.name, color: s.color, lat: s.latitude!, lng: s.longitude!, photo: s.photoUrl ?? undefined }, risk: risk(s.metrics.status) }))}
               />
             </Suspense>
           </div>

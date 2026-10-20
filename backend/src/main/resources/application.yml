@@ -59,6 +59,11 @@ andaime:
     access-key: ${ANDAIME_STORAGE_ACCESS_KEY:andaime-local}
     secret-key: ${ANDAIME_STORAGE_SECRET_KEY:andaime-local-secret}
     max-file-bytes: 15728640
+  # Antivírus (ClamAV/clamd). "off" em desenvolvimento; em produção "clamd" (falha fechada: sem antivírus, sem upload).
+  antivirus:
+    mode: ${ANDAIME_ANTIVIRUS_MODE:off}
+    host: ${ANDAIME_ANTIVIRUS_HOST:localhost}
+    port: ${ANDAIME_ANTIVIRUS_PORT:59310}
 
 management:
   endpoints:

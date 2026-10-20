@@ -26,6 +26,8 @@ import pt.andaime.audit.AuditLog;
 import pt.andaime.audit.Changes;
 import pt.andaime.shared.api.ApiException;
 import pt.andaime.shared.api.PageView;
+import pt.andaime.shared.storage.PhotoStorage;
+import pt.andaime.shared.storage.PhotoStorage.PhotoContent;
 import pt.andaime.shared.tenant.OrgRole;
 import pt.andaime.shared.tenant.TenantContext;
 import pt.andaime.workforce.application.WorkforceViews.ContractView;
@@ -50,9 +52,11 @@ public class EmployeeService {
     private final JdbcTemplate jdbcTemplate;
     private final AuditLog auditLog;
     private final JsonMapper jsonMapper;
+    private final PhotoStorage photos;
     private final Clock clock;
 
-    public EmployeeService(JdbcTemplate jdbcTemplate, AuditLog auditLog, JsonMapper jsonMapper, Clock clock) {
+    public EmployeeService(JdbcTemplate jdbcTemplate, AuditLog auditLog, JsonMapper jsonMapper, PhotoStorage photos, Clock clock) {
+        this.photos = photos;
         this.jdbcTemplate = jdbcTemplate;
         this.auditLog = auditLog;
         this.jsonMapper = jsonMapper;
@@ -99,7 +103,7 @@ public class EmployeeService {
         var total = new long[] {0};
         var items = jdbcTemplate.query("""
                 SELECT employee.id, employee.number, employee.full_name, employee.category, employee.status,
-                       employee.archived_at, team.id AS team_id, team.name AS team_name, team.color AS team_color,
+                       employee.archived_at, employee.photo_updated_at, team.id AS team_id, team.name AS team_name, team.color AS team_color,
                        count(*) OVER () AS total
                 FROM employees employee
                 LEFT JOIN team_members member
@@ -119,7 +123,8 @@ public class EmployeeService {
                     resultSet.getString("category"),
                     resultSet.getString("status"),
                     resultSet.getObject("archived_at") != null,
-                    teamRef(resultSet));
+                    teamRef(resultSet),
+                    PhotoStorage.url("employees", resultSet.getObject("id", UUID.class), resultSet.getTimestamp("photo_updated_at")));
         }, params.toArray());
         return new PageView<>(items, safePage, safeSize, total[0]);
     }
@@ -243,6 +248,10 @@ public class EmployeeService {
         jdbcTemplate.update("UPDATE employees SET full_name = 'Ex-trabalhador ' || number, phone = NULL, email = NULL,"
                 + " nationality = NULL, home_city = NULL, hire_date = NULL, hourly_cost = NULL, skills = '{}', sizes = '{}'::jsonb,"
                 + " notes = NULL, anonymized_at = now(), version = version + 1 WHERE id = ?", employeeId);
+        jdbcTemplate.queryForList("SELECT photo_key FROM employees WHERE id = ? AND photo_key IS NOT NULL", String.class, employeeId)
+                .forEach(photos::deleteAfterCommit);
+        jdbcTemplate.update("UPDATE employees SET photo_key = NULL, photo_content_type = NULL, photo_updated_at = NULL WHERE id = ?",
+                employeeId);
         jdbcTemplate.update("DELETE FROM employee_contracts WHERE employee_id = ?", employeeId);
         jdbcTemplate.update("UPDATE memberships SET status = 'DISABLED' WHERE employee_id = ? AND status = 'ACTIVE'", employeeId);
         jdbcTemplate.update("UPDATE documents SET archived_at = coalesce(archived_at, now()) WHERE employee_id = ?", employeeId);
@@ -329,6 +338,49 @@ public class EmployeeService {
         auditLog.record("employee.contract-removed", "employee", employeeId, Map.of("contractId", contractId));
     }
 
+    // --- fotografia -------------------------------------------------------------------
+
+    @Transactional
+    public EmployeeDetail setPhoto(UUID employeeId, org.springframework.web.multipart.MultipartFile file) {
+        OrgRole.require(OrgRole.MANAGER);
+        if (get(employeeId).anonymized()) {
+            throw new ApiException(HttpStatus.CONFLICT, "anonymized", "Este trabalhador foi anonimizado.");
+        }
+        lockEmployee(employeeId);
+        var previous = jdbcTemplate.queryForObject("SELECT photo_key FROM employees WHERE id = ?", String.class, employeeId);
+        var stored = photos.store("employees", employeeId, file);
+        jdbcTemplate.update("""
+                UPDATE employees SET photo_key = ?, photo_content_type = ?, photo_updated_at = clock_timestamp() WHERE id = ?
+                """, stored.key(), stored.contentType(), employeeId);
+        photos.deleteAfterCommit(previous);
+        auditLog.record("employee.photo-changed", "employee", employeeId);
+        return get(employeeId);
+    }
+
+    @Transactional
+    public void removePhoto(UUID employeeId) {
+        OrgRole.require(OrgRole.MANAGER);
+        get(employeeId);
+        lockEmployee(employeeId);
+        var previous = jdbcTemplate.queryForObject("SELECT photo_key FROM employees WHERE id = ?", String.class, employeeId);
+        if (previous == null) {
+            return;
+        }
+        jdbcTemplate.update("UPDATE employees SET photo_key = NULL, photo_content_type = NULL, photo_updated_at = NULL WHERE id = ?",
+                employeeId);
+        photos.deleteAfterCommit(previous);
+        auditLog.record("employee.photo-removed", "employee", employeeId);
+    }
+
+    /** Fotografia para quem pode ver a ficha (mesmo âmbito que {@link #get}). */
+    @Transactional(readOnly = true)
+    public PhotoContent photo(UUID employeeId) {
+        get(employeeId);
+        return jdbcTemplate.query("SELECT photo_key, photo_content_type FROM employees WHERE id = ? AND photo_key IS NOT NULL",
+                (resultSet, rowNumber) -> new PhotoContent(photos.open(resultSet.getString(1)), resultSet.getString(2)), employeeId)
+                .stream().findFirst().orElseThrow(EmployeeService::notFound);
+    }
+
     // --- auxiliares -------------------------------------------------------------------
 
     private EmployeeDetail detail(ResultSet resultSet, boolean restricted) throws SQLException {
@@ -356,6 +408,7 @@ public class EmployeeService {
                         resultSet.getString("account_name"), resultSet.getString("membership_role")),
                 restricted,
                 resultSet.getObject("anonymized_at") != null,
+                PhotoStorage.url("employees", resultSet.getObject("id", UUID.class), resultSet.getTimestamp("photo_updated_at")),
                 resultSet.getInt("version"));
     }
 

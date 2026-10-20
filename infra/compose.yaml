@@ -42,6 +42,16 @@ services:
       - ./objectstore/s3.json:/etc/seaweedfs/s3.json:ro
     restart: unless-stopped
 
+  # Antivírus dos ficheiros carregados (opcional em desenvolvimento: `docker compose --profile antivirus up -d`).
+  # Arranca em alguns minutos (descarrega as assinaturas) e usa cerca de 1 GB de RAM.
+  clamav:
+    image: clamav/clamav:1.4
+    container_name: andaime-clamav
+    profiles: [antivirus]
+    ports:
+      - "59310:3310"
+    restart: unless-stopped
+
   backend:
     build:
       context: ../backend
@@ -56,6 +66,9 @@ services:
       ANDAIME_MAIL_HOST: mailpit
       ANDAIME_MAIL_PORT: 1025
       ANDAIME_STORAGE_ENDPOINT: http://objectstore:8333
+      ANDAIME_ANTIVIRUS_MODE: ${ANDAIME_ANTIVIRUS_MODE:-off}
+      ANDAIME_ANTIVIRUS_HOST: clamav
+      ANDAIME_ANTIVIRUS_PORT: 3310
     ports:
       - "8088:8088"
     depends_on:

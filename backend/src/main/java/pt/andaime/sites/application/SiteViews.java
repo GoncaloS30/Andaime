@@ -48,7 +48,8 @@ public final class SiteViews {
             Ref foreman,
             int openIssues,
             boolean archived,
-            SiteMetrics metrics) {
+            SiteMetrics metrics,
+            String photoUrl) {
     }
 
     public record SiteDetail(
@@ -76,6 +77,7 @@ public final class SiteViews {
             int openIssues,
             Instant archivedAt,
             SiteMetrics metrics,
+            String photoUrl,
             int version) {
     }
 

@@ -24,6 +24,7 @@ import {
   useEmployee,
   useEmployees,
   useEmployeeTeams,
+  usePhoto,
   useRemoveContract,
   useTeams,
   type Contract,
@@ -31,6 +32,7 @@ import {
 } from '../../api/workforce'
 import { useActiveOrg } from '../../session'
 import { FormError } from '../auth/AuthLayout'
+import { PhotoControls } from '../shared/PhotoControls'
 import { EmployeeForm } from './EmployeeForm'
 import { HistoryList } from './HistoryList'
 
@@ -162,7 +164,7 @@ export function WorkersPage() {
                 <tr key={w.id}>
                   <td>
                     <Link to={`/trabalhadores/${w.id}`} className="flex items-center gap-2.5 font-medium text-ink hover:underline">
-                      <Avatar name={w.fullName} size="sm" color={w.team?.color ?? '#7d847f'} />
+                      <Avatar name={w.fullName} size="sm" color={w.team?.color ?? '#7d847f'} photo={w.photoUrl} />
                       <span>
                         {w.fullName}
                         <span className="block text-xs font-normal text-ink-3 tabular">N.º {w.number}</span>
@@ -324,6 +326,7 @@ export function WorkerDetailPage() {
   const [tab, setTab] = useState('dados')
   const [editing, setEditing] = useState(false)
   const employee = useEmployee(org.id, id)
+  const photo = usePhoto(org.id, 'employees', id)
   const teams = useEmployeeTeams(org.id, id)
   const archive = useArchiveEmployee(org.id, id)
 
@@ -356,7 +359,19 @@ export function WorkerDetailPage() {
         <ArrowLeft className="size-4" aria-hidden /> Trabalhadores
       </Link>
       <header className="mb-4 flex flex-wrap items-start gap-4">
-        <Avatar name={w.fullName} size="lg" color={w.team?.color ?? '#7d847f'} className="size-20 text-2xl" />
+        <div className="flex flex-col items-center gap-1">
+          <Avatar name={w.fullName} size="lg" color={w.team?.color ?? '#7d847f'} photo={w.photoUrl} className="size-20 text-2xl" />
+          {manager && !w.anonymized && (
+            <PhotoControls
+              hasPhoto={!!w.photoUrl}
+              subject={w.fullName}
+              uploading={photo.upload.isPending}
+              removing={photo.remove.isPending}
+              onUpload={(file) => photo.upload.mutateAsync(file)}
+              onRemove={() => photo.remove.mutateAsync()}
+            />
+          )}
+        </div>
         <div className="min-w-[min(100%,18rem)] flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="font-expanded text-2xl font-semibold tracking-tight">{w.fullName}</h1>

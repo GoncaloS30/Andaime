@@ -81,7 +81,7 @@ export function PlanningPage({ readOnlyView = false }: { readOnlyView?: boolean 
   const rows = useMemo(() => {
     const ids = new Set<string>(assignments.map((a) => a.employeeId))
     const list = (employees.data?.items ?? []).filter((e) => !readOnly || ids.has(e.id))
-    for (const id of ids) if (!list.some((e) => e.id === id)) list.push({ id, number: '', fullName: 'Trabalhador', category: '', status: 'ACTIVE', archived: false, team: null })
+    for (const id of ids) if (!list.some((e) => e.id === id)) list.push({ id, number: '', fullName: 'Trabalhador', category: '', status: 'ACTIVE', archived: false, team: null, photoUrl: null })
     return list.sort((a, b) => (a.team?.name ?? '~').localeCompare(b.team?.name ?? '~', 'pt') || a.fullName.localeCompare(b.fullName, 'pt'))
   }, [employees.data, assignments, readOnly])
 

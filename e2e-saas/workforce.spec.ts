@@ -56,6 +56,13 @@ test('registar trabalhadores, formar uma equipa e criar uma obra com encarregado
     await drawer.getByRole('button', { name: 'Registar trabalhador' }).click()
     await expect(page.getByRole('heading', { name: name! })).toBeVisible()
   }
+  // Fotografia (ficha da Ana, a última criada): guardada no armazenamento e servida pela API.
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64')
+  await page.locator('input[type=file]').setInputFiles({ name: 'ana.png', mimeType: 'image/png', buffer: png })
+  await expect(page.getByRole('button', { name: 'Mudar fotografia de Ana Pedreira' })).toBeVisible()
+  const photo = page.locator('header img').first()
+  await expect(photo).toHaveAttribute('src', /\/employees\/.+\/photo\?v=/)
+  await expect.poll(() => photo.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth)).toBe(1)
   await page.goto('/trabalhadores')
   await expect(page.getByRole('link', { name: /Ana Pedreira/ })).toBeVisible()
   await expect(page.getByText('N.º 2')).toBeVisible()

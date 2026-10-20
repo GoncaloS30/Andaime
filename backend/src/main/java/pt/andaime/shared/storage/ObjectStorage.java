@@ -1,4 +1,4 @@
-package pt.andaime.documents.application;
+package pt.andaime.shared.storage;
 
 import java.io.InputStream;
 import java.net.URI;

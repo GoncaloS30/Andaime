@@ -22,6 +22,7 @@ import {
   SITE_STATUS_TONE,
   toGauge,
   useArchiveSite,
+  usePhoto,
   useIssues,
   useReportIssue,
   useResolveIssue,
@@ -36,6 +37,7 @@ import {
 import { useActiveOrg } from '../../session'
 import { COUNTRIES } from '../auth/OnboardingPages'
 import { HistoryList } from '../workforce/HistoryList'
+import { PhotoControls } from '../shared/PhotoControls'
 import { SiteForm } from './SiteForm'
 
 const SiteMap = lazy(async () => ({ default: (await import('@/features/shared/SiteMap')).SiteMap }))
@@ -458,6 +460,7 @@ export function SiteDetailPage() {
   const issues = useIssues(org.id, id)
   const save = useSaveSite(org.id, id)
   const archive = useArchiveSite(org.id, id)
+  const photo = usePhoto(org.id, 'sites', id)
   const [tab, setTab] = useState('resumo')
   const [editing, setEditing] = useState(false)
   const [reporting, setReporting] = useState(false)
@@ -480,7 +483,11 @@ export function SiteDetailPage() {
         <ArrowLeft className="size-4" aria-hidden /> Obras
       </Link>
       <header className="mb-4 flex flex-wrap items-end justify-between gap-4">
-        <div className="min-w-0">
+        <div className="flex min-w-0 items-end gap-4">
+          {s.photoUrl && (
+            <img src={s.photoUrl} alt={`Fotografia da obra ${s.name}`} className="size-20 shrink-0 rounded-md border border-line object-cover" />
+          )}
+          <div className="min-w-0">
           <SiteCode code={s.code} color={s.color} />
           <h1 className="font-expanded text-2xl font-semibold tracking-tight">{s.name}</h1>
           <p className="mt-0.5 flex flex-wrap items-center gap-2 text-sm text-ink-3">
@@ -492,6 +499,19 @@ export function SiteDetailPage() {
             </Badge>
             {s.archivedAt && <Badge>Arquivada</Badge>}
           </p>
+          {manager && !s.archivedAt && (
+            <div className="mt-1 -ml-2">
+              <PhotoControls
+                hasPhoto={!!s.photoUrl}
+                subject={s.name}
+                uploading={photo.upload.isPending}
+                removing={photo.remove.isPending}
+                onUpload={(file) => photo.upload.mutateAsync(file)}
+                onRemove={() => photo.remove.mutateAsync()}
+              />
+            </div>
+          )}
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button icon={<MessageSquareWarning className="size-4" />} onClick={() => setReporting(true)}>
@@ -554,7 +574,7 @@ export function SiteDetailPage() {
             {s.latitude != null && s.longitude != null && (
               <div className="h-80 px-4 pb-4">
                 <Suspense fallback={<SkeletonRows rows={4} />}>
-                  <SiteMap label={`Localização da obra ${s.name}`} className="h-full" pins={[{ site: { id: s.id, code: s.code, name: s.name, color: s.color, lat: s.latitude, lng: s.longitude } }]} />
+                  <SiteMap label={`Localização da obra ${s.name}`} className="h-full" pins={[{ site: { id: s.id, code: s.code, name: s.name, color: s.color, lat: s.latitude, lng: s.longitude, photo: s.photoUrl ?? undefined } }]} />
                 </Suspense>
               </div>
             )}

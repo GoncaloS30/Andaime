@@ -24,6 +24,8 @@ import pt.andaime.audit.AuditLog;
 import pt.andaime.audit.Changes;
 import pt.andaime.organization.MemberDirectory;
 import pt.andaime.shared.api.ApiException;
+import pt.andaime.shared.storage.PhotoStorage;
+import pt.andaime.shared.storage.PhotoStorage.PhotoContent;
 import pt.andaime.shared.tenant.OrgRole;
 import pt.andaime.shared.tenant.TenantContext;
 import pt.andaime.sites.application.SiteViews.Ref;
@@ -77,6 +79,7 @@ public class SiteService {
     private final AuditLog auditLog;
     private final EmployeeDirectory employees;
     private final MemberDirectory members;
+    private final PhotoStorage photos;
     private final Clock clock;
 
     public SiteService(
@@ -84,7 +87,9 @@ public class SiteService {
             AuditLog auditLog,
             EmployeeDirectory employees,
             MemberDirectory members,
+            PhotoStorage photos,
             Clock clock) {
+        this.photos = photos;
         this.jdbcTemplate = jdbcTemplate;
         this.auditLog = auditLog;
         this.employees = employees;
@@ -131,7 +136,9 @@ public class SiteService {
                         ref(resultSet, "foreman_employee_id", "foreman_name"),
                         resultSet.getInt("open_issues"),
                         resultSet.getObject("archived_at") != null,
-                        metrics(resultSet)), params.toArray());
+                        metrics(resultSet),
+                        PhotoStorage.url("sites", resultSet.getObject("id", UUID.class), resultSet.getTimestamp("photo_updated_at"))),
+                params.toArray());
     }
 
     @Transactional(readOnly = true)
@@ -354,6 +361,44 @@ public class SiteService {
         }
     }
 
+    // --- fotografia -------------------------------------------------------------------
+
+    @Transactional
+    public SiteDetail setPhoto(UUID siteId, org.springframework.web.multipart.MultipartFile file) {
+        OrgRole.require(OrgRole.MANAGER);
+        get(siteId);
+        var previous = jdbcTemplate.queryForObject("SELECT photo_key FROM sites WHERE id = ? FOR UPDATE", String.class, siteId);
+        var stored = photos.store("sites", siteId, file);
+        jdbcTemplate.update("""
+                UPDATE sites SET photo_key = ?, photo_content_type = ?, photo_updated_at = clock_timestamp() WHERE id = ?
+                """, stored.key(), stored.contentType(), siteId);
+        photos.deleteAfterCommit(previous);
+        auditLog.record("site.photo-changed", "site", siteId);
+        return get(siteId);
+    }
+
+    @Transactional
+    public void removePhoto(UUID siteId) {
+        OrgRole.require(OrgRole.MANAGER);
+        get(siteId);
+        var previous = jdbcTemplate.queryForObject("SELECT photo_key FROM sites WHERE id = ? FOR UPDATE", String.class, siteId);
+        if (previous == null) {
+            return;
+        }
+        jdbcTemplate.update("UPDATE sites SET photo_key = NULL, photo_content_type = NULL, photo_updated_at = NULL WHERE id = ?", siteId);
+        photos.deleteAfterCommit(previous);
+        auditLog.record("site.photo-removed", "site", siteId);
+    }
+
+    /** Fotografia para quem pode ver a obra (mesmo âmbito que {@link #get}). */
+    @Transactional(readOnly = true)
+    public PhotoContent photo(UUID siteId) {
+        get(siteId);
+        return jdbcTemplate.query("SELECT photo_key, photo_content_type FROM sites WHERE id = ? AND photo_key IS NOT NULL",
+                (resultSet, rowNumber) -> new PhotoContent(photos.open(resultSet.getString(1)), resultSet.getString(2)), siteId)
+                .stream().findFirst().orElseThrow(SiteService::notFound);
+    }
+
     private SiteDetail detail(ResultSet resultSet, int rowNumber) throws SQLException {
         return new SiteDetail(
                 resultSet.getObject("id", UUID.class),
@@ -381,6 +426,7 @@ public class SiteService {
                 resultSet.getObject("archived_at") == null ? null
                         : resultSet.getObject("archived_at", OffsetDateTime.class).toInstant(),
                 metrics(resultSet),
+                PhotoStorage.url("sites", resultSet.getObject("id", UUID.class), resultSet.getTimestamp("photo_updated_at")),
                 resultSet.getInt("version"));
     }
 

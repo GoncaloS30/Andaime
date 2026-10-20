@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -28,6 +29,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import pt.andaime.shared.api.ApiException;
+import pt.andaime.shared.api.PhotoResponses;
 import pt.andaime.sites.application.ClientService;
 import pt.andaime.sites.application.IssueService;
 import pt.andaime.sites.application.SiteService;
@@ -72,6 +74,24 @@ public class SiteController {
     @GetMapping("/sites/{siteId}")
     SiteDetail site(@PathVariable UUID orgId, @PathVariable UUID siteId) {
         return sites.get(siteId);
+    }
+
+    @PutMapping(path = "/sites/{siteId}/photo", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    SiteDetail setPhoto(@PathVariable UUID orgId, @PathVariable UUID siteId,
+            @org.springframework.web.bind.annotation.RequestPart("file") org.springframework.web.multipart.MultipartFile file) {
+        return sites.setPhoto(siteId, file);
+    }
+
+    @org.springframework.web.bind.annotation.DeleteMapping("/sites/{siteId}/photo")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void removePhoto(@PathVariable UUID orgId, @PathVariable UUID siteId) {
+        sites.removePhoto(siteId);
+    }
+
+    @GetMapping("/sites/{siteId}/photo")
+    org.springframework.http.ResponseEntity<org.springframework.core.io.InputStreamResource> photo(@PathVariable UUID orgId,
+            @PathVariable UUID siteId) {
+        return PhotoResponses.of(sites.photo(siteId));
     }
 
     @PostMapping("/sites")

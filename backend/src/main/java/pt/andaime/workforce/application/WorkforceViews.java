@@ -23,7 +23,8 @@ public final class WorkforceViews {
             String category,
             String status,
             boolean archived,
-            TeamRef team) {
+            TeamRef team,
+            String photoUrl) {
     }
 
     public record LinkedAccount(UUID membershipId, String displayName, String role) {
@@ -54,6 +55,7 @@ public final class WorkforceViews {
             LinkedAccount account,
             boolean restricted,
             boolean anonymized,
+            String photoUrl,
             int version) {
     }
 
