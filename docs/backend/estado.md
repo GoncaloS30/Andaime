@@ -405,11 +405,20 @@ k6 (20 gestores, 60 s) → 0 % erros; p95 quadro 0,35 s, folhas 0,30 s, trabalha
 restore-test.sh → contagens iguais, 19 migrações, RLS e permissões ok, 103 ficheiros legíveis
 ```
 
+### Planeamento mensal e para telemóvel (concluído em 2026-10-20)
+
+- O seletor Semana/Mês usa o mesmo read model da API. O mês mostra uma linha por trabalhador e um dia por coluna,
+  com cor da obra, duração, responsável e conflitos; escolher um dia abre a respetiva semana para editar.
+- Em ecrãs estreitos, a grelha semanal é substituída por uma fita de sete dias e cartões agrupados por obra. É
+  possível atribuir, abrir e alterar uma escala sem arrastar uma tabela horizontal; fotografias, viaturas e conflitos
+  continuam visíveis.
+- Não foi necessária uma migration: `/planning/board` já aceita intervalos até 92 dias. A próxima migration mantém-se
+  **V23**.
+
 ### Ainda não feito (decisões ou serviços externos)
 
 - Deploy real (sem autorização para criar recursos) e teste de intrusão externo.
-- Análise de vulnerabilidades das dependências Java; teste manual do antivírus com o ClamAV real.
-- Vista mensal e planeamento dedicado no telemóvel (existiam no protótipo).
+- Análise automatizada de vulnerabilidades das dependências e análise dinâmica da aplicação.
 - Tipos TypeScript gerados do OpenAPI.
 - Validação jurídica (retenção, RGPD, regras laborais e documentos por país).
 

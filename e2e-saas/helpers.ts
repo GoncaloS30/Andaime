@@ -16,7 +16,7 @@ export async function verificationLink(page: Page, to: string): Promise<string> 
         if (token) return token
       }
       return undefined
-    })
+    }, { timeout: 30_000, intervals: [250, 500, 1_000] })
     .toBeTruthy()
   return token!
 }
@@ -64,7 +64,7 @@ export async function linkFromMail(page: Page, to: string, path: string): Promis
         if (token) return token
       }
       return undefined
-    })
+    }, { timeout: 30_000, intervals: [250, 500, 1_000] })
     .toBeTruthy()
   return token!
 }

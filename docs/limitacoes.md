@@ -9,6 +9,8 @@
   servidor; o ficheiro original é guardado no armazenamento privado e servido pela API a utilizadores autorizados.
 - A integração com ClamAV reduz o risco de ficheiros maliciosos, mas não substitui regras de conteúdo, atualizações de
   assinaturas, monitorização nem testes de segurança independentes.
+- A vista mensal do planeamento é uma síntese por trabalhador; escolher um dia abre a semana para alterar os dados.
+  No telemóvel, as alterações usam botões e formulários por dia/obra em vez de arrastar e largar.
 
 > **Arquivo histórico:** o protótipo local foi removido em F6. A aplicação executável usa a API e PostgreSQL. A lista abaixo documenta limitações que existiam no protótipo e não deve ser lida como o estado atual; ver [backend/estado.md](backend/estado.md).
 

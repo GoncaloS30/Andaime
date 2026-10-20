@@ -10,7 +10,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-PT/1.1.0/); 
 - E2E de ponta a ponta contra a API real (`npm run e2e:saas`).
 - Trabalhadores, equipas (composição datada), obras, clientes, mapa de obras e ocorrências ligados à API, com âmbito por papel e histórico auditado.
 - Empresa de demonstração no backend por comando explícito e idempotente.
-- Planeamento ligado ao servidor: quadro semanal com arrastar, escalas e cópia de semana com pré-visualização, conflitos verificados no servidor (sobreposições impossíveis de gravar), confirmação de avisos e "Anular" seguro.
+- Planeamento ligado ao servidor: quadro semanal com arrastar, vista mensal, experiência própria para telemóvel por dia e obra, escalas e cópia de semana com pré-visualização, conflitos verificados no servidor (sobreposições impossíveis de gravar), confirmação de avisos e "Anular" seguro.
 - Horas: ponto na app do trabalhador (à prova de repetições), registos e correções com histórico, presenças confirmadas pelo encarregado, horas normais e extra pela política da empresa, folhas semanais com submeter/aprovar/devolver/reabrir e semanas aprovadas fechadas.
 - Documentos com ficheiros reais (armazenamento S3 privado), versões, exigências por país, conformidade e alertas de validade; ausências com impacto explícito no planeamento; fardamento e EPI com stock e registo de entregas; notificações na aplicação em tempo real.
 - Acesso de suporte temporário, só de leitura e auditado, autorizado pela empresa; ponto sem rede no telemóvel; política laboral e feriados editáveis; anonimização de ex-trabalhadores; documentos das viaturas.

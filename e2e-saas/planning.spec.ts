@@ -61,4 +61,21 @@ test('planear uma semana: atribuir, ver o conflito bloqueado, anular e ligar uma
   await dialog.getByLabel('Obra', { exact: true }).selectOption({ label: 'OB-E2E-001 · Obra Norte' })
   await dialog.getByRole('button', { name: 'Atribuir' }).click()
   await expect(page.getByRole('button', { name: /viatura E2-00-EE/ })).toBeVisible()
+
+  // A vista mensal usa o mesmo planeamento real e abre novamente a semana escolhida.
+  await page.getByRole('button', { name: 'Mês', exact: true }).click()
+  const month = page.getByRole('region', { name: /Planeamento mensal de/ })
+  await expect(month).toBeVisible()
+  await expect(month.getByRole('table')).toBeVisible()
+  await page.getByRole('button', { name: 'Semana', exact: true }).click()
+  await expect(page.getByRole('grid', { name: 'Planeamento semanal por trabalhador' })).toBeVisible()
+
+  // Em telemóvel não se comprime a tabela: escolhe-se um dia e as pessoas aparecem agrupadas por obra.
+  await page.setViewportSize({ width: 390, height: 844 })
+  const mobile = page.getByRole('region', { name: 'Planeamento no telemóvel' })
+  await expect(mobile).toBeVisible()
+  await expect(page.getByRole('grid', { name: 'Planeamento semanal por trabalhador' })).toBeHidden()
+  await mobile.getByRole('tab', { name: new RegExp(`${d}/${m}/`) }).click()
+  await expect(mobile.getByRole('region', { name: /OB-E2E-001 Obra Norte/ })).toBeVisible()
+  await expect(mobile.getByRole('button', { name: /Ana Planeada/ })).toBeVisible()
 })

@@ -1,5 +1,5 @@
 import { DndContext, DragOverlay, PointerSensor, KeyboardSensor, useDraggable, useDroppable, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
-import { AlertOctagon, AlertTriangle, CalendarRange, ChevronLeft, ChevronRight, Copy, Crown, Plus, Truck, Undo2 } from 'lucide-react'
+import { AlertOctagon, AlertTriangle, CalendarDays, CalendarRange, ChevronLeft, ChevronRight, Copy, Crown, Plus, Truck, Undo2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
@@ -27,9 +27,11 @@ import {
 } from '../../api/planning'
 import { addDaysIso, formatDate, minutesToHours, todayIso, useEmployeeOptions, useSites, type EmployeeSummary, type SiteSummary } from '../../api/workforce'
 import { useActiveOrg } from '../../session'
+import { MonthPlanning, MobilePlanning, monthRange, shiftMonth } from './PlanningViews'
 import { ConflictList, usePlanningCommands } from './usePlanningCommands'
 
 const DAY = new Intl.DateTimeFormat('pt-PT', { weekday: 'short', timeZone: 'UTC' })
+const MONTH = new Intl.DateTimeFormat('pt-PT', { month: 'long', year: 'numeric', timeZone: 'UTC' })
 const dayLabel = (iso: string) => DAY.format(new Date(`${iso}T00:00:00Z`)).replace('.', '')
 const GRID = 'grid-cols-[minmax(170px,210px)_repeat(5,minmax(110px,1fr))_repeat(2,minmax(80px,0.65fr))]'
 
@@ -45,7 +47,10 @@ export function PlanningPage({ readOnlyView = false }: { readOnlyView?: boolean 
   const today = todayIso()
   const [week, setWeek] = useState(() => mondayOf(today))
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDaysIso(week, i)), [week])
-  const board = useBoard(org.id, week, days[6]!)
+  const [scale, setScale] = useState<'week' | 'month'>('week')
+  const monthReference = addDaysIso(week, 3)
+  const [monthFrom, monthTo] = useMemo(() => monthRange(monthReference), [monthReference])
+  const board = useBoard(org.id, scale === 'month' ? monthFrom : week, scale === 'month' ? monthTo : days[6]!)
   const readOnly = readOnlyView || (board.data?.readOnly ?? true)
   const employees = useEmployeeOptions(org.id)
   const sites = useSites(org.id, {}, true)
@@ -54,7 +59,7 @@ export function PlanningPage({ readOnlyView = false }: { readOnlyView?: boolean 
   const { run, dialog, busy, revert } = usePlanningCommands(org.id)
   const navigate = useNavigate()
 
-  const [assign, setAssign] = useState<{ employeeId?: string; date?: string } | null>(null)
+  const [assign, setAssign] = useState<{ employeeId?: string; siteId?: string; date?: string } | null>(null)
   const [openId, setOpenId] = useState<string | null>(null)
   const [schedule, setSchedule] = useState(false)
   const [copy, setCopy] = useState(false)
@@ -145,19 +150,33 @@ export function PlanningPage({ readOnlyView = false }: { readOnlyView?: boolean 
     <>
       <PageHeader
         title={readOnlyView ? 'Escala da semana' : 'Planeamento'}
-        description={readOnly ? 'Escala planeada das suas equipas e obras. Alterações são feitas pelo gestor.' : 'Arraste blocos para mudar de dia ou de pessoa. Os conflitos são verificados no servidor antes de gravar.'}
+        description={readOnly ? 'Escala planeada das suas equipas e obras. Alterações são feitas pelo gestor.' : 'Organize pessoas, obras, horários e viaturas. Os conflitos são verificados no servidor antes de gravar.'}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-1">
-              <IconButton label="Semana anterior" onClick={() => setWeek(addDaysIso(week, -7))}>
+              <IconButton
+                label={scale === 'month' ? 'Mês anterior' : 'Semana anterior'}
+                onClick={() => setWeek(scale === 'month' ? mondayOf(`${shiftMonth(monthReference, -1).slice(0, 8)}15`) : addDaysIso(week, -7))}
+              >
                 <ChevronLeft className="size-4" />
               </IconButton>
               <Button variant="ghost" size="sm" onClick={() => setWeek(mondayOf(today))}>
-                {formatDate(week)} – {formatDate(days[6])}
+                {scale === 'month' ? <span className="capitalize">{MONTH.format(new Date(`${monthFrom}T00:00:00Z`))}</span> : `${formatDate(week)} – ${formatDate(days[6]!)}`}
               </Button>
-              <IconButton label="Semana seguinte" onClick={() => setWeek(addDaysIso(week, 7))}>
+              <IconButton
+                label={scale === 'month' ? 'Mês seguinte' : 'Semana seguinte'}
+                onClick={() => setWeek(scale === 'month' ? mondayOf(`${shiftMonth(monthReference, 1).slice(0, 8)}15`) : addDaysIso(week, 7))}
+              >
                 <ChevronRight className="size-4" />
               </IconButton>
+            </div>
+            <div className="flex rounded-md border border-line bg-surface p-0.5" role="group" aria-label="Escala de tempo">
+              <Button size="sm" variant={scale === 'week' ? 'secondary' : 'ghost'} aria-pressed={scale === 'week'} onClick={() => setScale('week')}>
+                Semana
+              </Button>
+              <Button size="sm" variant={scale === 'month' ? 'secondary' : 'ghost'} aria-pressed={scale === 'month'} icon={<CalendarDays className="size-4" />} onClick={() => setScale('month')}>
+                Mês
+              </Button>
             </div>
             {!readOnly && (
               <>
@@ -198,9 +217,26 @@ export function PlanningPage({ readOnlyView = false }: { readOnlyView?: boolean 
         <div className="flex flex-col gap-4 xl:flex-row">
           <Panel flush className="min-w-0 flex-1">
             {rows.length === 0 ? (
-              <EmptyState icon={<CalendarRange />} title={readOnly ? 'Sem planeamento nesta semana' : 'Ainda não há trabalhadores'}>
-                {readOnly ? 'Quando o gestor planear a semana, aparece aqui.' : 'Crie trabalhadores para começar a planear.'}
+              <EmptyState icon={<CalendarRange />} title={readOnly ? `Sem planeamento ${scale === 'month' ? 'neste mês' : 'nesta semana'}` : 'Ainda não há trabalhadores'}>
+                {readOnly ? `Quando o gestor planear ${scale === 'month' ? 'o mês' : 'a semana'}, aparece aqui.` : 'Crie trabalhadores para começar a planear.'}
               </EmptyState>
+            ) : scale === 'month' ? (
+              <MonthPlanning
+                from={monthFrom}
+                to={monthTo}
+                assignments={assignments}
+                conflicts={conflicts}
+                employees={rows}
+                sites={lookups.sites}
+                today={today}
+                readOnly={readOnly}
+                onOpenAssignment={setOpenId}
+                onAssign={setAssign}
+                onOpenWeek={(date) => {
+                  setWeek(mondayOf(date))
+                  setScale('week')
+                }}
+              />
             ) : (
               <DndContext
                 sensors={sensors}
@@ -208,7 +244,19 @@ export function PlanningPage({ readOnlyView = false }: { readOnlyView?: boolean 
                 onDragCancel={() => setDragging(null)}
                 onDragEnd={onDragEnd}
               >
-                <div className="overflow-x-auto" role="grid" aria-label="Planeamento semanal por trabalhador">
+                <MobilePlanning
+                  week={week}
+                  days={days}
+                  assignments={assignments}
+                  conflicts={conflicts}
+                  employees={rows}
+                  sites={lookups.sites}
+                  today={today}
+                  readOnly={readOnly}
+                  onOpenAssignment={setOpenId}
+                  onAssign={setAssign}
+                />
+                <div className="hidden overflow-x-auto md:block" role="grid" aria-label="Planeamento semanal por trabalhador">
                   <div className="min-w-[860px]">
                     <div className={cn('sticky top-0 z-10 grid border-b border-line bg-surface', GRID)} role="row">
                       <div className="px-3 py-2 text-xs font-semibold text-ink-3" role="columnheader">
@@ -277,7 +325,7 @@ export function PlanningPage({ readOnlyView = false }: { readOnlyView?: boolean 
           {!readOnly && (
             <Panel title={`Conflitos (${conflicts.length})`} className="xl:w-[340px] xl:shrink-0">
               {conflicts.length === 0 ? (
-                <p className="text-sm text-ink-3">Sem conflitos nesta semana.</p>
+                <p className="text-sm text-ink-3">Sem conflitos {scale === 'month' ? 'neste mês' : 'nesta semana'}.</p>
               ) : (
                 <ConflictList conflicts={conflicts}>
                   {(c) =>
@@ -475,7 +523,7 @@ function PreviewResult({ result }: { result: CommandResult | undefined }) {
 function AssignDialog({
   preset, onClose, employees, lookups, run,
 }: {
-  preset: { employeeId?: string; date?: string } | null
+  preset: { employeeId?: string; siteId?: string; date?: string } | null
   onClose: () => void
   employees: EmployeeSummary[]
   lookups: Lookups
@@ -483,7 +531,7 @@ function AssignDialog({
 }) {
   const [employeeId, setEmployeeId] = useState(preset?.employeeId ?? '')
   const [date, setDate] = useState(preset?.date ?? todayIso())
-  const [siteId, setSiteId] = useState('')
+  const [siteId, setSiteId] = useState(preset?.siteId ?? '')
   const [start, setStart] = useState('08:00')
   const [end, setEnd] = useState('17:00')
   const [vehicle, setVehicle] = useState('')
