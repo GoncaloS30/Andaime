@@ -8,7 +8,7 @@ Centro de operações para empresas de construção: **planeamento → execuçã
 
 ## Arrancar
 
-No Windows, `scripts/arrancar.ps1` faz tudo de uma vez: confirma a versão do Node, corre `npm ci` quando faltam dependências ou o `package-lock.json` mudou, arranca PostgreSQL, Mailpit e API no Docker do WSL, espera pela API e abre o frontend (`-Porta 5174` muda a porta, `-Abrir` abre o navegador, `-Reconstruir` reconstrói a API depois de mudar o backend, `-Prototipo` arranca só o protótipo antigo):
+No Windows, `scripts/arrancar.ps1` faz tudo de uma vez: confirma a versão do Node, corre `npm ci` quando faltam dependências ou o `package-lock.json` mudou, arranca PostgreSQL, Mailpit e API no Docker do WSL, espera pela API e abre o frontend (`-Porta 5174` muda a porta, `-Abrir` abre o navegador e `-Reconstruir` reconstrói a API depois de mudar o backend):
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/arrancar.ps1
@@ -29,7 +29,7 @@ npm run dev        # http://localhost:5173
 
 Emails de desenvolvimento (confirmação de conta, convites, recuperação): http://localhost:58035.
 
-O protótipo antigo, com dados fictícios locais, continua disponível só para referência e testes dos módulos por migrar: `npm run dev:prototipo`. Não entra no build de produção.
+O protótipo local foi retirado em F6: a aplicação usa sempre a API e o PostgreSQL, sem store ou semente fictícia no navegador.
 
 Para contribuir (ramos, commits, pull requests e versões), ver [CONTRIBUTING.md](CONTRIBUTING.md). Alterações por versão em [CHANGELOG.md](CHANGELOG.md). Software proprietário: ver [LICENSE](LICENSE).
 
@@ -105,11 +105,10 @@ As 100 fotos da demonstração (trabalhadores, gestores, obras, viaturas, EPI, d
 
 ## Arquitetura
 
-- **Vite + React 19 + TypeScript strict + Tailwind CSS v4**, React Router 8 (rotas carregadas à parte), Zustand + immer, @dnd-kit, Radix, Leaflet, ExcelJS (carregado só ao exportar). Decisões em [docs/adr](docs/adr).
+- **Vite + React 19 + TypeScript strict + Tailwind CSS v4**, React Router 8, TanStack Query, @dnd-kit, Radix e Leaflet. Excel é gerado na API com Apache POI SXSSF. Decisões em [docs/adr](docs/adr).
 - `src/domain` — regras puras e testadas: semanas ISO, horas normais/extra, métricas de obra (limite, realizadas, aprovadas, planeadas futuras, saldo, projeção), disponibilidade, **9 tipos de conflito com correções executáveis**, documentos por país, mapas semanais, diário, dormidas, mapa de férias, agenda, totais e livro do RH, folha de entrega, cópia da demonstração.
-- `src/data/seed` — semente determinística relativa a "hoje": 42 trabalhadores, 8 equipas, 11 viaturas, 9 obras em 4 países, 4 semanas de horas, conflitos plantados, diário das últimas 3 semanas, 7 hotéis, férias do ano e eventos de agenda.
-- `src/store` — **uma store como fonte única de verdade**: ações com nome (mutadores puros reutilizados nas pré-visualizações), histórico, notificações, anular, caixa de saída offline, persistência versionada. Os ecrãs só leem *selectors* memoizados — uma ação num módulo aparece em todos.
-- `src/features/*` — um módulo por área (fatias verticais, prontas para migrar para API).
+- `src/saas` — aplicação real, cliente HTTP, cache de servidor e ecrãs ligados à API.
+- `backend/src/main/java/pt/andaime` — monólito modular Spring Boot; PostgreSQL é a fonte única de verdade e o RLS isola empresas.
 - `src/ui` — design system ([docs/design-system.md](docs/design-system.md)); galeria viva em `/design`.
 
 Especificações: [V3](docs/superpowers/specs/2026-10-15-andaime-v3-design.md) · [V3.1](docs/superpowers/specs/2026-10-16-andaime-lyrical-fotos-design.md) · Relatório de revisão: [docs/review-report.md](docs/review-report.md).

@@ -111,6 +111,9 @@ Trigger: `UPDATE`/`DELETE`/`INSERT` em `time_entries`/`time_entry_breaks` associ
 | `event_publication` (F1) | outbox do Spring Modulith |
 | `idempotency_keys` (F1) | organization_id, user_id, key, request_hash, response_status, response_body, expires_at — `UNIQUE(organization_id, user_id, key)` |
 | `notifications` (F5) | recipient_user_id, kind, params jsonb, link, read_at |
+| `reporting_time_facts` (F6) | Projeção idempotente por `(organization_id, source_entry_id)` de horas já aprovadas: trabalhador/equipa/obra/data, minutos trabalhados/normais/extra e código ERP |
+| `reporting_document_facts` (F6) | Projeção sem conteúdo de ficheiro: titular, tipo, país, validade e estado atual |
+| `report_exports` (F6) | Pedido, parâmetros JSON, estado, ficheiro XLSX temporário, erro, timestamps e expiração; worker reclama com `SKIP LOCKED` |
 
 ## Retenção (a validar juridicamente)
 

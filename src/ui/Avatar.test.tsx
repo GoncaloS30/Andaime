@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { Avatar, PhotoStack } from './Avatar'
 
-const photo = { kind: 'banco' as const, src: 'trabalhadores/t01', credit: 'c', alt: 'Retrato de Rui Fontes', w: 800, h: 800 }
+const photo = '/api/orgs/o1/employees/e1/photo'
 
 describe('Avatar', () => {
   it('com foto mostra o retrato decorativo (o nome está ao lado)', () => {

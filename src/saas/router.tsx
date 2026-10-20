@@ -12,6 +12,8 @@ import { TeamDetailPage, TeamsPage } from './pages/workforce/TeamsPages'
 import { WorkerDetailPage, WorkersPage } from './pages/workforce/WorkersPages'
 import { PlatformPage } from './pages/PlatformPage'
 import { RulesPage } from './pages/settings/RulesPage'
+import { ReportsPage } from './pages/reporting/ReportsPage'
+import { WeeklyMapsPage } from './pages/reporting/WeeklyMapsPage'
 import { VehicleDetailPage, VehiclesPage } from './pages/fleet/VehiclesPages'
 import { PlanningPage } from './pages/planning/PlanningPage'
 import { TimesheetsPage } from './pages/timekeeping/TimesheetsPage'
@@ -101,6 +103,8 @@ export const router = createBrowserRouter([
               { path: 'documentos', element: gestor(<DocumentsPage />) },
               { path: 'encarregado/documentos', element: encarregado(<DocumentsPage />) },
               { path: 'equipamentos', element: gestor(<EquipmentPage />) },
+              { path: 'mapas', element: gestor(<WeeklyMapsPage />) },
+              { path: 'relatorios', element: gestor(<ReportsPage />) },
               { path: 'encarregado/horas', element: encarregado(<TimesheetsPage />) },
               { path: 'viaturas', element: both(<VehiclesPage />) },
               { path: 'viaturas/:id', element: both(<VehicleDetailPage />) },

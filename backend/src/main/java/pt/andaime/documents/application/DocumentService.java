@@ -30,6 +30,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import pt.andaime.audit.AuditLog;
 import pt.andaime.notifications.Notifier;
+import pt.andaime.reporting.ReportingProjection;
 import pt.andaime.shared.api.ApiException;
 import pt.andaime.shared.tenant.OrgRole;
 import pt.andaime.shared.tenant.TenantContext;
@@ -77,12 +78,14 @@ public class DocumentService {
     private final ObjectStorage storage;
     private final AuditLog auditLog;
     private final Notifier notifier;
+    private final ReportingProjection reporting;
     private final Clock clock;
     private final long maxBytes;
     private final Tika tika = new Tika();
 
-    public DocumentService(JdbcTemplate jdbcTemplate, ObjectStorage storage, AuditLog auditLog, Notifier notifier, Clock clock,
-            @Value("${andaime.storage.max-file-bytes}") long maxBytes) {
+    public DocumentService(JdbcTemplate jdbcTemplate, ObjectStorage storage, AuditLog auditLog, Notifier notifier,
+            ReportingProjection reporting, Clock clock, @Value("${andaime.storage.max-file-bytes}") long maxBytes) {
+        this.reporting = reporting;
         this.jdbcTemplate = jdbcTemplate;
         this.storage = storage;
         this.auditLog = auditLog;
@@ -322,6 +325,7 @@ public class DocumentService {
         changes.put("expiresOn", upload.expiresOn() == null ? null : upload.expiresOn().toString());
         changes.put("sizeBytes", content.length);
         auditLog.record(created ? "document.uploaded" : "document.renewed", "document", documentId, changes);
+        project(documentId);
         if (!OrgRole.current().atLeast(OrgRole.MANAGER)) {
             notifier.notify(notifier.managers(), "document.uploaded", "Novo documento para verificar",
                     type[2] + " carregado e à espera de verificação.", "/documentos", null);
@@ -352,6 +356,7 @@ public class DocumentService {
             throw new ApiException(HttpStatus.CONFLICT, "already-verified", "Esta versão já foi verificada ou não existe.");
         }
         auditLog.record("document.verified", "document", documentId, Map.of("versionId", versionId.toString()));
+        project(documentId);
         return get(documentId);
     }
 
@@ -361,6 +366,7 @@ public class DocumentService {
         get(documentId);
         jdbcTemplate.update("UPDATE documents SET archived_at = now(), version = version + 1 WHERE id = ? AND archived_at IS NULL", documentId);
         auditLog.record("document.archived", "document", documentId);
+        reporting.removeDocument(documentId);
         return jdbcTemplate.query(DOCUMENT_SELECT + " WHERE document.id = ?",
                 (resultSet, rowNumber) -> document(resultSet, TenantContext.today(clock), null, List.of()), documentId).getFirst();
     }
@@ -441,6 +447,8 @@ public class DocumentService {
                   AND current.expires_on <= ?::date + type.alert_days
                 """, (resultSet, rowNumber) -> new Object[] {resultSet.getObject(1, UUID.class), resultSet.getObject(2, UUID.class),
                 resultSet.getObject(3, LocalDate.class), resultSet.getString(4), resultSet.getString(5)}, today);
+        // Os estados mudam com o tempo (a caducar, caducado): atualiza os relatórios de todos os documentos ativos.
+        jdbcTemplate.queryForList("SELECT id FROM documents WHERE archived_at IS NULL", UUID.class).forEach(this::project);
         var managers = notifier.managers();
         int created = 0;
         for (var row : due) {
@@ -454,6 +462,22 @@ public class DocumentService {
             created += jdbcTemplate.queryForObject("SELECT count(*) FROM notifications", Integer.class) - before;
         }
         return created;
+    }
+
+    /** Estado do documento nos relatórios: válido, a caducar, caducado, ou por verificar (versão atual não verificada). */
+    private void project(UUID documentId) {
+        var today = TenantContext.today(clock);
+        jdbcTemplate.query(DOCUMENT_SELECT + " WHERE document.id = ? AND document.archived_at IS NULL", resultSet -> {
+            var expires = resultSet.getObject("expires_on", LocalDate.class);
+            var status = status(expires, resultSet.getInt("alert_days"), today);
+            if (status.equals("VALID") && !resultSet.getBoolean("verified")) {
+                status = "PENDING";
+            }
+            var employee = resultSet.getObject("employee_id", UUID.class);
+            reporting.documentState(new ReportingProjection.DocumentState(documentId, employee != null ? "EMPLOYEE" : "VEHICLE",
+                    employee != null ? employee : resultSet.getObject("vehicle_id", UUID.class), resultSet.getString("type_name"),
+                    null, status, expires));
+        }, documentId);
     }
 
     // --- auxiliares ---------------------------------------------------------------------------------------

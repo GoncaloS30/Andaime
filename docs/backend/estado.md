@@ -9,7 +9,7 @@ Plano completo: secções "Arquitetura", "Modelo", "Endpoints" e "Sequência" em
 - Monorepo: frontend na raiz; `backend/` (Maven, Java 21, Spring Boot 4.1.1, Modulith 2.1.1, springdoc 3.1); `infra/` (Docker Compose).
 - Docker só existe no WSL Ubuntu → build e testes do backend correm no WSL com JDK 21 (o CI e a imagem Docker usam a mesma versão).
 - Autenticação por sessões Spring Security + Spring Session JDBC.
-- Modo demo removido da aplicação; o protótipo antigo só existe nos builds `e2e`/`prototipo` (testes), nunca em produção, e é apagado módulo a módulo.
+- Modo demo removido da aplicação; o protótipo antigo foi apagado em F6.
 - Portas: Postgres **55442**, API **8088**, Mailpit **51035** (SMTP) / **58035** (UI), armazenamento S3 **59010** (F5). Nunca tocar nos contentores do projeto Mesa (8081, 55432, 51025, 58025) nem nos volumes `infra_*`.
 
 ## Fases
@@ -22,7 +22,7 @@ Plano completo: secções "Arquitetura", "Modelo", "Endpoints" e "Sequência" em
 | F3 — Planeamento e viaturas | ✅ concluída em 2026-10-19 |
 | F4 — Horas e aprovações | ✅ concluída em 2026-10-19 |
 | F5 — Documentos, ausências, equipamentos, notificações | ✅ concluída em 2026-10-19 |
-| F6 — Mapas e relatórios | ⏳ |
+| F6 — Mapas e relatórios | ✅ concluída em 2026-10-20 |
 | F7 — Hardening | ✅ concluída em 2026-10-20 (lote A: produto e segurança; lote B: operação e qualidade) |
 
 ## Ajustes ao plano
@@ -291,6 +291,33 @@ npm run e2e:saas → 5 passed: + documentos com ficheiro real, entregas de EPI e
 - Antivírus aos ficheiros carregados (`scan_status` existe; integração com ClamAV em F7).
 - Documentos de viaturas na interface (a API já os aceita; ecrã na ficha da viatura em F7).
 - Notificações por email (hoje só na aplicação).
+
+## F6 — Mapas e relatórios (concluída em 2026-10-20)
+
+Feita em paralelo (ChatGPT) e integrada por Claude sobre o `main` com F7.
+
+- Módulo Modulith `reporting` com read models SQL para mapa semanal, overview, horas aprovadas, planeado/realizado,
+  viaturas, documentos e distribuição por equipa, sempre sob RLS.
+- Projeções idempotentes `reporting_time_facts` e `reporting_document_facts`, alimentadas pela fachada
+  `ReportingProjection`: aprovar uma folha publica os registos da semana (com a divisão normal/extra da política
+  laboral, equipa histórica e código ERP); reabrir retira-os. Documentos são projetados ao carregar, verificar,
+  arquivar e no job diário de validades (estados VALID, EXPIRING, EXPIRED, PENDING; trabalhadores e viaturas).
+- Quatro XLSX no servidor com Apache POI SXSSF 5.5.1: equipa, obra, horas e ERP. Limite síncrono de 20 000 linhas e
+  assíncrono de 200 000. Fila PostgreSQL com reclamação `SKIP LOCKED`, retoma após 15 minutos e expiração a 24 horas.
+- Ecrãs reais `/mapas` e `/relatorios` (tabelas com scroll acessível por teclado).
+- Migrations **V19** (`report_exports`) e **V20** (read models) — renumeradas de V17/V18 para não colidir com F4/F5.
+- Importador opcional do histórico Lyrical (`npm run importar:lyrical`, ver `importacao-lyrical.md`).
+- **Protótipo retirado**: `src/store`, `src/data/seed`, `src/lib/excel`, `src/features` não usados, `e2e/` antigo,
+  fotos locais e dependências `exceljs`, `zustand`, `immer`, `jszip`, `date-fns`, `cmdk`, `fake-indexeddb`, `sharp`.
+  `main.tsx` arranca só a aplicação real e limpa as chaves antigas do `localStorage`.
+
+Verificação real:
+
+```text
+./mvnw verify → 62 testes, 0 falhas (inclui ReportingIntegrationTest e ReportingSourcesIntegrationTest)
+npm run typecheck · npm run lint → sem erros · npm test → 31 testes · npm run test:lyrical-import → 5 testes
+npm run e2e:saas → 26 passed (8 cenários + 18 ecrãs/diálogos sem violações sérias de acessibilidade)
+```
 
 ## F7 — Endurecimento
 

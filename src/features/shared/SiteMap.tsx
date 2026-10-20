@@ -5,7 +5,7 @@ import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-lea
 import type { ID, Site } from '@/domain/types'
 import { cn } from '@/lib/cn'
 
-/** Só o que o mapa precisa: serve tanto o protótipo como os dados da API. */
+/** Só o que o mapa precisa, a partir dos dados da API. */
 export type MapSite = Pick<Site, 'id' | 'code' | 'name' | 'color' | 'lat' | 'lng'> & { photo?: Site['photo'] }
 
 export interface MapPin {
@@ -16,9 +16,9 @@ export interface MapPin {
 
 function pinIcon(site: MapSite, selected: boolean, risk?: MapPin['risk']) {
   const ring = risk === 'excede' ? '#b03a2e' : risk === 'atencao' ? '#c98a12' : '#ffffff'
-  // Miniatura só com fotos de banco: o HTML do pino não passa pelo React, e as carregadas vivem no IndexedDB.
-  const thumb = site.photo?.kind === 'banco'
-    ? `<img src="/fotos/${site.photo.src}-s.webp" width="20" height="20" alt="" style="width:20px;height:20px;object-fit:cover;border-radius:3px;margin-right:5px;filter:saturate(.88) contrast(1.04)">`
+  // Miniatura da capa da obra (servida pela API, só para quem tem acesso; o HTML do pino não passa pelo React).
+  const thumb = site.photo
+    ? `<img src="${encodeURI(site.photo)}" width="20" height="20" alt="" style="width:20px;height:20px;object-fit:cover;border-radius:3px;margin-right:5px">`
     : ''
   return L.divIcon({
     className: '',

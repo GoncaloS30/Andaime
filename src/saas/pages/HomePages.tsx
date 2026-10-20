@@ -19,8 +19,6 @@ import { WorkerClock } from './timekeeping/WorkerClock'
  */
 export const MODULES: { path: string; label: string; phase: string }[] = [
   { path: '/agenda', label: 'Agenda', phase: 'depois de F6' },
-  { path: '/mapas', label: 'Mapas semanais', phase: 'F6' },
-  { path: '/relatorios', label: 'Relatórios', phase: 'F6' },
   { path: '/dormidas', label: 'Dormidas', phase: 'depois de F6' },
   { path: '/encarregado/diario', label: 'Diário de obra', phase: 'depois de F6' },
 ]
