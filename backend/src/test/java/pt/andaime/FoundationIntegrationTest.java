@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -72,6 +73,19 @@ class FoundationIntegrationTest extends IntegrationTestSupport {
                     ON CONFLICT DO NOTHING
                     """, orgA, userId);
         }
+    }
+
+    /** Cabeçalhos e cookie CSRF endurecidos (análise ZAP): SameSite no cookie e recursos só para a mesma origem. */
+    @Test
+    void cabecalhosDeSegurancaECookieCsrf() throws Exception {
+        mockMvc.perform(get("/api/auth/csrf"))
+                .andExpect(status().isOk())
+                .andExpect(cookie().sameSite("XSRF-TOKEN", "Lax"))
+                .andExpect(cookie().httpOnly("XSRF-TOKEN", false))
+                .andExpect(header().string("Cross-Origin-Resource-Policy", "same-origin"))
+                .andExpect(header().string("Content-Security-Policy", "default-src 'self'"))
+                .andExpect(header().string("X-Content-Type-Options", "nosniff"))
+                .andExpect(header().string("X-Frame-Options", "DENY"));
     }
 
     @Test

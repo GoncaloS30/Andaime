@@ -2,6 +2,8 @@ package pt.andaime.shared.config;
 
 import java.time.Clock;
 
+import jakarta.servlet.DispatcherType;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,7 +19,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfException;
+import org.springframework.security.web.header.writers.CrossOriginResourcePolicyHeaderWriter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.session.web.http.CookieSerializer;
 import org.springframework.session.web.http.DefaultCookieSerializer;
@@ -29,10 +33,16 @@ class SecurityConfig {
     SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             SecurityContextRepository securityContextRepository,
-            @Value("${management.server.port:-1}") int managementPort) throws Exception {
+            @Value("${management.server.port:-1}") int managementPort,
+            @Value("${server.servlet.session.cookie.secure:false}") boolean secureCookies) throws Exception {
+        // O SPA lê o token do cookie (por isso não é HttpOnly) e devolve-o no cabeçalho X-XSRF-TOKEN.
+        var csrfTokens = CookieCsrfTokenRepository.withHttpOnlyFalse();
+        csrfTokens.setCookieCustomizer(cookie -> cookie.sameSite("Lax").secure(secureCookies));
         return http
-                .csrf(csrf -> csrf.spa())
+                .csrf(csrf -> csrf.spa().csrfTokenRepository(csrfTokens))
                 .authorizeHttpRequests(authorize -> authorize
+                        // Erros do servlet (ex.: multipart mal formado) chegam ao tratamento de erros em JSON.
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers("/actuator/health/**").permitAll()
                         // Métricas e restantes endpoints de gestão nunca pela porta pública: em produção ficam
                         // numa porta de gestão interna (management.server.port), não exposta pelo proxy.
@@ -66,7 +76,9 @@ class SecurityConfig {
                 .headers(headers -> headers
                         .contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'"))
                         .referrerPolicy(referrer -> referrer
-                                .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER)))
+                                .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER))
+                        .crossOriginResourcePolicy(policy -> policy
+                                .policy(CrossOriginResourcePolicyHeaderWriter.CrossOriginResourcePolicy.SAME_ORIGIN)))
                 .build();
     }
 

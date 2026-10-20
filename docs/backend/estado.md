@@ -418,9 +418,16 @@ restore-test.sh → contagens iguais, 19 migrações, RLS e permissões ok, 103 
 ### Ainda não feito (decisões ou serviços externos)
 
 - Deploy real (sem autorização para criar recursos) e teste de intrusão externo.
-- Análise automatizada de vulnerabilidades das dependências e análise dinâmica da aplicação.
 - Tipos TypeScript gerados do OpenAPI.
-- Validação jurídica (retenção, RGPD, regras laborais e documentos por país).
+- Validação jurídica: rascunho técnico em [docs/juridico](../juridico/README.md) (registo de tratamentos, retenção,
+  esboço de AIPD, regras por país) — não declara conformidade.
+
+### Segurança automatizada (2026-10-20)
+
+- OSV-Scanner sobre o SBOM das dependências Java na CI (falha com vulnerabilidades conhecidas); corrigidas as do Tomcat
+  e do Jackson; Dependabot para Maven e Docker.
+- OWASP ZAP (análise de API sem sessão): sem alertas altos/médios; alertas baixos corrigidos (cookie CSRF com SameSite,
+  `Cross-Origin-Resource-Policy`, erros do servlet em JSON). Detalhe em [seguranca.md](seguranca.md).
 
 ## Comandos
 

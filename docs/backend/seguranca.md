@@ -60,3 +60,25 @@ Por fazer antes de vender (fora do código ou dependente de decisões):
 - Antivírus aos ficheiros carregados (ClamAV) — a coluna `scan_status` já existe.
 - Análise automática de vulnerabilidades das dependências Java (o CI já audita as do npm).
 - Encriptação e localização dos backups; DPA com subprocessadores.
+
+## Análise automatizada (2026-10-20)
+
+**Dependências Java (OSV-Scanner sobre o SBOM CycloneDX das dependências de execução).** A primeira análise encontrou
+17 vulnerabilidades conhecidas: Tomcat 11.0.24 (3 críticas, até CVSS 9,8) e Jackson 2.21.5/3.1.5 (altas). Corrigido
+sobrepondo `tomcat.version` 11.0.27, `jackson-bom.version` 3.1.8 e `jackson-2-bom.version` 2.21.8 no `pom.xml`
+(retirar quando o Spring Boot trouxer versões iguais ou superiores). A CI gera o SBOM e falha com qualquer
+vulnerabilidade conhecida; o Dependabot cobre npm, Maven, a imagem Docker do backend e as ações do GitHub.
+
+**Análise dinâmica (OWASP ZAP, `zap-api-scan.py` a partir do OpenAPI, sem sessão, contra a API local).** Sem alertas
+de risco alto ou médio. Os de risco baixo foram tratados:
+
+| Alerta | Tratamento |
+|---|---|
+| Cookie `XSRF-TOKEN` sem `SameSite` | Passa a `SameSite=Lax` (e `Secure` quando os cookies de sessão o são) |
+| Cookie `XSRF-TOKEN` sem `HttpOnly` | Aceite: o SPA tem de ler o token para o enviar em `X-XSRF-TOKEN` (padrão de proteção CSRF) |
+| `Cross-Origin-Resource-Policy` em falta | `same-origin` em todas as respostas |
+| Página de erro HTML do Tomcat em multipart mal formado | Os erros do servlet passam pelo tratamento de erros do Spring (JSON); deixa de expor a página do servidor |
+
+Limites: a análise foi feita sem sessão autenticada (a maior parte das rotas responde 401) e só contra a API; **não
+substitui um teste de intrusão externo**, que continua necessário antes de produção.
+
