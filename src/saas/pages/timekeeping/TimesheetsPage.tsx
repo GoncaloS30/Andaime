@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/cn'
 import { Badge } from '@/ui/Badge'
 import { Button, IconButton } from '@/ui/Button'
-import { Checkbox, Field, Input, Select, Textarea } from '@/ui/Field'
+import { Checkbox, Field, Input, Segmented, Select, Textarea } from '@/ui/Field'
 import { PageHeader, Panel } from '@/ui/Layout'
 import { Dialog, Drawer } from '@/ui/Overlay'
 import { EmptyState, ErrorState, SkeletonRows } from '@/ui/States'
@@ -27,6 +27,8 @@ import {
 import { atLeast } from '../../api/types'
 import { addDaysIso, formatDate, minutesToHours, todayIso, useSites } from '../../api/workforce'
 import { useActiveOrg } from '../../session'
+import { HoursTotals } from './HoursTotals'
+import { WeekGrid } from './WeekGrid'
 
 const DAY = new Intl.DateTimeFormat('pt-PT', { weekday: 'long', day: '2-digit', month: '2-digit', timeZone: 'UTC' })
 const dayName = (iso: string) => DAY.format(new Date(`${iso}T00:00:00Z`))
@@ -41,6 +43,7 @@ export function TimesheetsPage() {
   const sheets = useTimesheets(org.id, week, status)
   const action = useTimesheetAction(org.id)
   const [open, setOpen] = useState<string | null>(null)
+  const [view, setView] = useState<'folhas' | 'grelha' | 'totais'>('folhas')
   const submitted = (sheets.data ?? []).filter((s) => s.status === 'SUBMITTED' && s.openEntries === 0)
 
   const approveAll = async () => {
@@ -81,6 +84,20 @@ export function TimesheetsPage() {
         }
       />
 
+      {manager && (
+        <Segmented
+          className="mb-4"
+          label="Vista"
+          value={view}
+          onChange={setView}
+          options={[{ value: 'folhas', label: 'Folhas da semana' }, { value: 'grelha', label: 'Grelha da semana' }, { value: 'totais', label: 'Totais' }]}
+        />
+      )}
+      {view === 'totais' ? (
+        <HoursTotals />
+      ) : view === 'grelha' ? (
+        <WeekGrid week={week} />
+      ) : (
       <div className="flex flex-col gap-4">
         {week <= today && today <= addDaysIso(week, 6) && <PresenceToday />}
 
@@ -156,6 +173,7 @@ export function TimesheetsPage() {
           )}
         </Panel>
       </div>
+      )}
 
       <SheetDrawer employeeId={open} week={week} onClose={() => setOpen(null)} />
     </div>

@@ -73,6 +73,12 @@ public class TimekeepingController {
         return entries.confirmPlanned(request.assignmentIds());
     }
 
+    @PostMapping("/time-entries/week-grid")
+    pt.andaime.timekeeping.application.TimekeepingViews.WeekGridResult weekGrid(@PathVariable UUID orgId,
+            @RequestBody pt.andaime.timekeeping.application.TimekeepingViews.WeekGridInput input) {
+        return entries.weekGrid(input);
+    }
+
     @PatchMapping("/time-entries/{entryId}")
     EntryView correct(@PathVariable UUID orgId, @PathVariable UUID entryId, @RequestBody Correction input) {
         return entries.correct(entryId, input);

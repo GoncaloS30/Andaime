@@ -76,6 +76,18 @@ public class ReportingController {
         return reporting.vehicles(from, to);
     }
 
+    @GetMapping("/hours/matrix")
+    ReportingViews.HoursMatrix hoursMatrix(
+            @PathVariable UUID orgId,
+            @RequestParam(defaultValue = "employee") String rows,
+            @RequestParam(defaultValue = "day") String cols,
+            @RequestParam LocalDate from,
+            @RequestParam LocalDate to,
+            @RequestParam(required = false) UUID siteId,
+            @RequestParam(required = false) UUID employeeId) {
+        return reporting.hoursMatrix(rows, cols, from, to, siteId, employeeId);
+    }
+
     @GetMapping("/hours")
     ReportingViews.HoursReport hours(
             @PathVariable UUID orgId,

@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight, Download, FileSpreadsheet } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { WeekCharts } from './WeekCharts'
 import { useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import { Button, IconButton } from '@/ui/Button'
@@ -162,6 +163,7 @@ export function WeeklyMapsPage() {
           ) : isActual(report.data) ? <ActualMap report={report.data} erp={template === 'erp'} />
             : template === 'equipa' ? <TeamMap report={report.data} /> : <SiteMap report={report.data} />}
         </Panel>
+        <WeekCharts orgId={org.id} week={week} siteLabel={(id) => { const x = (sites.data ?? []).find((y) => y.id === id); return x ? `${x.code} · ${x.name}` : 'Obra' }} />
       </div>
     </>
   )

@@ -82,6 +82,17 @@ public final class TimekeepingViews {
             Integer breakMin, String note, String reason) {
     }
 
+    /** Uma célula da grelha da semana: as horas totais (em minutos) de uma pessoa num dia. */
+    public record GridCell(UUID employeeId, LocalDate date, UUID siteId, Integer minutes) {
+    }
+
+    /** Grelha da semana: várias células com um motivo comum (fica em cada revisão). */
+    public record WeekGridInput(String reason, List<GridCell> cells) {
+    }
+
+    public record WeekGridResult(int created, int updated, int cancelled, int unchanged) {
+    }
+
     public record Correction(UUID siteId, LocalDate date, LocalTime start, LocalTime end, Integer breakMin, String note,
             String reason, Integer version) {
     }

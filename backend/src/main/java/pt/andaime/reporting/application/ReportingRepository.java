@@ -133,6 +133,30 @@ class ReportingRepository {
                 resultSet.getInt("employees"), resultSet.getInt("sites")), from, to);
     }
 
+    record MatrixCell(String rowKey, String rowLabel, String colKey, String colLabel, int workedMin, int approvedMin) {
+    }
+
+    /** Registos fechados agrupados pelas duas dimensões; as aprovadas vêm das semanas com folha aprovada. */
+    List<MatrixCell> hoursMatrix(LocalDate from, LocalDate to, ReportingViews.MatrixDimension rows,
+            ReportingViews.MatrixDimension cols, java.util.UUID siteId, java.util.UUID employeeId) {
+        var sql = """
+                SELECT %s row_key, %s row_label, %s col_key, %s col_label,
+                       sum(entry.worked_min)::int worked_min,
+                       sum(CASE WHEN sheet.status = 'APPROVED' THEN entry.worked_min ELSE 0 END)::int approved_min
+                FROM time_entries entry
+                JOIN employees employee ON employee.organization_id = entry.organization_id AND employee.id = entry.employee_id
+                JOIN sites site ON site.organization_id = entry.organization_id AND site.id = entry.site_id
+                LEFT JOIN timesheets sheet ON sheet.organization_id = entry.organization_id AND sheet.employee_id = entry.employee_id
+                 AND sheet.week_start = entry.work_date - (extract(isodow FROM entry.work_date)::int - 1)
+                WHERE entry.status = 'CLOSED' AND entry.worked_min IS NOT NULL AND entry.work_date BETWEEN ? AND ?
+                  AND (?::uuid IS NULL OR entry.site_id = ?::uuid) AND (?::uuid IS NULL OR entry.employee_id = ?::uuid)
+                GROUP BY 1, 2, 3, 4
+                """.formatted(rows.keySql, rows.labelSql, cols.keySql, cols.labelSql);
+        return jdbcTemplate.query(sql, (rs, n) -> new MatrixCell(rs.getString("row_key"), rs.getString("row_label"),
+                rs.getString("col_key"), rs.getString("col_label"), rs.getInt("worked_min"), rs.getInt("approved_min")),
+                from, to, siteId, siteId, employeeId, employeeId);
+    }
+
     ActualTotals actualTotals(LocalDate from, LocalDate to) {
         return jdbcTemplate.queryForObject("""
                 SELECT coalesce(sum(worked_min), 0)::int worked_min,

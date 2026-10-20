@@ -96,6 +96,47 @@ class TimekeepingIntegrationTest extends ApiTestSupport {
     }
 
     @Test
+    void grelhaDaSemanaAjustaCriaEAnulaETotaisBatemCertos() throws Exception {
+        var owner = newUser("dono-grelha");
+        var orgId = createOrganization(owner, "Grelha F8");
+        var ana = employee(owner, orgId, "Ana Grelha", "Pedreiro");
+        var site = site(owner, orgId, "Obra Grelha", null);
+        perform(owner, post("/api/orgs/{orgId}/time-entries", orgId).content(manual(ana, site, LAST_MONDAY, "08:00", "17:00")))
+                .andExpect(status().isCreated());
+        var grid = "/api/orgs/{orgId}/time-entries/week-grid";
+        perform(owner, post(grid, orgId).content("""
+                {"reason":"","cells":[{"employeeId":"%s","date":"%s","minutes":600}]}""".formatted(ana, LAST_MONDAY)))
+                .andExpect(status().isBadRequest());
+
+        // Segunda: 8 h → 10 h (mantém a entrada e a pausa); terça: cria 8 h; quarta: vazio fica como está.
+        perform(owner, post(grid, orgId).content("""
+                {"reason":"Ficou até mais tarde na betonagem","cells":[
+                 {"employeeId":"%1$s","date":"%2$s","minutes":600},
+                 {"employeeId":"%1$s","date":"%3$s","siteId":"%4$s","minutes":480},
+                 {"employeeId":"%1$s","date":"%5$s","minutes":0}]}"""
+                .formatted(ana, LAST_MONDAY, LAST_MONDAY.plusDays(1), site, LAST_MONDAY.plusDays(2))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.updated").value(1)).andExpect(jsonPath("$.created").value(1))
+                .andExpect(jsonPath("$.unchanged").value(1));
+        var entries = body(perform(owner, get("/api/orgs/{orgId}/time-entries", orgId)
+                .param("from", LAST_MONDAY.toString()).param("to", LAST_MONDAY.plusDays(6).toString())));
+        assertThat(JsonPath.<List<Integer>>read(entries, "$[?(@.workDate == '%s')].workedMin".formatted(LAST_MONDAY))).containsExactly(600);
+
+        // Totais: pessoa × dia, com o total da semana.
+        var matrix = body(perform(owner, get("/api/orgs/{orgId}/reporting/hours/matrix", orgId).param("rows", "employee")
+                .param("cols", "day").param("from", LAST_MONDAY.toString()).param("to", LAST_MONDAY.plusDays(6).toString()))
+                .andExpect(status().isOk()));
+        assertThat((Integer) JsonPath.read(matrix, "$.totalMin")).isEqualTo(1080);
+        assertThat((Integer) JsonPath.read(matrix, "$.lines[0].cells['%s']".formatted(LAST_MONDAY))).isEqualTo(600);
+        perform(owner, get("/api/orgs/{orgId}/reporting/hours/matrix", orgId).param("rows", "day").param("cols", "employee")
+                .param("from", LAST_MONDAY.toString()).param("to", LAST_MONDAY.plusDays(6).toString())).andExpect(status().isBadRequest());
+
+        // 0 h num dia com registo anula-o.
+        perform(owner, post(grid, orgId).content("""
+                {"reason":"Não veio","cells":[{"employeeId":"%s","date":"%s","minutes":0}]}""".formatted(ana, LAST_MONDAY.plusDays(1))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.cancelled").value(1));
+    }
+
+    @Test
     void folhaSemanalSubmeterDevolverAprovarBloquearEReabrir() throws Exception {
         var owner = newUser("dono-folha");
         var orgId = createOrganization(owner, "Folhas F4");

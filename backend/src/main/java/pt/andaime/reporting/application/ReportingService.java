@@ -137,6 +137,58 @@ public class ReportingService {
     }
 
     @Transactional(readOnly = true)
+    public ReportingViews.HoursMatrix hoursMatrix(String rows, String cols, LocalDate from, LocalDate to,
+            java.util.UUID siteId, java.util.UUID employeeId) {
+        requireRange(from, to);
+        ReportingViews.MatrixDimension rowDimension;
+        ReportingViews.MatrixDimension colDimension;
+        try {
+            rowDimension = ReportingViews.MatrixDimension.parse(rows);
+            colDimension = ReportingViews.MatrixDimension.parse(cols);
+        } catch (RuntimeException exception) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "validation", "rows e cols devem ser employee, site, day, week ou month.");
+        }
+        if (rowDimension == colDimension || (rowDimension != ReportingViews.MatrixDimension.EMPLOYEE
+                && rowDimension != ReportingViews.MatrixDimension.SITE)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "validation", "As linhas são pessoas ou obras, e diferentes das colunas.");
+        }
+        var cells = repository.hoursMatrix(from, to, rowDimension, colDimension, siteId, employeeId);
+        var columnLabels = new java.util.TreeMap<String, String>();
+        var columnTotals = new java.util.HashMap<String, Integer>();
+        var rowLabels = new java.util.LinkedHashMap<String, String>();
+        var rowCells = new java.util.HashMap<String, java.util.Map<String, Integer>>();
+        var rowTotals = new java.util.HashMap<String, Integer>();
+        var rowApproved = new java.util.HashMap<String, Integer>();
+        int total = 0;
+        int approved = 0;
+        for (var cell : cells) {
+            columnLabels.putIfAbsent(cell.colKey(), cell.colLabel());
+            columnTotals.merge(cell.colKey(), cell.workedMin(), Integer::sum);
+            rowLabels.putIfAbsent(cell.rowKey(), cell.rowLabel());
+            rowCells.computeIfAbsent(cell.rowKey(), k -> new java.util.TreeMap<>()).merge(cell.colKey(), cell.workedMin(), Integer::sum);
+            rowTotals.merge(cell.rowKey(), cell.workedMin(), Integer::sum);
+            rowApproved.merge(cell.rowKey(), cell.approvedMin(), Integer::sum);
+            total += cell.workedMin();
+            approved += cell.approvedMin();
+        }
+        // Colunas de tempo pela data (a chave ISO já ordena); de pessoa ou obra, pelo nome.
+        var columnKeys = new java.util.ArrayList<>(columnLabels.keySet());
+        if (colDimension == ReportingViews.MatrixDimension.EMPLOYEE || colDimension == ReportingViews.MatrixDimension.SITE) {
+            columnKeys.sort(java.util.Comparator.comparing(columnLabels::get));
+        }
+        var columnViews = columnKeys.stream()
+                .map(key -> new ReportingViews.MatrixColumn(key, columnLabels.get(key), columnTotals.getOrDefault(key, 0))).toList();
+        var rowViews = rowLabels.keySet().stream()
+                .map(key -> new ReportingViews.MatrixRow(key, rowLabels.get(key), java.util.Map.copyOf(rowCells.get(key)),
+                        rowTotals.get(key), rowApproved.get(key)))
+                .sorted(java.util.Comparator.comparingInt(ReportingViews.MatrixRow::totalMin).reversed()
+                        .thenComparing(ReportingViews.MatrixRow::label))
+                .toList();
+        return new ReportingViews.HoursMatrix(from, to, rowDimension.value(), colDimension.value(), columnViews, rowViews,
+                total, approved);
+    }
+
+    @Transactional(readOnly = true)
     public HoursReport hours(String requestedGroup, LocalDate from, LocalDate to) {
         requireRange(from, to);
         HoursGroupBy groupBy;

@@ -190,3 +190,21 @@ export const useRevisions = (orgId: string, entryId: string | null) =>
 export function localTime(iso: string, timeZone: string): string {
   return new Intl.DateTimeFormat('pt-PT', { hour: '2-digit', minute: '2-digit', timeZone }).format(new Date(iso))
 }
+
+/** Registos de um período (para a grelha da semana), no âmbito de quem pede. */
+export const useEntries = (orgId: string, from: string, to: string) =>
+  useQuery({
+    queryKey: ['org', orgId, 'time-entries', from, to],
+    queryFn: () => api<TimeEntry[]>(`${base(orgId)}/time-entries?from=${from}&to=${to}`),
+    placeholderData: keepPreviousData,
+  })
+
+/** Grelha da semana: horas totais por pessoa e dia, guardadas de uma vez com um motivo comum. */
+export function useWeekGrid(orgId: string) {
+  const invalidate = useInvalidate(orgId)
+  return useMutation({
+    mutationFn: (body: { reason: string; cells: { employeeId: string; date: string; minutes: number }[] }) =>
+      api<{ created: number; updated: number; cancelled: number; unchanged: number }>(`${base(orgId)}/time-entries/week-grid`, { method: 'POST', body }),
+    onSettled: invalidate,
+  })
+}

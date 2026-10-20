@@ -36,6 +36,47 @@ public final class ReportingViews {
         }
     }
 
+    /**
+     * Totais de horas em grelha (porta da vista "Totais" do protótipo V3.1): linhas por pessoa ou obra, colunas por
+     * dia, semana, mês, pessoa ou obra. Realizadas = registos fechados; aprovadas = os de semanas aprovadas.
+     */
+    public record HoursMatrix(LocalDate from, LocalDate to, String rows, String cols, List<MatrixColumn> columns,
+            List<MatrixRow> lines, int totalMin, int approvedMin) {
+    }
+
+    public record MatrixColumn(String key, String label, int totalMin) {
+    }
+
+    public record MatrixRow(String key, String label, java.util.Map<String, Integer> cells, int totalMin, int approvedMin) {
+    }
+
+    public enum MatrixDimension {
+        EMPLOYEE("employee", "entry.employee_id::text", "employee.full_name"),
+        SITE("site", "entry.site_id::text", "site.code || ' — ' || site.name"),
+        DAY("day", "to_char(entry.work_date, 'YYYY-MM-DD')", "to_char(entry.work_date, 'DD/MM')"),
+        WEEK("week", "to_char(date_trunc('week', entry.work_date), 'YYYY-MM-DD')", "'Semana ' || to_char(entry.work_date, 'IW')"),
+        MONTH("month", "to_char(entry.work_date, 'YYYY-MM')", "to_char(entry.work_date, 'MM/YYYY')");
+
+        private final String value;
+        final String keySql;
+        final String labelSql;
+
+        MatrixDimension(String value, String keySql, String labelSql) {
+            this.value = value;
+            this.keySql = keySql;
+            this.labelSql = labelSql;
+        }
+
+        public static MatrixDimension parse(String value) {
+            for (var dimension : values()) if (dimension.value.equalsIgnoreCase(value)) return dimension;
+            throw new IllegalArgumentException(value);
+        }
+
+        public String value() {
+            return value;
+        }
+    }
+
     public enum HoursGroupBy {
         EMPLOYEE("employee"), TEAM("team"), SITE("site"), WEEK("week");
 

@@ -465,6 +465,18 @@ Primeira fase das lacunas face à V3.1 (análise em `lacunas-v31.md`, não versi
 - **Frontend:** painel "Os meus dias" na app do trabalhador, com hoje e os 13 dias seguintes, "Hoje" e "Amanhã" destacados e a morada a abrir no mapa. O ponto e "Esta semana" já existiam.
 - **Verificação:** `PlanningIntegrationTest` com um teste novo (âmbito, colegas, período máximo); `tsc` e `eslint` limpos.
 
+### F8.3 — totais de horas, grelha da semana e "Como correu a semana" (2026-10-20)
+
+- **Totais:** `GET /reporting/hours/matrix?rows=employee|site&cols=day|week|month|employee|site&from&to[&siteId][&employeeId]` (gestor, até um ano). Realizadas = registos fechados; aprovadas = registos de semanas com folha aprovada. No frontend, Horas → Totais tem semana, mês ou ano com navegação, as vistas Pessoas, Obras e Obras × pessoas, o filtro de obra e a ordenação por horas ou por nome.
+- **Grelha da semana:** `POST /time-entries/week-grid` com `{reason, cells:[{employeeId, date, siteId?, minutes}]}` (encarregado ou gestor). Por célula:
+  - cria o registo do dia (início da atribuição ou 08:00, pausa explícita 0);
+  - ajusta a saída do registo existente, mantendo a entrada e a pausa;
+  - 0 anula o registo.
+
+  Tudo numa transação. Um dia repartido ou uma entrada aberta recusam (409), e a semana aprovada é bloqueada pelo trigger. No frontend, Horas → Grelha da semana tem uma célula por pessoa e dia e um motivo obrigatório.
+- **"Como correu a semana"** nos mapas semanais: horas por dia (realizadas cheias, planeadas tracejadas), por obra e por pessoa, com tabela.
+- **Verificação:** `TimekeepingIntegrationTest` (grelha: ajustar, criar, anular, motivo obrigatório; totais por dia; dimensões inválidas); `tsc` e `eslint` limpos.
+
 ### Ainda não feito (decisões ou serviços externos)
 
 - Deploy real: escolher e contratar fornecedores, DNS, segredos e TLS — passos em

@@ -304,6 +304,66 @@ public class TimeEntryService {
         return new ConfirmResult(created, skipped);
     }
 
+    /**
+     * Grelha da semana (porta do protótipo V3.1): para cada célula, cria o registo do dia, ajusta a saída do que existe
+     * ou anula-o (0 h). Tudo numa transação: a semana aprovada (trigger) ou um dia repartido recusam a grelha inteira.
+     * As horas extra continuam a sair da política laboral, como em qualquer registo.
+     */
+    @Transactional
+    public TimekeepingViews.WeekGridResult weekGrid(TimekeepingViews.WeekGridInput input) {
+        OrgRole.require(OrgRole.FOREMAN);
+        requireText(input.reason(), "reason", "Indique o motivo da alteração.");
+        if (input.cells() == null || input.cells().isEmpty() || input.cells().size() > 200) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "validation", "Indique entre 1 e 200 células.");
+        }
+        int created = 0, updated = 0, cancelled = 0, unchanged = 0;
+        for (var cell : input.cells()) {
+            if (cell.employeeId() == null || cell.date() == null || cell.minutes() == null || cell.minutes() < 0 || cell.minutes() > 900) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "validation", "Cada célula leva pessoa, dia e entre 0 e 15 horas.");
+            }
+            var day = repository.entries(cell.date(), cell.date(), TimekeepingRepository.scope(cell.date(), cell.date()),
+                    cell.employeeId(), null).stream().filter(e -> !e.status().equals("CANCELLED")).toList();
+            if (day.size() > 1) {
+                throw new ApiException(HttpStatus.CONFLICT, "split-day",
+                        "O dia " + cell.date() + " tem vários registos: corrija-o registo a registo.");
+            }
+            if (day.size() == 1 && day.getFirst().status().equals("OPEN")) {
+                throw new ApiException(HttpStatus.CONFLICT, "open-entry", "Há uma entrada ainda aberta em " + cell.date() + ".");
+            }
+            if (day.isEmpty()) {
+                if (cell.minutes() == 0) {
+                    unchanged++;
+                    continue;
+                }
+                var planned = jdbcTemplate.query("""
+                        SELECT site_id, start_time FROM assignments WHERE employee_id = ? AND work_date = ? ORDER BY start_time LIMIT 1
+                        """, (rs, n) -> new Object[] {rs.getObject(1, UUID.class), rs.getObject(2, LocalTime.class)},
+                        cell.employeeId(), cell.date()).stream().findFirst().orElse(null);
+                var siteId = cell.siteId() != null ? cell.siteId() : planned == null ? null : (UUID) planned[0];
+                if (siteId == null) {
+                    throw new ApiException(HttpStatus.BAD_REQUEST, "site-required", "Indique a obra de " + cell.date() + ".");
+                }
+                var start = planned == null ? LocalTime.of(8, 0) : (LocalTime) planned[1];
+                create(new ManualEntry(cell.employeeId(), siteId, cell.date(), start, start.plusMinutes(cell.minutes()), 0, null,
+                        input.reason()));
+                created++;
+                continue;
+            }
+            var entry = day.getFirst();
+            if (cell.minutes() == 0) {
+                cancel(entry.id(), input.reason(), entry.version());
+                cancelled++;
+            } else if (entry.workedMin() != null && entry.workedMin().equals(cell.minutes())) {
+                unchanged++;
+            } else {
+                var end = entry.startLocal().plusMinutes(cell.minutes() + entry.breakMin());
+                correct(entry.id(), new Correction(null, null, null, end, null, null, input.reason(), entry.version()));
+                updated++;
+            }
+        }
+        return new TimekeepingViews.WeekGridResult(created, updated, cancelled, unchanged);
+    }
+
     @Transactional
     public EntryView correct(UUID entryId, Correction input) {
         OrgRole.require(OrgRole.FOREMAN);
