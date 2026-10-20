@@ -295,7 +295,7 @@ class PrivacyDataReader {
 
     /**
      * Metadados de todas as versões; o ficheiro só da versão atual de cada documento (nunca de uma versão marcada como
-     * infetada pela análise antivírus).
+     * infetada pela análise antivírus nem de uma já apagada pela conservação de dados).
      */
     private List<Documento> documents(UUID employeeId, List<StoredFile> files, Set<String> usedPaths) {
         var documents = new LinkedHashMap<UUID, Documento>();
@@ -328,7 +328,8 @@ class PrivacyDataReader {
             var current = resultSet.getBoolean("current");
             var filename = resultSet.getString("filename");
             String inZip = null;
-            if (current && !"INFECTED".equals(resultSet.getString("scan_status"))) {
+            // Versões apagadas pela conservação de dados (storage_key nulo) ficam só como metadados.
+            if (current && !"INFECTED".equals(resultSet.getString("scan_status")) && resultSet.getString("storage_key") != null) {
                 inZip = unique("documentos/" + slug(typeName) + "-v" + number + "-" + safeFilename(filename), usedPaths);
                 files.add(new StoredFile(inZip, resultSet.getString("storage_key")));
             }

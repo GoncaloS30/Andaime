@@ -31,7 +31,8 @@ import pt.andaime.workforce.EmployeeRetention;
 @Service
 public class RetentionService {
 
-    static final int DEFAULT_ANONYMIZE_MONTHS = 12;
+    /** Desligada por omissão: apagar dados é irreversível e o prazo tem de ser decidido pela empresa. */
+    static final Integer DEFAULT_ANONYMIZE_MONTHS = null;
     static final int DEFAULT_NOTIFICATION_MONTHS = 12;
 
     /** {@code anonymizeAfterMonths} nulo = anonimização automática desligada. */

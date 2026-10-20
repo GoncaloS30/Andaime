@@ -4,8 +4,8 @@
 
 CREATE TABLE retention_policies (
     organization_id uuid NOT NULL,
-    -- NULL = anonimização automática desligada.
-    anonymize_after_months integer DEFAULT 12
+    -- NULL = anonimização automática desligada (por omissão: é irreversível, cada empresa liga-a quando decidir).
+    anonymize_after_months integer
         CHECK (anonymize_after_months IS NULL OR anonymize_after_months BETWEEN 1 AND 120),
     notifications_after_months integer NOT NULL DEFAULT 12 CHECK (notifications_after_months BETWEEN 1 AND 60),
     created_at timestamptz NOT NULL DEFAULT now(),

@@ -77,7 +77,7 @@ class RetentionIntegrationTest extends ApiTestSupport {
 
         // Valores por omissão criados com a empresa.
         perform(owner, get("/api/orgs/{orgId}/retention", orgId)).andExpect(status().isOk())
-                .andExpect(jsonPath("$.anonymizeAfterMonths").value(12))
+                .andExpect(jsonPath("$.anonymizeAfterMonths").doesNotExist())
                 .andExpect(jsonPath("$.notificationsAfterMonths").value(12))
                 .andExpect(jsonPath("$.version").value(0));
         perform(manager, get("/api/orgs/{orgId}/retention", orgId)).andExpect(status().isOk());
@@ -141,10 +141,15 @@ class RetentionIntegrationTest extends ApiTestSupport {
         }
         assertThat(storage.get(anaKey).readAllBytes()).isEqualTo(PDF);
 
+        // Por omissão a anonimização automática está desligada: nada é anonimizado até a empresa a ligar.
+        assertThat(retentionService.runFor(orgId).anonymizedEmployees()).isZero();
+        perform(owner, put("/api/orgs/{orgId}/retention", orgId)
+                .content("{\"anonymizeAfterMonths\":12,\"notificationsAfterMonths\":12,\"version\":0}")).andExpect(status().isOk());
+
         var result = retentionService.runFor(orgId);
         assertThat(result.skipped()).isFalse();
         assertThat(result.anonymizedEmployees()).isEqualTo(1);
-        assertThat(result.deletedNotifications()).isEqualTo(1);
+        assertThat(result.deletedNotifications()).isZero(); // já apagada pela primeira execução
 
         perform(owner, get("/api/orgs/{orgId}/employees/{id}", orgId, ana)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.anonymized").value(true))
@@ -177,7 +182,7 @@ class RetentionIntegrationTest extends ApiTestSupport {
 
         // Com a anonimização automática desligada, nem um ex-trabalhador antigo é anonimizado.
         perform(owner, put("/api/orgs/{orgId}/retention", orgId)
-                .content("{\"anonymizeAfterMonths\":null,\"notificationsAfterMonths\":12,\"version\":0}")).andExpect(status().isOk());
+                .content("{\"anonymizeAfterMonths\":null,\"notificationsAfterMonths\":12,\"version\":1}")).andExpect(status().isOk());
         try (var connection = ownerConnection()) {
             execute(connection, "UPDATE employees SET archived_at = now() - interval '5 years' WHERE id = ?", rui);
         }

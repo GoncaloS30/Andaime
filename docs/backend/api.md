@@ -184,6 +184,19 @@ Com acesso de suporte, qualquer escrita devolve 403 `support-read-only`. `/actua
 - Avisos por email: pedidos e decisões de ausência, folhas devolvidas e documentos a caducar/caducados seguem também por email, depois do commit, para quem os tem ligados (fila na tabela `notifications`, `SKIP LOCKED`, recuo 2–16 min, desiste à 5.ª tentativa).
 - Antivírus: com `andaime.antivirus.mode=clamd` (por omissão no perfil `prod`), documentos e fotos são analisados pelo clamd antes de irem para o armazenamento: 422 `file-infected`; 503 `antivirus-unavailable` se o clamd não responder (falha fechada). Os documentos guardam `scan_status` (`CLEAN` ou `NOT_SCANNED`).
 
+## RGPD — conservação e exportação de dados
+
+| Método | Caminho | Quem | Descrição |
+|---|---|---|---|
+| GET | `/api/orgs/{orgId}/retention` | gestor+ | `{anonymizeAfterMonths?, notificationsAfterMonths, updatedAt, version}`; `anonymizeAfterMonths` ausente = anonimização automática desligada (por omissão) |
+| PUT | `/api/orgs/{orgId}/retention` | ADMIN+ | `{anonymizeAfterMonths: 1–120 \| null, notificationsAfterMonths: 1–60, version}`; 400 `validation`, 409 `stale`; auditado `retention.updated` |
+| GET | `/api/orgs/{orgId}/employees/{id}/export` | OWNER/ADMIN com membership real (o suporte não pode) | ZIP com `dados.json` (ficha, contratos, equipas, planeamento, ponto, registos e correções, folhas, ausências, documentos, EPI, notificações, auditoria), os ficheiros atuais dos documentos, a fotografia e `LEIA-ME.txt`; auditado `employee.exported` |
+| GET | `/api/orgs/{orgId}/me/export` | qualquer membro com ficha ligada | O mesmo ZIP para os próprios dados; 404 `no-employee` sem ficha ligada |
+| GET | `/api/orgs/{orgId}/documents/{id}/versions/{v}/download` | (alterado) | 410 `document-purged` quando o ficheiro foi apagado pela anonimização |
+
+- Job diário (`andaime.jobs.retention-cron`, 03:30 Europe/Lisbon): limpeza global (tokens expirados, convites terminados há mais de 30 dias, bloqueios de login antigos) e, por empresa, anonimização de ex-trabalhadores arquivados há mais do prazo (se ligada) e remoção de notificações antigas. Ex-trabalhadores ligados à conta do dono não são anonimizados automaticamente.
+- A anonimização (manual ou automática) apaga os ficheiros dos documentos do armazenamento depois do commit e marca as versões como apagadas (`purged_at`).
+
 ## F6 — Mapas e relatórios
 
 Todas sob `/api/orgs/{orgId}/reporting`; requerem gestor (OWNER, ADMIN ou MANAGER). As consultas usam RLS e devolvem durações em minutos.
