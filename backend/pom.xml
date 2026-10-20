@@ -24,6 +24,11 @@
 		<awssdk.version>2.56.0</awssdk.version>
 		<tika.version>4.1.0</tika.version>
 		<apache-poi.version>5.5.1</apache-poi.version>
+		<!-- Correções de segurança acima das versões do Spring Boot 4.1.1 (OSV: Tomcat GHSA-9xv2-5v5q-p794 e outras,
+		     Jackson GHSA-cxp5-3px4-pw24 e outras). Retirar quando o Boot trouxer versões iguais ou superiores. -->
+		<tomcat.version>11.0.27</tomcat.version>
+		<jackson-bom.version>3.1.8</jackson-bom.version>
+		<jackson-2-bom.version>2.21.8</jackson-2-bom.version>
 	</properties>
 
 	<dependencies>
@@ -178,6 +183,17 @@
 
 	<build>
 		<plugins>
+			<!-- SBOM das dependências de execução (target/bom.json), analisado pelo OSV-Scanner na CI. -->
+			<plugin>
+				<groupId>org.cyclonedx</groupId>
+				<artifactId>cyclonedx-maven-plugin</artifactId>
+				<version>2.9.3</version>
+				<configuration>
+					<includeTestScope>false</includeTestScope>
+					<outputFormat>json</outputFormat>
+					<outputName>bom</outputName>
+				</configuration>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-enforcer-plugin</artifactId>

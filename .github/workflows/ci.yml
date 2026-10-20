@@ -107,6 +107,17 @@ jobs:
           name: backend-surefire
           path: backend/target/surefire-reports
           retention-days: 7
+      # Vulnerabilidades conhecidas nas dependências Java: SBOM das dependências de execução (versões resolvidas
+      # pelo Maven) analisado pelo OSV-Scanner contra osv.dev. Falha a CI se houver vulnerabilidades conhecidas.
+      - run: ./mvnw -B -q cyclonedx:makeBom
+      - name: OSV-Scanner (dependências Java)
+        run: docker run --rm -v "$PWD/target:/src:ro" ghcr.io/google/osv-scanner:v2.2.4 scan source -L /src/bom.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: backend-sbom
+          path: backend/target/bom.json
+          retention-days: 30
 
   auditoria:
     name: Auditoria de dependências

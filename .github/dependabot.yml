@@ -16,6 +16,31 @@ updates:
       menores:
         update-types: [minor, patch]
 
+  # Dependências Java do backend (Maven): correções de segurança chegam como PR; menores agrupadas.
+  - package-ecosystem: maven
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+      time: '07:00'
+      timezone: Europe/Lisbon
+    open-pull-requests-limit: 5
+    labels: [dependencias, backend]
+    commit-message:
+      prefix: chore(deps)
+    groups:
+      menores-backend:
+        update-types: [minor, patch]
+
+  # Imagem base do backend (Dockerfile).
+  - package-ecosystem: docker
+    directory: /backend
+    schedule:
+      interval: monthly
+    labels: [dependencias, infra]
+    commit-message:
+      prefix: chore(docker)
+
   # Ações do GitHub usadas na CI.
   - package-ecosystem: github-actions
     directory: /
