@@ -28,11 +28,17 @@ class SecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-            SecurityContextRepository securityContextRepository) throws Exception {
+            SecurityContextRepository securityContextRepository,
+            @Value("${management.server.port:-1}") int managementPort) throws Exception {
         return http
                 .csrf(csrf -> csrf.spa())
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/actuator/health/**").permitAll()
+                        // Métricas e restantes endpoints de gestão nunca pela porta pública: em produção ficam
+                        // numa porta de gestão interna (management.server.port), não exposta pelo proxy.
+                        .requestMatchers(request -> request.getRequestURI().startsWith("/actuator/")
+                                && request.getLocalPort() == managementPort).permitAll()
+                        .requestMatchers("/actuator/**").denyAll()
                         .requestMatchers("/api/docs/**").permitAll()
                         .requestMatchers("/api/auth/csrf", "/api/auth/signup",
                                 "/api/auth/verify-email", "/api/auth/login",

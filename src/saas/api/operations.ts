@@ -71,7 +71,7 @@ export const DOC_STATUS_TONE: Record<DocStatus, 'ok' | 'warn' | 'danger' | 'neut
 export const useDocumentTypes = (orgId: string) =>
   useQuery({ queryKey: ['org', orgId, 'documents', 'types'], queryFn: () => api<DocumentType[]>(`${base(orgId)}/document-types`), staleTime: 60_000 })
 
-export const useDocuments = (orgId: string, filters: { employeeId?: string; status?: string } = {}) => {
+export const useDocuments = (orgId: string, filters: { employeeId?: string; vehicleId?: string; status?: string } = {}) => {
   const search = new URLSearchParams(Object.entries(filters).filter(([, v]) => !!v) as [string, string][]).toString()
   return useQuery({
     queryKey: ['org', orgId, 'documents', 'list', filters],

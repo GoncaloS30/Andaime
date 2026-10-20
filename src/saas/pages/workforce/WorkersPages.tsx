@@ -1,4 +1,4 @@
-import { Archive, ArchiveRestore, ArrowLeft, FileSignature, Mail, Pencil, Phone, Plus, Search, Trash2, Users } from 'lucide-react'
+import { Archive, ArchiveRestore, ArrowLeft, FileSignature, Mail, Pencil, Phone, Plus, Search, Trash2, Users, UserX } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
@@ -18,6 +18,7 @@ import {
   formatDate,
   todayIso,
   useAddContract,
+  useAnonymizeEmployee,
   useArchiveEmployee,
   useContracts,
   useEmployee,
@@ -400,6 +401,8 @@ export function WorkerDetailPage() {
                 Editar
               </Button>
             )}
+            {w.archivedAt && !w.anonymized && atLeast(org.role, 'ADMIN') && <AnonymizeButton id={w.id} name={w.fullName} />}
+            {!w.anonymized && (
             <Button
               variant="ghost"
               icon={w.archivedAt ? <ArchiveRestore className="size-4" /> : <Archive className="size-4" />}
@@ -413,6 +416,7 @@ export function WorkerDetailPage() {
             >
               {w.archivedAt ? 'Repor' : 'Arquivar'}
             </Button>
+            )}
           </div>
         )}
       </header>
@@ -477,5 +481,43 @@ export function WorkerDetailPage() {
       </Tabs>
       {editing && <EmployeeForm open onOpenChange={setEditing} existing={w} />}
     </div>
+  )
+}
+
+/** RGPD: apaga os dados pessoais de um ex-trabalhador arquivado. Irreversível, por isso pede confirmação escrita. */
+function AnonymizeButton({ id, name }: { id: string; name: string }) {
+  const org = useActiveOrg()
+  const anonymize = useAnonymizeEmployee(org.id, id)
+  const [open, setOpen] = useState(false)
+  const [typed, setTyped] = useState('')
+  return (
+    <>
+      <Button variant="ghost" icon={<UserX className="size-4" />} onClick={() => setOpen(true)}>
+        Anonimizar
+      </Button>
+      <Dialog
+        open={open}
+        onOpenChange={setOpen}
+        title={`Anonimizar ${name}`}
+        description="Apaga nome, contactos, nacionalidade, morada, tamanhos, competências, notas, custo e contratos. Ficam o número, a categoria e o histórico de horas e planeamento sem identificação. Os documentos ficam arquivados. Não é possível desfazer."
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="danger"
+              disabled={typed.trim() !== 'ANONIMIZAR'}
+              loading={anonymize.isPending}
+              onClick={() => anonymize.mutate(undefined, { onSuccess: () => (toast.success('Dados pessoais apagados'), setOpen(false)), onError: (e) => toast.error(errorMessage(e)) })}
+            >
+              Anonimizar
+            </Button>
+          </div>
+        }
+      >
+        <Field label="Escreva ANONIMIZAR para confirmar">{(p) => <Input {...p} value={typed} onChange={(e) => setTyped(e.target.value)} />}</Field>
+      </Dialog>
+    </>
   )
 }

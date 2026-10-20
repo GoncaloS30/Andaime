@@ -85,6 +85,11 @@ public class EmployeeController {
         return employees.archive(employeeId);
     }
 
+    @PostMapping("/{employeeId}/anonymize")
+    EmployeeDetail anonymize(@PathVariable UUID orgId, @PathVariable UUID employeeId) {
+        return employees.anonymize(employeeId);
+    }
+
     @PostMapping("/{employeeId}/restore")
     EmployeeDetail restore(@PathVariable UUID orgId, @PathVariable UUID employeeId) {
         return employees.restore(employeeId);

@@ -290,10 +290,11 @@ function TypesTab() {
 }
 
 /** Carregar ou renovar um documento (cria uma nova versão se já existir um do mesmo tipo). */
-export function UploadDialog({ preset, onClose, selfOnly = false }: { preset: { employeeId?: string; typeId?: string }; onClose: () => void; selfOnly?: boolean }) {
+export function UploadDialog({ preset, onClose, selfOnly = false }: { preset: { employeeId?: string; vehicleId?: string; typeId?: string }; onClose: () => void; selfOnly?: boolean }) {
+  const forVehicle = !!preset.vehicleId
   const org = useActiveOrg()
   const types = useDocumentTypes(org.id)
-  const employees = useEmployeeOptions(org.id, !selfOnly)
+  const employees = useEmployeeOptions(org.id, !selfOnly && !forVehicle)
   const upload = useUploadDocument(org.id)
   const [employeeId, setEmployeeId] = useState(preset.employeeId ?? '')
   const [typeId, setTypeId] = useState(preset.typeId ?? '')
@@ -301,7 +302,7 @@ export function UploadDialog({ preset, onClose, selfOnly = false }: { preset: { 
   const [expiresOn, setExpiresOn] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const type = types.data?.find((t) => t.id === typeId)
-  const ready = !!typeId && !!file && (selfOnly || !!employeeId) && (!type?.requiresExpiry || !!expiresOn)
+  const ready = !!typeId && !!file && (selfOnly || forVehicle || !!employeeId) && (!type?.requiresExpiry || !!expiresOn)
   const fieldError = (name: string) => (isApiError(upload.error) ? upload.error.fieldErrors[name] : undefined)
   return (
     <Dialog
@@ -321,7 +322,9 @@ export function UploadDialog({ preset, onClose, selfOnly = false }: { preset: { 
             onClick={() =>
               file &&
               upload.mutate(
-                { typeId, employeeId: selfOnly ? preset.employeeId : employeeId, issuedOn: issuedOn || undefined, expiresOn: expiresOn || undefined, file },
+                forVehicle
+                  ? { typeId, vehicleId: preset.vehicleId, issuedOn: issuedOn || undefined, expiresOn: expiresOn || undefined, file }
+                  : { typeId, employeeId: selfOnly ? preset.employeeId : employeeId, issuedOn: issuedOn || undefined, expiresOn: expiresOn || undefined, file },
                 { onSuccess: () => (toast.success('Documento carregado'), onClose()), onError: (e) => toast.error(errorMessage(e)) },
               )
             }
@@ -332,7 +335,7 @@ export function UploadDialog({ preset, onClose, selfOnly = false }: { preset: { 
       }
     >
       <div className="grid gap-4 sm:grid-cols-2">
-        {!selfOnly && (
+        {!selfOnly && !forVehicle && (
           <Field label="Trabalhador" className="sm:col-span-2">
             {(p) => (
               <Select {...p} value={employeeId} onChange={(e) => setEmployeeId(e.target.value)}>
@@ -351,7 +354,7 @@ export function UploadDialog({ preset, onClose, selfOnly = false }: { preset: { 
             <Select {...p} value={typeId} onChange={(e) => setTypeId(e.target.value)}>
               <option value="">Escolha…</option>
               {(types.data ?? [])
-                .filter((t) => t.subject === 'EMPLOYEE')
+                .filter((t) => t.subject === (forVehicle ? 'VEHICLE' : 'EMPLOYEE'))
                 .map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.name}

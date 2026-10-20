@@ -53,6 +53,7 @@ public final class WorkforceViews {
             TeamRef team,
             LinkedAccount account,
             boolean restricted,
+            boolean anonymized,
             int version) {
     }
 

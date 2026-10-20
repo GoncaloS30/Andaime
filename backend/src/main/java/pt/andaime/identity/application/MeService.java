@@ -42,7 +42,14 @@ public class MeService {
                 resultSet.getObject("id", UUID.class),
                 resultSet.getObject("organization_id", UUID.class),
                 resultSet.getString("name"),
-                resultSet.getString("role")), principal.id());
+                resultSet.getString("role"),
+                null), principal.id());
+        // Acessos de suporte ativos aparecem como empresas só de leitura (papel de administrador).
+        memberships = new java.util.ArrayList<>(memberships);
+        memberships.addAll(jdbcTemplate.query("SELECT * FROM app.support_grants_for(?)", (resultSet, rowNumber) ->
+                new MeView.MembershipView(resultSet.getObject("organization_id", UUID.class),
+                        resultSet.getObject("organization_id", UUID.class), resultSet.getString("organization_name"), "ADMIN",
+                        resultSet.getObject("expires_at", java.time.OffsetDateTime.class).toInstant()), principal.id()));
 
         var platformAdmin = Boolean.TRUE.equals(jdbcTemplate.queryForObject(
                 "SELECT EXISTS (SELECT 1 FROM platform_admins WHERE user_id = ?)",

@@ -1,4 +1,4 @@
-import { AlertTriangle, Archive, ArrowLeft, CalendarX2, Pencil, Plus, Trash2, Truck } from 'lucide-react'
+import { AlertTriangle, Archive, ArrowLeft, CalendarX2, Download, FileUp, Pencil, Plus, Trash2, Truck } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
@@ -25,7 +25,9 @@ import {
 import { atLeast } from '../../api/types'
 import { formatDate, todayIso } from '../../api/workforce'
 import { useActiveOrg } from '../../session'
+import { DOC_STATUS_LABEL, DOC_STATUS_TONE, downloadUrl, useDocuments } from '../../api/operations'
 import { FormError } from '../auth/AuthLayout'
+import { UploadDialog } from '../operations/DocumentsPage'
 
 function AlertBadges({ alerts }: { alerts: VehicleAlert[] }) {
   if (alerts.length === 0) return <Badge dot tone="ok">Em dia</Badge>
@@ -290,6 +292,7 @@ export function VehicleDetailPage() {
             </ul>
           )}
         </Panel>
+        <VehicleDocuments vehicleId={v.id} manager={manager} />
         <Panel title="Próximas saídas" className="lg:col-span-2">
           {v.upcoming.length === 0 ? (
             <p className="text-sm text-ink-3">Sem planeamento com esta viatura nos próximos dias.</p>
@@ -342,5 +345,43 @@ export function VehicleDetailPage() {
         </div>
       </Dialog>
     </div>
+  )
+}
+
+/** Seguro, inspeção e outros documentos da viatura (ficheiros no armazenamento privado). */
+function VehicleDocuments({ vehicleId, manager }: { vehicleId: string; manager: boolean }) {
+  const org = useActiveOrg()
+  const documents = useDocuments(org.id, { vehicleId })
+  const [uploading, setUploading] = useState(false)
+  return (
+    <Panel
+      title="Documentos"
+      className="lg:col-span-2"
+      actions={manager && <Button size="sm" variant="secondary" icon={<FileUp className="size-4" />} onClick={() => setUploading(true)}>Carregar</Button>}
+    >
+      {(documents.data ?? []).length === 0 ? (
+        <p className="text-sm text-ink-3">Sem documentos carregados (ex.: apólice do seguro, ficha de inspeção).</p>
+      ) : (
+        <ul className="divide-y divide-line-2">
+          {documents.data!.map((d) => (
+            <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
+              <span>
+                <span className="font-semibold">{d.typeName}</span>
+                {d.expiresOn && <span className="text-ink-3"> · até {formatDate(d.expiresOn)}</span>}
+              </span>
+              <span className="flex items-center gap-2">
+                <Badge tone={DOC_STATUS_TONE[d.status]}>{DOC_STATUS_LABEL[d.status]}</Badge>
+                {d.current && (
+                  <a className="inline-flex items-center gap-1 text-pinho underline" href={downloadUrl(org.id, d.id, d.current.id)} download>
+                    <Download className="size-4" aria-hidden /> Descarregar
+                  </a>
+                )}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {uploading && <UploadDialog preset={{ vehicleId }} onClose={() => setUploading(false)} />}
+    </Panel>
   )
 }
