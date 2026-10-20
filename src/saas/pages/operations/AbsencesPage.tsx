@@ -1,11 +1,13 @@
 import { CalendarPlus, Check, ChevronLeft, ChevronRight, Palmtree, X } from 'lucide-react'
 import { useState } from 'react'
+import { useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import { Badge } from '@/ui/Badge'
 import { Button, IconButton } from '@/ui/Button'
 import { Field, Input, Select, Textarea } from '@/ui/Field'
 import { PageHeader, Panel } from '@/ui/Layout'
 import { Dialog } from '@/ui/Overlay'
+import { TabPanel, Tabs } from '@/ui/Tabs'
 import { EmptyState, ErrorState, SkeletonRows } from '@/ui/States'
 import { errorMessage } from '../../api/http'
 import {
@@ -23,6 +25,7 @@ import { hhmm } from '../../api/planning'
 import { atLeast } from '../../api/types'
 import { formatDate, todayIso, useEmployeeOptions, useSites } from '../../api/workforce'
 import { useActiveOrg } from '../../session'
+import { AbsenceYearMap } from './AbsenceYearMap'
 
 const MONTH = new Intl.DateTimeFormat('pt-PT', { month: 'long', year: 'numeric', timeZone: 'UTC' })
 
@@ -59,6 +62,18 @@ export function AbsencesPage() {
   const pending = useAbsences(org.id, todayIso(), shiftMonth(todayIso(), 12), 'REQUESTED')
   const [creating, setCreating] = useState(false)
   const [deciding, setDeciding] = useState<{ absence: Absence; mode: 'approve' | 'reject' } | null>(null)
+  const [params, setParams] = useSearchParams()
+  const view = params.get('vista') === 'ano' ? 'year' : 'list'
+  const setView = (v: string) =>
+    setParams(
+      (p) => {
+        const n = new URLSearchParams(p)
+        if (v === 'year') n.set('vista', 'ano')
+        else n.delete('vista')
+        return n
+      },
+      { replace: true },
+    )
 
   return (
     <div className="mx-auto max-w-[1180px]">
@@ -73,95 +88,108 @@ export function AbsencesPage() {
           )
         }
       />
-      <div className="flex flex-col gap-4">
-        {(pending.data ?? []).length > 0 && (
-          <Panel title={`Por decidir (${pending.data!.length})`}>
-            <ul className="flex flex-col divide-y divide-line-2">
-              {pending.data!.map((a) => (
-                <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                  <span className="text-sm">
-                    <span className="font-semibold text-ink">{a.employeeName}</span> · {ABSENCE_KIND_LABEL[a.kind]} · {period(a)}
-                    {a.note && <span className="text-ink-3"> · “{a.note}”</span>}
-                  </span>
-                  {manager && (
-                    <span className="flex gap-2">
-                      <Button size="sm" variant="ghost" icon={<X className="size-4" />} onClick={() => setDeciding({ absence: a, mode: 'reject' })}>
-                        Recusar
-                      </Button>
-                      <Button size="sm" variant="primary" icon={<Check className="size-4" />} onClick={() => setDeciding({ absence: a, mode: 'approve' })}>
-                        Aprovar
-                      </Button>
+      <Tabs
+        value={view}
+        onValueChange={setView}
+        label="Vistas das ausências"
+        tabs={[
+          { value: 'list', label: 'Pedidos e registo', count: pending.data?.length },
+          { value: 'year', label: 'Mapa do ano' },
+        ]}
+      >
+        <TabPanel value="list" className="flex flex-col gap-4">
+          {(pending.data ?? []).length > 0 && (
+            <Panel title={`Por decidir (${pending.data!.length})`}>
+              <ul className="flex flex-col divide-y divide-line-2">
+                {pending.data!.map((a) => (
+                  <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                    <span className="text-sm">
+                      <span className="font-semibold text-ink">{a.employeeName}</span> · {ABSENCE_KIND_LABEL[a.kind]} · {period(a)}
+                      {a.note && <span className="text-ink-3"> · “{a.note}”</span>}
                     </span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </Panel>
-        )}
-
-        <Panel
-          flush
-          title={
-            <span className="flex items-center gap-1">
-              <IconButton label="Mês anterior" size="sm" onClick={() => setAnchor(shiftMonth(anchor, -1))}>
-                <ChevronLeft className="size-4" />
-              </IconButton>
-              <span className="min-w-36 text-center capitalize">{MONTH.format(new Date(`${from}T00:00:00Z`))}</span>
-              <IconButton label="Mês seguinte" size="sm" onClick={() => setAnchor(shiftMonth(anchor, 1))}>
-                <ChevronRight className="size-4" />
-              </IconButton>
-            </span>
-          }
-          actions={
-            <Select aria-label="Estado" value={status} onChange={(e) => setStatus(e.target.value as AbsenceStatus | '')} className="h-8 max-w-[170px]">
-              <option value="">Todos os estados</option>
-              {(Object.keys(ABSENCE_STATUS_LABEL) as AbsenceStatus[]).map((s) => (
-                <option key={s} value={s}>
-                  {ABSENCE_STATUS_LABEL[s]}
-                </option>
-              ))}
-            </Select>
-          }
-        >
-          {absences.isPending ? (
-            <SkeletonRows rows={5} />
-          ) : absences.isError ? (
-            <ErrorState onRetry={() => void absences.refetch()}>{errorMessage(absences.error)}</ErrorState>
-          ) : absences.data.length === 0 ? (
-            <EmptyState icon={<Palmtree />} title="Sem ausências neste mês" />
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[680px] text-sm">
-                <thead>
-                  <tr className="border-b border-line text-left text-xs text-ink-3">
-                    <th className="px-4 py-2 font-semibold">Trabalhador</th>
-                    <th className="px-2 py-2 font-semibold">Tipo</th>
-                    <th className="px-2 py-2 font-semibold">Período</th>
-                    <th className="px-2 py-2 text-right font-semibold">Dias</th>
-                    <th className="px-2 py-2 font-semibold">Estado</th>
-                    <th className="px-4 py-2" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {absences.data.map((a) => (
-                    <tr key={a.id} className="border-b border-line-2 last:border-0">
-                      <td className="px-4 py-2.5 font-semibold text-ink">{a.employeeName}</td>
-                      <td className="px-2">{ABSENCE_KIND_LABEL[a.kind]}</td>
-                      <td className="px-2 tabular">{period(a)}</td>
-                      <td className="px-2 text-right tabular">{a.days}</td>
-                      <td className="px-2">
-                        <Badge tone={ABSENCE_STATUS_TONE[a.status]}>{ABSENCE_STATUS_LABEL[a.status]}</Badge>
-                        {a.decisionNote && <span className="ml-1 text-xs text-ink-3">“{a.decisionNote}”</span>}
-                      </td>
-                      <td className="px-4 text-right">{manager && (a.status === 'REQUESTED' || a.status === 'APPROVED') && <CancelButton absence={a} />}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                    {manager && (
+                      <span className="flex gap-2">
+                        <Button size="sm" variant="ghost" icon={<X className="size-4" />} onClick={() => setDeciding({ absence: a, mode: 'reject' })}>
+                          Recusar
+                        </Button>
+                        <Button size="sm" variant="primary" icon={<Check className="size-4" />} onClick={() => setDeciding({ absence: a, mode: 'approve' })}>
+                          Aprovar
+                        </Button>
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </Panel>
           )}
-        </Panel>
-      </div>
+  
+          <Panel
+            flush
+            title={
+              <span className="flex items-center gap-1">
+                <IconButton label="Mês anterior" size="sm" onClick={() => setAnchor(shiftMonth(anchor, -1))}>
+                  <ChevronLeft className="size-4" />
+                </IconButton>
+                <span className="min-w-36 text-center capitalize">{MONTH.format(new Date(`${from}T00:00:00Z`))}</span>
+                <IconButton label="Mês seguinte" size="sm" onClick={() => setAnchor(shiftMonth(anchor, 1))}>
+                  <ChevronRight className="size-4" />
+                </IconButton>
+              </span>
+            }
+            actions={
+              <Select aria-label="Estado" value={status} onChange={(e) => setStatus(e.target.value as AbsenceStatus | '')} className="h-8 max-w-[170px]">
+                <option value="">Todos os estados</option>
+                {(Object.keys(ABSENCE_STATUS_LABEL) as AbsenceStatus[]).map((s) => (
+                  <option key={s} value={s}>
+                    {ABSENCE_STATUS_LABEL[s]}
+                  </option>
+                ))}
+              </Select>
+            }
+          >
+            {absences.isPending ? (
+              <SkeletonRows rows={5} />
+            ) : absences.isError ? (
+              <ErrorState onRetry={() => void absences.refetch()}>{errorMessage(absences.error)}</ErrorState>
+            ) : absences.data.length === 0 ? (
+              <EmptyState icon={<Palmtree />} title="Sem ausências neste mês" />
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[680px] text-sm">
+                  <thead>
+                    <tr className="border-b border-line text-left text-xs text-ink-3">
+                      <th className="px-4 py-2 font-semibold">Trabalhador</th>
+                      <th className="px-2 py-2 font-semibold">Tipo</th>
+                      <th className="px-2 py-2 font-semibold">Período</th>
+                      <th className="px-2 py-2 text-right font-semibold">Dias</th>
+                      <th className="px-2 py-2 font-semibold">Estado</th>
+                      <th className="px-4 py-2" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {absences.data.map((a) => (
+                      <tr key={a.id} className="border-b border-line-2 last:border-0">
+                        <td className="px-4 py-2.5 font-semibold text-ink">{a.employeeName}</td>
+                        <td className="px-2">{ABSENCE_KIND_LABEL[a.kind]}</td>
+                        <td className="px-2 tabular">{period(a)}</td>
+                        <td className="px-2 text-right tabular">{a.days}</td>
+                        <td className="px-2">
+                          <Badge tone={ABSENCE_STATUS_TONE[a.status]}>{ABSENCE_STATUS_LABEL[a.status]}</Badge>
+                          {a.decisionNote && <span className="ml-1 text-xs text-ink-3">“{a.decisionNote}”</span>}
+                        </td>
+                        <td className="px-4 text-right">{manager && (a.status === 'REQUESTED' || a.status === 'APPROVED') && <CancelButton absence={a} />}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Panel>
+        </TabPanel>
+        <TabPanel value="year">
+          <AbsenceYearMap />
+        </TabPanel>
+      </Tabs>
       {creating && <RequestAbsenceDialog onClose={() => setCreating(false)} onBehalf />}
       {deciding && <DecisionDialog key={deciding.absence.id} {...deciding} onClose={() => setDeciding(null)} />}
     </div>

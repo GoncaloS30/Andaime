@@ -18,6 +18,7 @@ import { VehicleDetailPage, VehiclesPage } from './pages/fleet/VehiclesPages'
 import { PlanningPage } from './pages/planning/PlanningPage'
 import { TimesheetsPage } from './pages/timekeeping/TimesheetsPage'
 import { AbsencesPage } from './pages/operations/AbsencesPage'
+import { AgendaPage } from './pages/agenda/AgendaPage'
 import { DocumentsPage } from './pages/operations/DocumentsPage'
 import { EquipmentPage } from './pages/operations/EquipmentPage'
 import { ExperienceGate, RedirectIfAuthenticated, RequireAuth, RequireOrg } from './session'
@@ -100,6 +101,7 @@ export const router = createBrowserRouter([
               { path: 'encarregado/semana', element: encarregado(<PlanningPage readOnlyView />) },
               { path: 'horas', element: gestor(<TimesheetsPage />) },
               { path: 'ausencias', element: gestor(<AbsencesPage />) },
+              { path: 'agenda', element: both(<AgendaPage />) },
               { path: 'documentos', element: gestor(<DocumentsPage />) },
               { path: 'encarregado/documentos', element: encarregado(<DocumentsPage />) },
               { path: 'equipamentos', element: gestor(<EquipmentPage />) },

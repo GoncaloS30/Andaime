@@ -20,7 +20,6 @@ import { WorkerClock } from './timekeeping/WorkerClock'
  * o ecrã diz isso mesmo, em vez de mostrar dados fictícios.
  */
 export const MODULES: { path: string; label: string; phase: string }[] = [
-  { path: '/agenda', label: 'Agenda', phase: 'depois de F6' },
   { path: '/dormidas', label: 'Dormidas', phase: 'depois de F6' },
   { path: '/encarregado/diario', label: 'Diário de obra', phase: 'depois de F6' },
 ]
