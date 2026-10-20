@@ -154,6 +154,19 @@ Todas sob `/api/orgs/{orgId}`.
 | GET · POST | `/notifications` · `/notifications/read` | o próprio | `{unread, items}`; `{ids[]}` vazio = todas |
 | GET | `/notifications/stream` | o próprio | SSE: evento `changed` |
 
+## F7 — Endurecimento
+
+| Método | Caminho | Quem | Descrição |
+|---|---|---|---|
+| GET · POST | `/api/orgs/{orgId}/support-access` | ADMIN+ | `{email, hours: 1–72, reason}`; o email tem de ser de um administrador da plataforma |
+| POST | `/api/orgs/{orgId}/support-access/{id}/revoke` | ADMIN+ | |
+| GET · PUT | `/api/orgs/{orgId}/labor-policy` | ver: encarregado+; alterar: ADMIN+ | `{dailyNormalMin, weeklyNormalMin, restDays[], autoBreakAfterMin, autoBreakMin, overnightAttribution, version}`; vale de hoje em diante |
+| GET · POST · DELETE | `/api/orgs/{orgId}/holidays[?year][/{id}]` | ver: encarregado+; alterar: ADMIN+ | `{date, name}` |
+| POST | `/api/orgs/{orgId}/employees/{id}/anonymize` | ADMIN+ | Só arquivados; 409 `not-archived`, `already-anonymized` |
+| POST | `/api/orgs/{orgId}/me/clock/{action}` | trabalhador | Novo `offline: true` com `deviceTime`; 409 `offline-too-old`, `offline-out-of-order` |
+
+Com acesso de suporte, qualquer escrita devolve 403 `support-read-only`. `/actuator/**` (exceto health) responde 403 na porta pública.
+
 ## F6 (planeado)
 
 Ver `docs/backend/arquitetura.md` (Ecrã → API) e o plano aprovado. Cada fase acrescenta aqui a sua tabela quando é implementada.

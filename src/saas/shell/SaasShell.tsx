@@ -239,6 +239,19 @@ function MobileNav() {
 }
 
 /** Layout autenticado do backoffice (gestor e encarregado). */
+/** Acesso de suporte: tudo é só de leitura e cada pedido fica na auditoria da empresa. */
+function SupportBanner() {
+  const org = useActiveOrg()
+  if (!org.supportUntil) return null
+  const until = new Intl.DateTimeFormat('pt-PT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(org.supportUntil))
+  return (
+    <div role="status" className="border-b border-ambar/40 bg-ambar-soft px-4 py-2 text-sm text-ambar-ink lg:px-7">
+      <ShieldCheck className="mr-1.5 inline size-4 align-text-bottom" aria-hidden />
+      Acesso de suporte a <strong>{org.name}</strong>, só de leitura, até {until}. Cada consulta fica registada na auditoria da empresa.
+    </div>
+  )
+}
+
 export function SaasShell() {
   const location = useLocation()
   const loading = useNavigation().state === 'loading'
@@ -261,6 +274,7 @@ export function SaasShell() {
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar />
+        <SupportBanner />
         <main id="conteudo" tabIndex={-1} aria-busy={loading || undefined} className="flex-1 px-4 pt-5 pb-28 focus:outline-none sm:px-5 md:pb-10 lg:px-7">
           <Suspense fallback={<SkeletonRows rows={8} />}>
             <Outlet />

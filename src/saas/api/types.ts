@@ -7,7 +7,8 @@ export type OrgRole = 'OWNER' | 'ADMIN' | 'MANAGER' | 'FOREMAN' | 'WORKER'
 
 export interface Me {
   user: { id: string; email: string; displayName: string; locale: string }
-  memberships: { id: string; orgId: string; orgName: string; role: OrgRole }[]
+  /** `supportUntil` preenchido: acesso de suporte temporário (só leitura), não uma membership. */
+  memberships: { id: string; orgId: string; orgName: string; role: OrgRole; supportUntil: string | null }[]
   activeOrgId: string | null
   platformAdmin: boolean
 }

@@ -8,6 +8,11 @@ spring:
   flyway:
     clean-disabled: true
 
+# Porta de gestão interna (Prometheus, info): não exposta pelo proxy; o health continua na porta pública.
+management:
+  server:
+    port: ${ANDAIME_MANAGEMENT_PORT:8098}
+
 springdoc:
   api-docs:
     enabled: false

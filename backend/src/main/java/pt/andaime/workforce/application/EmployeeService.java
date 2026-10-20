@@ -222,10 +222,42 @@ public class EmployeeService {
         return get(employeeId);
     }
 
+    /**
+     * RGPD: apaga os dados pessoais de um ex-trabalhador arquivado (nome, contactos, nacionalidade, morada, tamanhos,
+     * competências, notas, custo, contratos). Ficam o número, a categoria e o histórico de horas e planeamento, sem
+     * identificação. A conta ligada perde o acesso à empresa; os documentos ficam arquivados. Irreversível.
+     */
+    @Transactional
+    public EmployeeDetail anonymize(UUID employeeId) {
+        OrgRole.require(OrgRole.ADMIN);
+        get(employeeId);
+        lockEmployee(employeeId);
+        var state = jdbcTemplate.queryForObject("SELECT archived_at IS NOT NULL, anonymized_at IS NOT NULL FROM employees WHERE id = ?",
+                (resultSet, rowNumber) -> new boolean[] {resultSet.getBoolean(1), resultSet.getBoolean(2)}, employeeId);
+        if (!state[0]) {
+            throw new ApiException(HttpStatus.CONFLICT, "not-archived", "Arquive o trabalhador antes de o anonimizar.");
+        }
+        if (state[1]) {
+            throw new ApiException(HttpStatus.CONFLICT, "already-anonymized", "Este trabalhador já foi anonimizado.");
+        }
+        jdbcTemplate.update("UPDATE employees SET full_name = 'Ex-trabalhador ' || number, phone = NULL, email = NULL,"
+                + " nationality = NULL, home_city = NULL, hire_date = NULL, hourly_cost = NULL, skills = '{}', sizes = '{}'::jsonb,"
+                + " notes = NULL, anonymized_at = now(), version = version + 1 WHERE id = ?", employeeId);
+        jdbcTemplate.update("DELETE FROM employee_contracts WHERE employee_id = ?", employeeId);
+        jdbcTemplate.update("UPDATE memberships SET status = 'DISABLED' WHERE employee_id = ? AND status = 'ACTIVE'", employeeId);
+        jdbcTemplate.update("UPDATE documents SET archived_at = coalesce(archived_at, now()) WHERE employee_id = ?", employeeId);
+        auditLog.record("employee.anonymized", "employee", employeeId);
+        return get(employeeId);
+    }
+
     @Transactional
     public EmployeeDetail restore(UUID employeeId) {
         OrgRole.require(OrgRole.MANAGER);
         get(employeeId);
+        if (Boolean.TRUE.equals(jdbcTemplate.queryForObject("SELECT anonymized_at IS NOT NULL FROM employees WHERE id = ?",
+                Boolean.class, employeeId))) {
+            throw new ApiException(HttpStatus.CONFLICT, "already-anonymized", "Um trabalhador anonimizado não pode ser reposto.");
+        }
         jdbcTemplate.update("""
                 UPDATE employees SET archived_at = NULL, version = version + 1 WHERE id = ? AND archived_at IS NOT NULL
                 """, employeeId);
@@ -323,6 +355,7 @@ public class EmployeeService {
                 membershipId == null ? null : new LinkedAccount(membershipId,
                         resultSet.getString("account_name"), resultSet.getString("membership_role")),
                 restricted,
+                resultSet.getObject("anonymized_at") != null,
                 resultSet.getInt("version"));
     }
 

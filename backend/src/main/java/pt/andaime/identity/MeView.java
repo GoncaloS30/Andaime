@@ -12,6 +12,7 @@ public record MeView(
     public record UserView(UUID id, String email, String displayName, String locale) {
     }
 
-    public record MembershipView(UUID id, UUID orgId, String orgName, String role) {
+    /** {@code supportUntil} preenchido = acesso de suporte temporário (só leitura), não uma membership. */
+    public record MembershipView(UUID id, UUID orgId, String orgName, String role, java.time.Instant supportUntil) {
     }
 }

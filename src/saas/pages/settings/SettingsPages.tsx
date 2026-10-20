@@ -41,6 +41,7 @@ function SettingsTabs() {
     ...(atLeast(org.role, 'ADMIN') ? [{ to: '/definicoes', label: 'Empresa', end: true }] : []),
     ...(atLeast(org.role, 'MANAGER') ? [{ to: '/definicoes/equipa', label: 'Equipa e acessos' }] : []),
     { to: '/definicoes/conta', label: 'A minha conta' },
+    ...(atLeast(org.role, 'ADMIN') ? [{ to: '/definicoes/regras', label: 'Regras e suporte' }] : []),
     ...(atLeast(org.role, 'ADMIN') ? [{ to: '/definicoes/auditoria', label: 'Auditoria' }] : []),
   ]
   return (
@@ -65,7 +66,7 @@ function SettingsTabs() {
   )
 }
 
-function SettingsFrame({ children }: { children: ReactNode }) {
+export function SettingsFrame({ children }: { children: ReactNode }) {
   const org = useActiveOrg()
   return (
     <>

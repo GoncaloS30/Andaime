@@ -43,7 +43,11 @@ public final class TimekeepingViews {
             int weekOvertimeMin) {
     }
 
-    public record ClockRequest(String idempotencyKey, Instant deviceTime, UUID siteId) {
+    /**
+     * @param offline o toque foi feito sem rede e chega agora da fila do telemóvel: conta a hora do dispositivo
+     *                ({@code deviceTime}), dentro de limites (até 72 h atrás, nunca no futuro, nunca antes do último toque).
+     */
+    public record ClockRequest(String idempotencyKey, Instant deviceTime, UUID siteId, Boolean offline) {
     }
 
     public record DayView(LocalDate date, int plannedMin, int workedMin, int normalMin, int overtimeMin, boolean restDay,

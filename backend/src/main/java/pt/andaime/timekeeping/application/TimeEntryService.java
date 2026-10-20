@@ -97,7 +97,7 @@ public class TimeEntryService {
         if (Boolean.TRUE.equals(repeated)) {
             return status();
         }
-        var now = clock.instant();
+        var now = occurredAt(me, request);
         var open = repository.openEntry(me).orElse(null);
         UUID entryId;
         UUID siteId = null;
@@ -172,6 +172,26 @@ public class TimeEntryService {
                 request.deviceTime() == null ? null : java.sql.Timestamp.from(request.deviceTime()), request.idempotencyKey(),
                 siteId, entryId, TenantContext.userId().orElseThrow());
         return status();
+    }
+
+    /** Hora do toque: a do servidor; para toques feitos sem rede, a do dispositivo, validada. */
+    private Instant occurredAt(UUID employeeId, ClockRequest request) {
+        var server = clock.instant();
+        if (!Boolean.TRUE.equals(request.offline()) || request.deviceTime() == null) {
+            return server;
+        }
+        var device = request.deviceTime().truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
+        if (device.isAfter(server.plusSeconds(120)) || device.isBefore(server.minus(Duration.ofHours(72)))) {
+            throw new ApiException(HttpStatus.CONFLICT, "offline-too-old",
+                    "Este registo sem rede tem mais de 72 horas ou uma hora inválida. Peça ao encarregado para o registar.");
+        }
+        var last = jdbcTemplate.queryForObject("SELECT max(occurred_at) FROM clock_events WHERE employee_id = ?",
+                java.time.OffsetDateTime.class, employeeId);
+        if (last != null && device.isBefore(last.toInstant())) {
+            throw new ApiException(HttpStatus.CONFLICT, "offline-out-of-order",
+                    "Há um registo mais recente do que este toque sem rede. Peça ao encarregado para corrigir.");
+        }
+        return device.isAfter(server) ? server : device;
     }
 
     private void endBreak(UUID entryId, Instant now) {

@@ -11,6 +11,7 @@ import { NewSitePage, SiteDetailPage, SitesPage } from './pages/sites/SitesPages
 import { TeamDetailPage, TeamsPage } from './pages/workforce/TeamsPages'
 import { WorkerDetailPage, WorkersPage } from './pages/workforce/WorkersPages'
 import { PlatformPage } from './pages/PlatformPage'
+import { RulesPage } from './pages/settings/RulesPage'
 import { VehicleDetailPage, VehiclesPage } from './pages/fleet/VehiclesPages'
 import { PlanningPage } from './pages/planning/PlanningPage'
 import { TimesheetsPage } from './pages/timekeeping/TimesheetsPage'
@@ -115,6 +116,7 @@ export const router = createBrowserRouter([
               { path: 'definicoes/equipa', element: <TeamAccessPage /> },
               { path: 'definicoes/conta', element: <AccountPage /> },
               { path: 'definicoes/auditoria', element: <AuditPage /> },
+              { path: 'definicoes/regras', element: <RulesPage /> },
               { path: 'plataforma', element: <PlatformPage /> },
               { path: 'inicio', element: <Navigate to="/" replace /> },
               { path: '*', element: <NotFoundPage /> },

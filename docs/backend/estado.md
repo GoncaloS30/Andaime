@@ -23,7 +23,7 @@ Plano completo: secções "Arquitetura", "Modelo", "Endpoints" e "Sequência" em
 | F4 — Horas e aprovações | ✅ concluída em 2026-10-19 |
 | F5 — Documentos, ausências, equipamentos, notificações | ✅ concluída em 2026-10-19 |
 | F6 — Mapas e relatórios | ⏳ |
-| F7 — Hardening | ⏳ |
+| F7 — Hardening | 🔄 lote A concluído em 2026-10-20 (produto e segurança); lote B (operação e qualidade) em curso |
 
 ## Ajustes ao plano
 
@@ -291,6 +291,41 @@ npm run e2e:saas → 5 passed: + documentos com ficheiro real, entregas de EPI e
 - Antivírus aos ficheiros carregados (`scan_status` existe; integração com ClamAV em F7).
 - Documentos de viaturas na interface (a API já os aceita; ecrã na ficha da viatura em F7).
 - Notificações por email (hoje só na aplicação).
+
+## F7 — Endurecimento
+
+### Lote A — produto e segurança (concluído em 2026-10-20)
+
+- **Endpoints de gestão:** `/actuator/**` (exceto health) fechado na porta pública; em produção as métricas ficam na
+  porta de gestão interna `ANDAIME_MANAGEMENT_PORT` (8098), que o proxy não expõe. Antes, qualquer utilizador
+  autenticado de qualquer empresa podia ler `/actuator/prometheus`.
+- **Notificações em tempo real:** no máximo 5 ligações SSE por utilizador (as mais antigas fecham).
+- **Acesso de suporte** (adiado desde a F1): o dono ou administrador autoriza, com motivo e prazo (até 72 h), um
+  administrador da plataforma; o acesso é só de leitura (escritas → 403 `support-read-only`), revogável, e cada pedido
+  fica na auditoria da empresa (`support.viewed`, `support.blocked`). O suporte vê a empresa no `/api/me` com
+  `supportUntil` e um aviso permanente no topo.
+- **Ponto sem rede:** a app guarda os toques sem rede numa fila (só pedidos por enviar, com chave de idempotência e hora
+  real) e envia-os quando a rede volta; o servidor aceita a hora do dispositivo até 72 h atrás e por ordem
+  (`offline-too-old`, `offline-out-of-order`). Toques recusados ficam visíveis para a pessoa avisar o encarregado.
+- **Regras da empresa:** política laboral editável (horas normais por dia e semana, dias de descanso, pausa automática,
+  turnos noturnos), em vigor de hoje em diante (as semanas passadas mantêm a política anterior), e feriados próprios.
+- **RGPD:** anonimizar um ex-trabalhador arquivado apaga nome, contactos, nacionalidade, morada, tamanhos, competências,
+  notas, custo e contratos; ficam o número, a categoria e o histórico sem identificação; a conta ligada perde o acesso
+  e os documentos ficam arquivados. Irreversível, com confirmação escrita. Prazos de retenção a validar juridicamente.
+- **Documentos das viaturas** na ficha da viatura (seguro, inspeção), com upload e download.
+- **V18_1** (versão 18.1, para não colidir com as V19+ da F6 em paralelo): funções `app.support_grant_active` e
+  `app.support_grants_for` (SECURITY DEFINER) e `employees.anonymized_at`.
+
+Verificação real:
+
+```text
+./mvnw verify → 59 testes, 0 falhas (HardeningIntegrationTest 5: métricas fechadas; suporte sem concessão → 404,
+  com concessão lê e não escreve, auditoria e revogação; ponto sem rede com limites; política e feriados nas horas;
+  anonimização)
+npm run typecheck · npm run lint → sem erros · npm test → 182 testes
+npm run e2e:saas → 6 passed: + regras da empresa, ponto com o navegador offline enviado quando a rede volta,
+  anonimização
+```
 
 ## Comandos
 

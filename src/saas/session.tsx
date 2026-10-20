@@ -11,13 +11,21 @@ export interface ActiveOrg {
   name: string
   role: OrgRole
   experience: Experience
+  /** Acesso de suporte só de leitura, até esta hora. */
+  supportUntil: string | null
 }
 
 /** Empresa ativa: a preferência guardada no servidor, se ainda for membro; senão a primeira. */
 export function activeOrgOf(me: Me): ActiveOrg | null {
   const membership = me.memberships.find((m) => m.orgId === me.activeOrgId) ?? me.memberships[0]
   if (!membership) return null
-  return { id: membership.orgId, name: membership.orgName, role: membership.role, experience: experienceOf(membership.role) }
+  return {
+    id: membership.orgId,
+    name: membership.orgName,
+    role: membership.role,
+    experience: experienceOf(membership.role),
+    supportUntil: membership.supportUntil ?? null,
+  }
 }
 
 /**

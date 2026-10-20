@@ -21,6 +21,8 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 public class NotificationStream {
 
     static final Duration TIMEOUT = Duration.ofMinutes(30);
+    /** Ligações abertas por utilizador (separadores); as mais antigas fecham primeiro. */
+    static final int MAX_PER_USER = 5;
 
     private final Map<String, List<SseEmitter>> emitters = new ConcurrentHashMap<>();
 
@@ -28,6 +30,9 @@ public class NotificationStream {
         var key = organizationId + ":" + userId;
         var emitter = new SseEmitter(TIMEOUT.toMillis());
         var list = emitters.computeIfAbsent(key, k -> new CopyOnWriteArrayList<>());
+        while (list.size() >= MAX_PER_USER) {
+            list.removeFirst().complete();
+        }
         list.add(emitter);
         Runnable remove = () -> list.remove(emitter);
         emitter.onCompletion(remove);

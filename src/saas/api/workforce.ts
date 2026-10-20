@@ -37,6 +37,8 @@ export interface EmployeeDetail extends Omit<EmployeeSummary, 'archived'> {
   account: { membershipId: string; displayName: string; role: string } | null
   /** Vista de encarregado: sem dados pessoais nem custos. */
   restricted: boolean
+  /** Ex-trabalhador com os dados pessoais apagados (RGPD). */
+  anonymized: boolean
   version: number
 }
 
@@ -332,6 +334,14 @@ export function useArchiveEmployee(orgId: string, id: string) {
   return useMutation({
     mutationFn: (archive: boolean) => api<EmployeeDetail>(`${base(orgId)}/employees/${id}/${archive ? 'archive' : 'restore'}`, { method: 'POST' }),
     onSuccess: () => invalidate('employees', 'teams', 'audit'),
+  })
+}
+
+export function useAnonymizeEmployee(orgId: string, id: string) {
+  const invalidate = useInvalidate(orgId)
+  return useMutation({
+    mutationFn: () => api<EmployeeDetail>(`${base(orgId)}/employees/${id}/anonymize`, { method: 'POST' }),
+    onSuccess: () => invalidate('employees', 'teams', 'audit', 'time-entries', 'timesheets'),
   })
 }
 

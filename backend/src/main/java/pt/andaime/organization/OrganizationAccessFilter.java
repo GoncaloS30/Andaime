@@ -36,11 +36,13 @@ public final class OrganizationAccessFilter extends OncePerRequestFilter {
 
     private final JdbcTemplate jdbcTemplate;
     private final TransactionTemplate readOnly;
+    private final TransactionTemplate readWrite;
 
     OrganizationAccessFilter(JdbcTemplate jdbcTemplate, PlatformTransactionManager transactionManager) {
         this.jdbcTemplate = jdbcTemplate;
         this.readOnly = new TransactionTemplate(transactionManager);
         this.readOnly.setReadOnly(true);
+        this.readWrite = new TransactionTemplate(transactionManager);
     }
 
     @Override
@@ -65,6 +67,13 @@ public final class OrganizationAccessFilter extends OncePerRequestFilter {
 
         var organizationId = parse(matcher.group(1));
         var access = organizationId.flatMap(id -> membership(id, userId));
+        if (access.isEmpty() && organizationId.isPresent()) {
+            var grant = supportGrant(organizationId.get(), userId);
+            if (grant.isPresent()) {
+                support(request, response, chain, organizationId.get(), userId, grant.get());
+                return;
+            }
+        }
         if (access.isEmpty()) {
             problem(response, 404, "not-found", "Não encontrado", "A organização não foi encontrada.");
             return;
@@ -78,6 +87,38 @@ public final class OrganizationAccessFilter extends OncePerRequestFilter {
         try (var ignored = TenantContext.open(
                 organizationId.get(), userId, access.get().role(), access.get().employeeId(), access.get().zone())) {
             chain.doFilter(request, response);
+        }
+    }
+
+    /**
+     * Acesso de suporte: só leitura (GET/HEAD), papel de administrador para ver tudo, e cada pedido registado na
+     * auditoria da empresa como ação da plataforma em nome dela.
+     */
+    private void support(HttpServletRequest request, HttpServletResponse response, FilterChain chain, UUID organizationId,
+            UUID userId, UUID grantId) throws ServletException, IOException {
+        var method = request.getMethod();
+        var readOnlyRequest = "GET".equals(method) || "HEAD".equals(method) || "OPTIONS".equals(method);
+        try (var ignored = TenantContext.open(organizationId, userId, "ADMIN")) {
+            readWrite.executeWithoutResult(status -> jdbcTemplate.update("""
+                    INSERT INTO audit_event (organization_id, actor_user_id, actor_role, on_behalf, action, entity_type,
+                                             entity_id, changes, request_id)
+                    VALUES (?, ?, 'PLATFORM_ADMIN', true, ?, 'support_access_grant', ?, jsonb_build_object('method', ?::text,
+                            'path', ?::text), ?)
+                    """, organizationId, userId, readOnlyRequest ? "support.viewed" : "support.blocked", grantId, method,
+                    request.getRequestURI(), MDC.get("requestId")));
+            if (!readOnlyRequest) {
+                problem(response, 403, "support-read-only", "Sem acesso",
+                        "O acesso de suporte é só de leitura.");
+                return;
+            }
+            chain.doFilter(request, response);
+        }
+    }
+
+    private Optional<UUID> supportGrant(UUID organizationId, UUID userId) {
+        try (var ignored = TenantContext.openForUser(userId)) {
+            return Optional.ofNullable(readOnly.execute(status -> jdbcTemplate.queryForObject(
+                    "SELECT app.support_grant_active(?, ?)", UUID.class, organizationId, userId)));
         }
     }
 

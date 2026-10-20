@@ -45,9 +45,11 @@ class TimekeepingRepository {
     }
 
     private final JdbcTemplate jdbcTemplate;
+    private final java.time.Clock clock;
 
-    TimekeepingRepository(JdbcTemplate jdbcTemplate) {
+    TimekeepingRepository(JdbcTemplate jdbcTemplate, java.time.Clock clock) {
         this.jdbcTemplate = jdbcTemplate;
+        this.clock = clock;
     }
 
     static EntryView entry(ResultSet resultSet, int rowNumber) throws SQLException {
@@ -129,6 +131,17 @@ class TimekeepingRepository {
 
     /** Política laboral em vigor na data (por omissão 8 h/dia, 40 h/semana, pausa de 60 min acima de 6 h). */
     PolicyRow policy(LocalDate monday) {
+        // Política em vigor no dia mais recente da semana já decorrido: mudanças valem "de hoje em diante" e as semanas
+        // passadas continuam com a política que estava em vigor.
+        return policyAt(monday, earliest(monday.plusDays(6), LocalDate.now(clock.withZone(TenantContext.zone()))));
+    }
+
+    private static LocalDate earliest(LocalDate a, LocalDate b) {
+        return a.isBefore(b) ? a : b;
+    }
+
+    /** Política em vigor numa data, com os feriados da semana que começa em {@code monday}. */
+    PolicyRow policyAt(LocalDate monday, LocalDate effectiveOn) {
         var holidays = new HashSet<LocalDate>(jdbcTemplate.query("""
                 SELECT holiday_date FROM org_holidays WHERE holiday_date BETWEEN ? AND ?
                 UNION
@@ -148,7 +161,7 @@ class TimekeepingRepository {
             return new PolicyRow(new Policy(resultSet.getInt(1), resultSet.getInt(2), rest, holidays, resultSet.getString(4)),
                     resultSet.getObject(5) == null ? Integer.MAX_VALUE : resultSet.getInt(5),
                     resultSet.getObject(6) == null ? 0 : resultSet.getInt(6));
-        }, monday).stream().findFirst()
+        }, effectiveOn).stream().findFirst()
                 .orElse(new PolicyRow(new Policy(480, 2400, Set.of(6, 7), holidays, "START_DAY"), 360, 60));
     }
 
@@ -157,7 +170,7 @@ class TimekeepingRepository {
         if (recordedBreak > 0) {
             return recordedBreak;
         }
-        var policy = policy(date);
+        var policy = policyAt(date, date);
         var minutes = java.time.Duration.between(start, end).toMinutes();
         return minutes > policy.autoBreakAfterMin() ? policy.autoBreakMin() : 0;
     }
