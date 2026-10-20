@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,7 +15,8 @@ import java.util.Set;
 /**
  * Horas normais e extraordinárias de uma semana, a partir dos registos fechados e da política laboral da empresa.
  * <ul>
- * <li>Dia de descanso ou feriado: todo o tempo é extraordinário.</li>
+ * <li>Dia de descanso ou feriado: todo o tempo é extraordinário. São feriados os da política (feriados da empresa e
+ * nacionais do país da empresa) e, para cada registo, os feriados nacionais do país da obra onde foi feito.</li>
  * <li>Dia útil: normal até ao limite diário; o excesso é extraordinário.</li>
  * <li>Semana: as horas normais acima do limite semanal passam a extraordinárias, pela ordem dos dias.</li>
  * <li>Turnos noturnos: contam no dia de início ({@code START_DAY}) ou são divididos à meia-noite local
@@ -31,7 +33,20 @@ public final class HoursCalculator {
             String overnightAttribution) {
     }
 
-    public record Entry(LocalDate workDate, Instant startedAt, Instant endedAt, ZoneId zone, int breakMin) {
+    /**
+     * Registo fechado. {@code siteHolidays}: feriados no local de trabalho (nacionais do país da obra); só contam
+     * nos dias a que este registo é atribuído.
+     */
+    public record Entry(LocalDate workDate, Instant startedAt, Instant endedAt, ZoneId zone, int breakMin,
+            Set<LocalDate> siteHolidays) {
+
+        public Entry {
+            siteHolidays = siteHolidays == null ? Set.of() : Set.copyOf(siteHolidays);
+        }
+
+        public Entry(LocalDate workDate, Instant startedAt, Instant endedAt, ZoneId zone, int breakMin) {
+            this(workDate, startedAt, endedAt, zone, breakMin, Set.of());
+        }
     }
 
     public record Day(LocalDate date, int workedMin, int normalMin, int overtimeMin, boolean restDay) {
@@ -45,8 +60,9 @@ public final class HoursCalculator {
         for (int i = 0; i < 7; i++) {
             worked.put(monday.plusDays(i), 0);
         }
+        var siteHolidays = new HashSet<LocalDate>();
         for (var entry : entries) {
-            attribute(entry, policy, worked);
+            attribute(entry, policy, worked, siteHolidays);
         }
         var days = new ArrayList<Day>();
         int weekNormal = 0;
@@ -55,7 +71,8 @@ public final class HoursCalculator {
         for (var day : worked.entrySet()) {
             var date = day.getKey();
             var minutes = day.getValue();
-            var rest = policy.restDays().contains(date.getDayOfWeek().getValue()) || policy.holidays().contains(date);
+            var rest = policy.restDays().contains(date.getDayOfWeek().getValue()) || policy.holidays().contains(date)
+                    || siteHolidays.contains(date);
             int normal = rest ? 0 : Math.min(minutes, policy.dailyNormalMin());
             int overtime = minutes - normal;
             var room = Math.max(0, policy.weeklyNormalMin() - weekNormal);
@@ -76,10 +93,13 @@ public final class HoursCalculator {
         return (int) Math.max(0, Duration.between(start, end).toMinutes() - breakMin);
     }
 
-    private static void attribute(Entry entry, Policy policy, Map<LocalDate, Integer> worked) {
+    private static void attribute(Entry entry, Policy policy, Map<LocalDate, Integer> worked, Set<LocalDate> siteHolidays) {
         var total = workedMin(entry.startedAt(), entry.endedAt(), entry.breakMin());
         if (!"SPLIT_MIDNIGHT".equals(policy.overnightAttribution())) {
             worked.computeIfPresent(entry.workDate(), (d, m) -> m + total);
+            if (entry.siteHolidays().contains(entry.workDate())) {
+                siteHolidays.add(entry.workDate());
+            }
             return;
         }
         // Divide pelos dias locais; a pausa é repartida pela proporção de tempo em cada dia.
@@ -101,6 +121,9 @@ public final class HoursCalculator {
                     : (int) Math.round(total * (double) segment.getValue() / Math.max(1, duration));
             assigned += share;
             worked.computeIfPresent(segment.getKey(), (d, m) -> m + share);
+            if (entry.siteHolidays().contains(segment.getKey())) {
+                siteHolidays.add(segment.getKey());
+            }
         }
     }
 }

@@ -11,6 +11,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
@@ -80,6 +81,7 @@ public class TimesheetService {
         var sheets = sheets(monday);
         var teams = teams(monday);
         var policy = repository.policy(monday).policy();
+        var siteHolidays = repository.siteHolidays(entries.stream().map(EntryView::siteId).toList(), monday, sunday);
         var result = new ArrayList<TimesheetSummary>();
         // Agrupado uma vez por trabalhador (com centenas de pessoas, filtrar a lista inteira por cada uma é quadrático).
         var entriesBy = entries.stream().collect(java.util.stream.Collectors.groupingBy(EntryView::employeeId));
@@ -88,7 +90,7 @@ public class TimesheetService {
             var mine = entriesBy.getOrDefault(employee, List.of());
             var plan = plannedBy.getOrDefault(employee, List.of());
             var summary = summary(employee, names.get(employee), teams.get(employee), monday, mine, plan,
-                    sheets.get(employee), policy);
+                    sheets.get(employee), policy, siteHolidays);
             if (status == null || status.isBlank() || summary.status().equals(status)) {
                 result.add(summary);
             }
@@ -106,10 +108,11 @@ public class TimesheetService {
         var entries = repository.entries(monday, sunday, scope, employeeId, null);
         var planned = repository.planned(monday, sunday, scope, employeeId);
         var policy = repository.policy(monday).policy();
+        var siteHolidays = repository.siteHolidays(entries.stream().map(EntryView::siteId).toList(), monday, sunday);
         var sheet = sheets(monday).get(employeeId);
         var summary = summary(employeeId, repository.employeeName(employeeId), teams(monday).get(employeeId), monday, entries, planned,
-                sheet, policy);
-        var week = HoursCalculator.week(monday, closed(entries), policy);
+                sheet, policy, siteHolidays);
+        var week = HoursCalculator.week(monday, closed(entries, siteHolidays), policy);
         var days = new ArrayList<DayView>();
         for (var day : week.days()) {
             days.add(new DayView(day.date(),
@@ -230,7 +233,8 @@ public class TimesheetService {
         var self = new TimekeepingRepository.Scope("entry.employee_id = ?", List.of(employeeId));
         var entries = repository.entries(monday, monday.plusDays(6), self, employeeId, null).stream()
                 .filter(e -> e.status().equals("CLOSED")).sorted(java.util.Comparator.comparing(EntryView::startedAt)).toList();
-        var week = HoursCalculator.week(monday, closed(entries), repository.policy(monday).policy());
+        var siteHolidays = repository.siteHolidays(entries.stream().map(EntryView::siteId).toList(), monday, monday.plusDays(6));
+        var week = HoursCalculator.week(monday, closed(entries, siteHolidays), repository.policy(monday).policy());
         var normalLeft = new HashMap<LocalDate, Integer>();
         week.days().forEach(day -> normalLeft.put(day.date(), day.normalMin()));
         var code = jdbcTemplate.query("SELECT normal_code FROM labor_policies WHERE country IS NULL AND effective_during @> ?::date",
@@ -258,8 +262,8 @@ public class TimesheetService {
     // --- auxiliares ----------------------------------------------------------------------------------
 
     private TimesheetSummary summary(UUID employeeId, String name, String team, LocalDate monday, List<EntryView> entries,
-            List<PlannedView> planned, Sheet sheet, HoursCalculator.Policy policy) {
-        var week = HoursCalculator.week(monday, closed(entries), policy);
+            List<PlannedView> planned, Sheet sheet, HoursCalculator.Policy policy, Map<UUID, Set<LocalDate>> siteHolidays) {
+        var week = HoursCalculator.week(monday, closed(entries, siteHolidays), policy);
         var plannedDays = planned.stream().map(PlannedView::date).distinct().toList();
         var today = TenantContext.today(clock);
         var missing = (int) plannedDays.stream()
@@ -269,9 +273,11 @@ public class TimesheetService {
                 (int) entries.stream().filter(e -> e.status().equals("OPEN")).count(), missing, sheet == null ? 0 : sheet.version());
     }
 
-    private static List<HoursCalculator.Entry> closed(List<EntryView> entries) {
+    /** Registos fechados, cada um com os feriados nacionais do país da sua obra. */
+    private static List<HoursCalculator.Entry> closed(List<EntryView> entries, Map<UUID, Set<LocalDate>> siteHolidays) {
         return entries.stream().filter(e -> e.status().equals("CLOSED"))
-                .map(e -> new HoursCalculator.Entry(e.workDate(), e.startedAt(), e.endedAt(), ZoneId.of(e.timezone()), e.breakMin()))
+                .map(e -> new HoursCalculator.Entry(e.workDate(), e.startedAt(), e.endedAt(), ZoneId.of(e.timezone()), e.breakMin(),
+                        siteHolidays.getOrDefault(e.siteId(), Set.of())))
                 .toList();
     }
 

@@ -8,8 +8,11 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -18,6 +21,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
+import pt.andaime.policy.PublicHolidays;
 import pt.andaime.shared.api.ApiException;
 import pt.andaime.shared.tenant.OrgRole;
 import pt.andaime.shared.tenant.TenantContext;
@@ -45,10 +49,12 @@ class TimekeepingRepository {
     }
 
     private final JdbcTemplate jdbcTemplate;
+    private final PublicHolidays publicHolidays;
     private final java.time.Clock clock;
 
-    TimekeepingRepository(JdbcTemplate jdbcTemplate, java.time.Clock clock) {
+    TimekeepingRepository(JdbcTemplate jdbcTemplate, PublicHolidays publicHolidays, java.time.Clock clock) {
         this.jdbcTemplate = jdbcTemplate;
+        this.publicHolidays = publicHolidays;
         this.clock = clock;
     }
 
@@ -140,16 +146,18 @@ class TimekeepingRepository {
         return a.isBefore(b) ? a : b;
     }
 
-    /** Política em vigor numa data, com os feriados da semana que começa em {@code monday}. */
+    /**
+     * Política em vigor numa data, com os feriados da semana que começa em {@code monday}: os da empresa e os
+     * nacionais do país da empresa. Os nacionais do país de cada obra entram registo a registo
+     * ({@link #siteHolidays}).
+     */
     PolicyRow policyAt(LocalDate monday, LocalDate effectiveOn) {
-        var holidays = new HashSet<LocalDate>(jdbcTemplate.query("""
-                SELECT holiday_date FROM org_holidays WHERE holiday_date BETWEEN ? AND ?
-                UNION
-                SELECT holiday.holiday_date FROM public_holidays holiday
-                JOIN organizations organization ON organization.id = app.current_org_id() AND organization.country = holiday.country
-                WHERE holiday.region = '' AND holiday.holiday_date BETWEEN ? AND ?
-                """, (resultSet, rowNumber) -> resultSet.getObject(1, LocalDate.class), monday, monday.plusDays(6), monday,
-                monday.plusDays(6)));
+        var sunday = monday.plusDays(6);
+        var holidays = new HashSet<LocalDate>(jdbcTemplate.query("SELECT holiday_date FROM org_holidays WHERE holiday_date BETWEEN ? AND ?",
+                (resultSet, rowNumber) -> resultSet.getObject(1, LocalDate.class), monday, sunday));
+        var country = jdbcTemplate.query("SELECT country FROM organizations WHERE id = app.current_org_id()",
+                (resultSet, rowNumber) -> resultSet.getString(1).strip()).stream().findFirst();
+        country.ifPresent(c -> holidays.addAll(publicHolidays.dates(List.of(c), monday, sunday).getOrDefault(c, Set.of())));
         return jdbcTemplate.query("""
                 SELECT daily_normal_min, weekly_normal_min, rest_days, overnight_attribution, auto_break_after_min, auto_break_min
                 FROM labor_policies WHERE country IS NULL AND effective_during @> ?::date
@@ -191,13 +199,38 @@ class TimekeepingRepository {
                 employeeId).stream().findFirst().orElseThrow(TimekeepingRepository::notFound);
     }
 
+    /**
+     * Feriados nacionais do país de cada obra, entre {@code from} e {@code to} (com um dia a mais em cada ponta,
+     * para os turnos que passam a meia-noite).
+     */
+    Map<UUID, Set<LocalDate>> siteHolidays(Collection<UUID> siteIds, LocalDate from, LocalDate to) {
+        var countries = new HashMap<UUID, String>();
+        if (!siteIds.isEmpty()) {
+            jdbcTemplate.query("SELECT id, country FROM sites WHERE id = ANY (?::uuid[])", resultSet -> {
+                countries.put(resultSet.getObject(1, UUID.class), resultSet.getString(2).strip());
+            }, (Object) siteIds.stream().distinct().map(UUID::toString).toArray(String[]::new));
+        }
+        var byCountry = publicHolidays.dates(countries.values(), from.minusDays(1), to.plusDays(1));
+        var result = new HashMap<UUID, Set<LocalDate>>();
+        countries.forEach((site, country) -> result.put(site, byCountry.getOrDefault(country, Set.of())));
+        return result;
+    }
+
     HoursCalculator.Week week(UUID employeeId, LocalDate monday) {
-        var entries = jdbcTemplate.query("""
-                SELECT work_date, started_at, ended_at, timezone, break_min FROM time_entries
+        var sunday = monday.plusDays(6);
+        var rows = jdbcTemplate.query("""
+                SELECT work_date, started_at, ended_at, timezone, break_min, site_id FROM time_entries
                 WHERE employee_id = ? AND status = 'CLOSED' AND work_date BETWEEN ? AND ?
-                """, (resultSet, rowNumber) -> new HoursCalculator.Entry(resultSet.getObject(1, LocalDate.class),
-                resultSet.getObject(2, OffsetDateTime.class).toInstant(), resultSet.getObject(3, OffsetDateTime.class).toInstant(),
-                ZoneId.of(resultSet.getString(4)), resultSet.getInt(5)), employeeId, monday, monday.plusDays(6));
+                """, (resultSet, rowNumber) -> Map.entry(resultSet.getObject(6, UUID.class), new HoursCalculator.Entry(
+                resultSet.getObject(1, LocalDate.class), resultSet.getObject(2, OffsetDateTime.class).toInstant(),
+                resultSet.getObject(3, OffsetDateTime.class).toInstant(), ZoneId.of(resultSet.getString(4)), resultSet.getInt(5))),
+                employeeId, monday, sunday);
+        var holidays = siteHolidays(rows.stream().map(Map.Entry::getKey).toList(), monday, sunday);
+        var entries = rows.stream().map(row -> {
+            var entry = row.getValue();
+            return new HoursCalculator.Entry(entry.workDate(), entry.startedAt(), entry.endedAt(), entry.zone(), entry.breakMin(),
+                    holidays.getOrDefault(row.getKey(), Set.of()));
+        }).toList();
         return HoursCalculator.week(monday, entries, policy(monday).policy());
     }
 

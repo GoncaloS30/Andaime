@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import pt.andaime.policy.PublicHolidays;
 import pt.andaime.policy.application.PolicyService;
 import pt.andaime.policy.application.PolicyService.Holiday;
 import pt.andaime.policy.application.PolicyService.LaborPolicy;
@@ -44,6 +45,11 @@ public class PolicyController {
     @GetMapping("/holidays")
     List<Holiday> holidays(@PathVariable UUID orgId, @RequestParam int year) {
         return policy.holidays(year);
+    }
+
+    @GetMapping("/public-holidays")
+    List<PublicHolidays.Holiday> publicHolidays(@PathVariable UUID orgId, @RequestParam String country, @RequestParam int year) {
+        return policy.publicHolidays(country, year);
     }
 
     @PostMapping("/holidays")

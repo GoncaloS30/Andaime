@@ -34,6 +34,28 @@ export interface RetentionInput {
   version: number
 }
 
+/** Feriado nacional (só leitura), calculado pelo servidor para o país e o ano. */
+export interface PublicHoliday {
+  date: string
+  name: string
+}
+
+/** Países com calendário de feriados nacionais no servidor (`NationalHolidays.SUPPORTED`). */
+export const PUBLIC_HOLIDAY_COUNTRIES: { code: string; name: string }[] = [
+  { code: 'PT', name: 'Portugal' },
+  { code: 'ES', name: 'Espanha' },
+  { code: 'FR', name: 'França' },
+  { code: 'BE', name: 'Bélgica' },
+  { code: 'LU', name: 'Luxemburgo' },
+  { code: 'NL', name: 'Países Baixos' },
+  { code: 'DE', name: 'Alemanha' },
+  { code: 'AT', name: 'Áustria' },
+  { code: 'IT', name: 'Itália' },
+  { code: 'IE', name: 'Irlanda' },
+  { code: 'GB', name: 'Reino Unido (Inglaterra e País de Gales)' },
+  { code: 'CH', name: 'Suíça (só o feriado federal)' },
+]
+
 export interface SupportGrant {
   id: string
   platformUserEmail: string
@@ -62,6 +84,14 @@ export function useSaveLaborPolicy(orgId: string) {
 
 export const useHolidays = (orgId: string, year: number) =>
   useQuery({ queryKey: ['org', orgId, 'policy', 'holidays', year], queryFn: () => api<Holiday[]>(`${base(orgId)}/holidays?year=${year}`) })
+
+export const usePublicHolidays = (orgId: string, country: string, year: number) =>
+  useQuery({
+    queryKey: ['org', orgId, 'policy', 'public-holidays', country, year],
+    queryFn: () => api<PublicHoliday[]>(`${base(orgId)}/public-holidays?country=${encodeURIComponent(country)}&year=${year}`),
+    enabled: country !== '',
+    staleTime: Infinity,
+  })
 
 export function useHolidayAction(orgId: string) {
   const qc = useQueryClient()

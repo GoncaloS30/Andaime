@@ -15,6 +15,10 @@ andaime:
   # As tarefas agendadas são chamadas diretamente pelos testes.
   jobs:
     enabled: false
+  # Os testes usam datas relativas a hoje: sem feriados nacionais no cálculo de horas, exceto em
+  # PublicHolidaysIntegrationTest, que os liga explicitamente.
+  holidays:
+    national-in-hours: false
 
 springdoc:
   api-docs:

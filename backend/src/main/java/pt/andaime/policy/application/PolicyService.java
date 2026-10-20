@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import pt.andaime.audit.AuditLog;
+import pt.andaime.policy.PublicHolidays;
 import pt.andaime.shared.api.ApiException;
 import pt.andaime.shared.tenant.OrgRole;
 import pt.andaime.shared.tenant.TenantContext;
@@ -39,11 +40,13 @@ public class PolicyService {
 
     private final JdbcTemplate jdbcTemplate;
     private final AuditLog auditLog;
+    private final PublicHolidays publicHolidays;
     private final Clock clock;
 
-    public PolicyService(JdbcTemplate jdbcTemplate, AuditLog auditLog, Clock clock) {
+    public PolicyService(JdbcTemplate jdbcTemplate, AuditLog auditLog, PublicHolidays publicHolidays, Clock clock) {
         this.jdbcTemplate = jdbcTemplate;
         this.auditLog = auditLog;
+        this.publicHolidays = publicHolidays;
         this.clock = clock;
     }
 
@@ -114,6 +117,25 @@ public class PolicyService {
                 SELECT id, holiday_date, name FROM org_holidays WHERE extract(year FROM holiday_date) = ? ORDER BY holiday_date
                 """, (resultSet, rowNumber) -> new Holiday(resultSet.getObject(1, UUID.class), resultSet.getObject(2, LocalDate.class),
                 resultSet.getString(3)), year);
+    }
+
+    /**
+     * Feriados nacionais de um país suportado (só leitura): os regionais e municipais acrescentam-se como feriados
+     * da empresa.
+     */
+    @Transactional(readOnly = true)
+    public List<PublicHolidays.Holiday> publicHolidays(String country, int year) {
+        OrgRole.require(OrgRole.FOREMAN);
+        var code = country == null ? "" : country.strip().toUpperCase(java.util.Locale.ROOT);
+        if (!PublicHolidays.supportedCountries().contains(code)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "unsupported-country",
+                    "Ainda não há calendário de feriados nacionais para esse país.")
+                    .with("supported", PublicHolidays.supportedCountries());
+        }
+        if (year < 2000 || year > 2100) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "validation", "Ano inválido.");
+        }
+        return publicHolidays.national(code, year);
     }
 
     @Transactional

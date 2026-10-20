@@ -48,6 +48,24 @@ class HoursCalculatorTest {
     }
 
     @Test
+    void feriadoDoPaisDaObraSoContaNosRegistosDessaObra() {
+        // Terça é feriado no país da obra A: o registo nessa obra é todo extra; na quarta, noutra obra, é normal.
+        var tuesday = MONDAY.plusDays(1);
+        var wednesday = MONDAY.plusDays(2);
+        var atSiteA = entry(tuesday, "08:00", "12:00", 0);
+        var siteA = new Entry(atSiteA.workDate(), atSiteA.startedAt(), atSiteA.endedAt(), LISBON, 0, Set.of(tuesday, wednesday));
+        var week = HoursCalculator.week(MONDAY, List.of(siteA, entry(wednesday, "08:00", "12:00", 0)), PT);
+        assertThat(week.days().get(1)).satisfies(d -> {
+            assertThat(d.restDay()).isTrue();
+            assertThat(d.overtimeMin()).isEqualTo(240);
+        });
+        assertThat(week.days().get(2)).satisfies(d -> {
+            assertThat(d.restDay()).isFalse();
+            assertThat(d.normalMin()).isEqualTo(240);
+        });
+    }
+
+    @Test
     void limiteSemanalPassaOExcessoAExtra() {
         var policy = new Policy(600, 2400, Set.of(6, 7), Set.of(), "START_DAY");
         var entries = List.of(0, 1, 2, 3, 4).stream().map(i -> entry(MONDAY.plusDays(i), "07:00", "17:00", 0)).toList();

@@ -8,10 +8,12 @@ import { Checkbox, Field, Input, Select, Textarea } from '@/ui/Field'
 import { Panel } from '@/ui/Layout'
 import { ErrorState, SkeletonRows } from '@/ui/States'
 import {
+  PUBLIC_HOLIDAY_COUNTRIES,
   useHolidayAction,
   useHolidays,
   useLaborPolicy,
   useRetentionPolicy,
+  usePublicHolidays,
   useSaveLaborPolicy,
   useSaveRetentionPolicy,
   useSupportAction,
@@ -19,6 +21,7 @@ import {
   type LaborPolicy,
   type RetentionPolicy,
 } from '../../api/admin'
+import { useOrganization } from '../../api/hooks'
 import { errorMessage, isApiError } from '../../api/http'
 import { atLeast } from '../../api/types'
 import { formatDate } from '../../api/workforce'
@@ -31,8 +34,8 @@ const minutes = (h: string) => Math.round(Number(h.replace(',', '.')) * 60)
 const when = new Intl.DateTimeFormat('pt-PT', { dateStyle: 'short', timeStyle: 'short' })
 
 /**
- * Definições → Regras e suporte: política laboral, feriados da empresa, conservação de dados e acesso temporário do
- * suporte. Os gestores só vêem a conservação de dados, sem poder alterar.
+ * Definições → Regras e suporte: política laboral, feriados (nacionais e da empresa), conservação de dados e acesso
+ * temporário do suporte. Os gestores só vêem a conservação de dados, sem poder alterar.
  */
 export function RulesPage() {
   const org = useActiveOrg()
@@ -218,8 +221,8 @@ function HolidaysPanel() {
   const [name, setName] = useState('')
   return (
     <Panel
-      title="Feriados da empresa"
-      description="Feriados municipais ou dias de encerramento: o trabalho nesses dias conta como extra."
+      title="Feriados"
+      description="O trabalho em feriados conta como extra. Os nacionais entram automaticamente no cálculo das horas, conforme o país da empresa e o de cada obra."
       actions={
         <Select aria-label="Ano" value={year} onChange={(e) => setYear(Number(e.target.value))} className="h-8 w-28">
           {[year - 1, year, year + 1].map((y) => (
@@ -230,41 +233,93 @@ function HolidaysPanel() {
         </Select>
       }
     >
-      <div className="flex flex-col gap-3">
-        {(holidays.data ?? []).length === 0 ? (
-          <p className="text-sm text-ink-3">Sem feriados próprios em {year}.</p>
-        ) : (
-          <ul className="flex flex-col divide-y divide-line-2">
-            {holidays.data!.map((h) => (
-              <li key={h.id} className="flex items-center justify-between py-1.5 text-sm">
-                <span>
-                  <span className="font-semibold tabular">{formatDate(h.date)}</span> · {h.name}
-                </span>
-                <IconButton label={`Remover ${h.name}`} size="sm" onClick={() => action.mutate({ action: 'remove', id: h.id }, { onError: (e) => toast.error(errorMessage(e)) })}>
-                  <Trash2 className="size-4" />
-                </IconButton>
-              </li>
-            ))}
-          </ul>
-        )}
-        <form
-          className="flex flex-wrap items-end gap-2"
-          onSubmit={(e) => {
-            e.preventDefault()
-            action.mutate(
-              { action: 'add', date, name: name.trim() },
-              { onSuccess: () => (toast.success('Feriado adicionado'), setName(''), setDate('')), onError: (err) => toast.error(errorMessage(err)) },
-            )
-          }}
-        >
-          <Field label="Data">{(p) => <Input {...p} type="date" value={date} onChange={(e) => setDate(e.target.value)} />}</Field>
-          <Field label="Nome">{(p) => <Input {...p} value={name} maxLength={120} onChange={(e) => setName(e.target.value)} placeholder="Feriado municipal" />}</Field>
-          <Button type="submit" icon={<Plus className="size-4" />} disabled={!date || name.trim().length < 2} loading={action.isPending}>
-            Adicionar
-          </Button>
-        </form>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <NationalHolidays year={year} />
+        <div className="flex flex-col gap-3">
+          <h3 className="text-sm font-semibold text-ink">Feriados da empresa</h3>
+          <p className="text-xs text-ink-3">Feriados municipais ou regionais e dias de encerramento.</p>
+          {(holidays.data ?? []).length === 0 ? (
+            <p className="text-sm text-ink-3">Sem feriados próprios em {year}.</p>
+          ) : (
+            <ul className="flex flex-col divide-y divide-line-2">
+              {holidays.data!.map((h) => (
+                <li key={h.id} className="flex items-center justify-between py-1.5 text-sm">
+                  <span>
+                    <span className="font-semibold tabular">{formatDate(h.date)}</span> · {h.name}
+                  </span>
+                  <IconButton label={`Remover ${h.name}`} size="sm" onClick={() => action.mutate({ action: 'remove', id: h.id }, { onError: (e) => toast.error(errorMessage(e)) })}>
+                    <Trash2 className="size-4" />
+                  </IconButton>
+                </li>
+              ))}
+            </ul>
+          )}
+          <form
+            className="flex flex-wrap items-end gap-2"
+            onSubmit={(e) => {
+              e.preventDefault()
+              action.mutate(
+                { action: 'add', date, name: name.trim() },
+                { onSuccess: () => (toast.success('Feriado adicionado'), setName(''), setDate('')), onError: (err) => toast.error(errorMessage(err)) },
+              )
+            }}
+          >
+            <Field label="Data">{(p) => <Input {...p} type="date" value={date} onChange={(e) => setDate(e.target.value)} />}</Field>
+            <Field label="Nome">{(p) => <Input {...p} value={name} maxLength={120} onChange={(e) => setName(e.target.value)} placeholder="Feriado municipal" />}</Field>
+            <Button type="submit" icon={<Plus className="size-4" />} disabled={!date || name.trim().length < 2} loading={action.isPending}>
+              Adicionar
+            </Button>
+          </form>
+        </div>
       </div>
     </Panel>
+  )
+}
+
+/** Lista só de leitura dos feriados nacionais; por omissão, os do país da empresa. */
+function NationalHolidays({ year }: { year: number }) {
+  const org = useActiveOrg()
+  const organization = useOrganization(org.id)
+  const orgCountry = organization.data?.country ?? ''
+  const [chosen, setChosen] = useState<string | null>(null)
+  const supported = PUBLIC_HOLIDAY_COUNTRIES.some((c) => c.code === orgCountry)
+  const country = chosen ?? (supported ? orgCountry : organization.isPending ? '' : 'PT')
+  const holidays = usePublicHolidays(org.id, country, year)
+  return (
+    <section className="flex flex-col gap-3" aria-labelledby="feriados-nacionais">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 id="feriados-nacionais" className="text-sm font-semibold text-ink">
+          Feriados nacionais
+        </h3>
+        <Select aria-label="País dos feriados nacionais" value={country} onChange={(e) => setChosen(e.target.value)} className="h-8 w-auto max-w-full">
+          {country === '' && <option value="">—</option>}
+          {PUBLIC_HOLIDAY_COUNTRIES.map((c) => (
+            <option key={c.code} value={c.code}>
+              {c.name}
+            </option>
+          ))}
+        </Select>
+      </div>
+      <p className="text-xs text-ink-3">
+        Só os feriados comuns a todo o país. Os feriados regionais e municipais (e, em Portugal, o Carnaval) não estão incluídos: acrescente-os como feriados da empresa.
+        {orgCountry !== '' && !supported && ' O país da empresa ainda não tem calendário de feriados nacionais.'}
+      </p>
+      {holidays.isPending ? (
+        country === '' ? null : <SkeletonRows rows={4} />
+      ) : holidays.isError ? (
+        <ErrorState onRetry={() => void holidays.refetch()} />
+      ) : holidays.data.length === 0 ? (
+        <p className="text-sm text-ink-3">Sem feriados nacionais em {year}.</p>
+      ) : (
+        <ul className="flex flex-col divide-y divide-line-2">
+          {holidays.data.map((h) => (
+            <li key={h.date} className="py-1.5 text-sm">
+              <span className="font-semibold tabular">{formatDate(h.date)}</span> · {h.name}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   )
 }
 
