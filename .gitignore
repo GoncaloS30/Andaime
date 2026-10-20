@@ -15,3 +15,6 @@ infra/.env
 
 # Definições pessoais do IntelliJ
 .idea/
+
+# Backups locais (scripts/ops/backup.sh)
+backups/

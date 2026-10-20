@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { ENCARREGADO_NAV, GESTOR_MOBILE, GESTOR_NAV, type NavGroup, type NavItem } from '@/app/nav'
 import { LogoMark, Wordmark } from '@/app/shell/Logo'
 import { cn } from '@/lib/cn'
-import { Avatar } from '@/ui/Avatar'
+import { Avatar, initials } from '@/ui/Avatar'
 import { Menu } from '@/ui/Menu'
 import { NotificationBell } from './NotificationBell'
 import { Drawer } from '@/ui/Overlay'
@@ -66,8 +66,8 @@ function OrganizationSwitcher({ onDark }: { onDark?: boolean }) {
             'flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-left',
             onDark ? 'hover:bg-white/8' : 'border border-line bg-surface hover:border-ink-4',
           )}
-          aria-label={`Empresa: ${org.name}. Mudar de empresa`}
         >
+          <span className="sr-only">Mudar de empresa: </span>
           <span className="min-w-0 flex-1">
             <span className={cn('block truncate text-xs font-medium', onDark ? 'text-white/85' : 'text-ink')}>{org.name}</span>
             <span className={cn('block text-[11px]', onDark ? 'text-white/60' : 'text-ink-3')}>{ORG_ROLE_LABEL[org.role]}</span>
@@ -172,7 +172,7 @@ function UserMenu() {
     <Menu
       items={items}
       trigger={
-        <button type="button" className="rounded-full focus-visible:ring-2 focus-visible:ring-pinho/30" aria-label={`Conta de ${me.user.displayName}`}>
+        <button type="button" className="rounded-full focus-visible:ring-2 focus-visible:ring-pinho/30" aria-label={`Conta de ${me.user.displayName} (${initials(me.user.displayName)})`}>
           <Avatar name={me.user.displayName} color="#24543f" size="sm" />
         </button>
       }

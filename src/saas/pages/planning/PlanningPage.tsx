@@ -372,7 +372,7 @@ function Chip({
   const color = site?.color ?? '#7d847f'
   const conflict = conflicts?.find((c) => c.severity === 'BLOCK') ?? conflicts?.[0]
   const vehicle = a.vehicleId ? lookups.vehicles.get(a.vehicleId) : undefined
-  const text = `${context ? `${context}: ` : ''}${site?.code ?? 'Obra'} ${hhmm(a.start)}–${hhmm(a.end)}, ${minutesToHours(a.plannedMin)}${a.foreman ? ', responsável' : ''}${vehicle ? `, viatura ${vehicle.plate}` : ''}${conflict ? `. Conflito: ${conflict.title}` : ''}`
+  const details = `, ${minutesToHours(a.plannedMin)}${a.foreman ? ', responsável' : ''}${vehicle ? `, viatura ${vehicle.plate}` : ''}${conflict ? `. Conflito: ${conflict.title}` : ''}`
   return (
     <button
       ref={ghost ? undefined : setNodeRef}
@@ -380,7 +380,6 @@ function Chip({
       {...(ghost ? {} : attributes)}
       {...(ghost ? {} : listeners)}
       onClick={onOpen}
-      aria-label={text}
       data-assignment={a.id}
       className={cn(
         'relative flex w-full min-w-0 flex-col overflow-hidden rounded-xs border-l-[3px] bg-surface px-1.5 py-1 text-left hatch [--hatch:color-mix(in_oklab,var(--chip)_22%,transparent)]',
@@ -393,9 +392,12 @@ function Chip({
       )}
       style={{ ['--chip' as string]: color, borderLeftColor: color }}
     >
+      {context && <span className="sr-only">{context}: </span>}
       <span className="truncate font-mono text-[11px] leading-tight font-semibold text-ink">{site?.code ?? 'Obra'}</span>
+      <span className="sr-only"> </span>
       <span className="flex items-center gap-1 font-mono text-[10px] leading-tight text-ink-2 tabular">
         {hhmm(a.start)}–{hhmm(a.end)}
+        <span className="sr-only">{details}</span>
         {a.foreman && <Crown aria-hidden className="size-2.5 shrink-0 text-ambar-ink" />}
         {vehicle && <Truck aria-hidden className="size-2.5 shrink-0 text-ink-3" />}
       </span>

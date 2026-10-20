@@ -152,7 +152,7 @@ export function EquipmentPage() {
             {(movements.data ?? []).length === 0 ? (
               <p className="px-4 py-3 text-sm text-ink-3">Sem movimentos.</p>
             ) : (
-              <ul className="max-h-[420px] divide-y divide-line-2 overflow-y-auto">
+              <ul className="max-h-[420px] divide-y divide-line-2 overflow-y-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-pinho/30" tabIndex={0} aria-label="Últimos movimentos">
                 {movements.data!.map((m) => (
                   <li key={m.id} className="px-4 py-2 text-sm">
                     <span className="font-semibold">{MOVEMENT_LABEL[m.kind]}</span> · {m.quantity}× {m.itemName}

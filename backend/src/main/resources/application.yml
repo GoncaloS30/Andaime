@@ -1,5 +1,10 @@
 server:
   port: 8088
+  # Respostas JSON grandes (ex.: quadro de planeamento com centenas de pessoas) comprimidas.
+  compression:
+    enabled: true
+    mime-types: application/json,application/problem+json
+    min-response-size: 2KB
   forward-headers-strategy: framework
   servlet:
     session:

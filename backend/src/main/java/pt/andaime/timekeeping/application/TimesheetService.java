@@ -74,9 +74,12 @@ public class TimesheetService {
         var teams = teams(monday);
         var policy = repository.policy(monday).policy();
         var result = new ArrayList<TimesheetSummary>();
+        // Agrupado uma vez por trabalhador (com centenas de pessoas, filtrar a lista inteira por cada uma é quadrático).
+        var entriesBy = entries.stream().collect(java.util.stream.Collectors.groupingBy(EntryView::employeeId));
+        var plannedBy = planned.stream().collect(java.util.stream.Collectors.groupingBy(PlannedView::employeeId));
         for (var employee : employees) {
-            var mine = entries.stream().filter(e -> e.employeeId().equals(employee)).toList();
-            var plan = planned.stream().filter(p -> p.employeeId().equals(employee)).toList();
+            var mine = entriesBy.getOrDefault(employee, List.of());
+            var plan = plannedBy.getOrDefault(employee, List.of());
             var summary = summary(employee, names.get(employee), teams.get(employee), monday, mine, plan,
                     sheets.get(employee), policy);
             if (status == null || status.isBlank() || summary.status().equals(status)) {
