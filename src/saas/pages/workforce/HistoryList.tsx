@@ -23,6 +23,12 @@ const ACTION: Record<string, string> = {
   'site.restored': 'Repôs a obra',
   'site.issue-reported': 'Comunicou uma ocorrência',
   'site.issue-resolved': 'Resolveu uma ocorrência',
+  'site.diary-created': 'Escreveu no diário',
+  'site.diary-updated': 'Alterou um registo do diário',
+  'site.diary-deleted': 'Apagou um registo do diário',
+  'site.diary-photo-added': 'Juntou fotos ao diário',
+  'site.diary-photo-removed': 'Removeu uma foto do diário',
+  'site.diary-exported': 'Exportou o diário',
   'client.created': 'Criou o cliente',
   'client.updated': 'Alterou o cliente',
 }

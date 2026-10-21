@@ -8,6 +8,7 @@ import { InvitePage, OnboardingPage } from './pages/auth/OnboardingPages'
 import { ManagerHome, MODULES, ModuleUnavailable, NotFoundPage, WorkerHome } from './pages/HomePages'
 import { ClientsPage, ForemanHomePage, ForemanIssuesPage, GeoMapPage } from './pages/sites/MorePages'
 import { NewSitePage, SiteDetailPage, SitesPage } from './pages/sites/SitesPages'
+import { ForemanDiaryPage } from './pages/sites/DiaryPages'
 import { TeamDetailPage, TeamsPage } from './pages/workforce/TeamsPages'
 import { WorkerDetailPage, WorkersPage } from './pages/workforce/WorkersPages'
 import { PlatformPage } from './pages/PlatformPage'
@@ -89,6 +90,7 @@ export const router = createBrowserRouter([
               { index: true, element: gestor(<ManagerHome />) },
               { path: 'encarregado', element: encarregado(<ForemanHomePage />) },
               { path: 'encarregado/problemas', element: encarregado(<ForemanIssuesPage />) },
+              { path: 'encarregado/diario', element: encarregado(<ForemanDiaryPage />) },
               { path: 'trabalhadores', element: both(<WorkersPage />) },
               { path: 'trabalhadores/:id', element: both(<WorkerDetailPage />) },
               { path: 'equipas', element: both(<TeamsPage />) },

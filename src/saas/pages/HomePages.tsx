@@ -12,6 +12,7 @@ import { useEmployees, useSites, useTeams } from '../api/workforce'
 import { useActiveOrg, useSession } from '../session'
 import { MyStaysCard } from './lodging/StayCards'
 import { WorkerSections } from './operations/WorkerSections'
+import { RecentDiaryPanel } from './sites/DiaryPages'
 import { DelayBadge } from './sites/SitesPages'
 import { MySchedule } from './timekeeping/MySchedule'
 import { WorkerClock } from './timekeeping/WorkerClock'
@@ -21,7 +22,6 @@ import { WorkerClock } from './timekeeping/WorkerClock'
  * o ecrã diz isso mesmo, em vez de mostrar dados fictícios.
  */
 export const MODULES: { path: string; label: string; phase: string }[] = [
-  { path: '/encarregado/diario', label: 'Diário de obra', phase: 'depois de F6' },
 ]
 
 const PHASE_TEXT: Record<string, string> = {
@@ -105,6 +105,7 @@ export function ManagerHome() {
           </ul>
         </Panel>
       )}
+      <RecentDiaryPanel />
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <Panel title="Primeiros passos">
           <ol className="divide-y divide-line-2 px-4">

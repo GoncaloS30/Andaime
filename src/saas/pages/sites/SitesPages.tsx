@@ -39,6 +39,7 @@ import { COUNTRIES } from '../auth/OnboardingPages'
 import { HistoryList } from '../workforce/HistoryList'
 import { SiteLodging } from '../lodging/SiteLodging'
 import { PhotoControls } from '../shared/PhotoControls'
+import { SiteDiary } from './SiteDiary'
 import { SiteForm } from './SiteForm'
 
 const SiteMap = lazy(async () => ({ default: (await import('@/features/shared/SiteMap')).SiteMap }))
@@ -474,7 +475,8 @@ export function SiteDetailPage() {
   const save = useSaveSite(org.id, id)
   const archive = useArchiveSite(org.id, id)
   const photo = usePhoto(org.id, 'sites', id)
-  const [tab, setTab] = useState('resumo')
+  const [searchParams] = useSearchParams()
+  const [tab, setTab] = useState(() => searchParams.get('separador') ?? 'resumo')
   const [editing, setEditing] = useState(false)
   const [reporting, setReporting] = useState(false)
 
@@ -560,6 +562,7 @@ export function SiteDetailPage() {
           { value: 'resumo', label: 'Resumo' },
           { value: 'localizacao', label: 'Localização' },
           { value: 'ocorrencias', label: 'Ocorrências', count: openCount, tone: 'warn' },
+          { value: 'diario', label: 'Diário' },
           ...(manager ? [{ value: 'alojamento', label: 'Alojamento' }] : []),
           ...(manager ? [{ value: 'historico', label: 'Histórico' }] : []),
         ]}
@@ -599,6 +602,9 @@ export function SiteDetailPage() {
         </TabPanel>
         <TabPanel value="ocorrencias">
           <Panel flush>{issues.isPending ? <SkeletonRows rows={3} /> : issues.isError ? <ErrorState onRetry={() => void issues.refetch()} /> : <IssueList issues={issues.data} canResolve />}</Panel>
+        </TabPanel>
+        <TabPanel value="diario">
+          <SiteDiary siteId={s.id} siteLabel={`${s.code} · ${s.name}`} />
         </TabPanel>
         {manager && (
           <TabPanel value="alojamento">
