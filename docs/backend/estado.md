@@ -477,6 +477,49 @@ Primeira fase das lacunas face à V3.1 (análise em `lacunas-v31.md`, não versi
 - **"Como correu a semana"** nos mapas semanais: horas por dia (realizadas cheias, planeadas tracejadas), por obra e por pessoa, com tabela.
 - **Verificação:** `TimekeepingIntegrationTest` (grelha: ajustar, criar, anular, motivo obrigatório; totais por dia; dimensões inválidas); `tsc` e `eslint` limpos.
 
+### F8.4 — dormidas e hotéis (2026-10-21)
+
+- **Modelo (V29):**
+  - `hotels` por obra: nome único na obra sem acentos (`app.fold_name`); remover arquiva o hotel;
+  - `stays` por pessoa × obra × semana: `hotel_id` nulo = "por definir", `check_out > check_in`, no máximo 14 noites;
+  - `employees.home_latitude/home_longitude`: as duas ou nenhuma, só visíveis para gestores e apagadas na anonimização.
+- **Módulo `lodging`:**
+  - `GET /lodging/week?week=` junta a escala (`assignments`, sem os dias de ausência aprovada de dia inteiro) às estadias;
+  - devolve os dias, as datas propostas, as noites, o "longe de casa", os hotéis da obra, o resumo e as estadias sem escala, que nunca se apagam sozinhas;
+  - "longe de casa" quer dizer outro país face à empresa ou mais de 100 km; sem coordenadas fica "desconhecido";
+  - as regras puras estão em `StayRules`, com os testes de `stays.ts` do protótipo.
+- **Estadias:**
+  - `PUT /lodging/stays` é idempotente e avisa o trabalhador (só na app);
+  - `DELETE /lodging/stays/{id}`;
+  - `GET /me/stays?week=`;
+  - `GET /employees/{id}/stays`, para o gestor ou o próprio.
+- **Hotéis:**
+  - CRUD em `/lodging/hotels`, com as noites levadas e a última entrada;
+  - remover um hotel passa a "por definir" as estadias ainda não terminadas; as passadas guardam o hotel arquivado, para o histórico.
+- **Frontend:**
+  - página Dormidas (semana, resumo, "Só longe de casa", marcar e remover, estadias sem escala);
+  - separador Alojamento na obra e separador Estadias na ficha;
+  - cartão "Onde durmo esta semana" na app;
+  - coordenadas da residência no formulário, com lista de cidades.
+- **Verificação:** `StayRulesTest` (6), `LodgingIntegrationTest`, `ModularityTest`, `WorkforceSitesIntegrationTest` (5); `tsc` e `eslint` limpos.
+- **Falta:**
+  - fotos de hotéis, Excel da semana e painel no dashboard;
+  - importação do Lyrical e estadias na exportação RGPD.
+
+### F8.7 — livro de horas do RH e férias em .ics (2026-10-21)
+
+- **Exportação `HR_BOOK`** na fila de `report_exports`:
+  - V32: `kind` aceita `HR_BOOK`, e `template` só é obrigatório no mapa semanal;
+  - `POST /reporting/exports {kind:"HR_BOOK", month}` gera um Excel com a folha "Tabelas" (código normal e escalões de extra da política laboral; 801/802 por omissão) e uma folha "Nome-Número" por pessoa;
+  - as colunas são Data, Horas, Obra, Atividade (fórmula para "Tabelas" com o valor em cache), Ordem e Ausência;
+  - entram só as horas aprovadas; as ausências aprovadas entram com 0 h em dias úteis e sem a nota (RGPD).
+- **`GET /reporting/hr-book?month=`:** pré-visualização, com os dias por aprovar que ficam de fora.
+- **`GET /absences/export.ics`:** férias aprovadas em iCalendar (dia inteiro, fim exclusivo, UID estável: reimportar não duplica).
+- **Frontend:** vista "Livro do RH" em Horas, para o gestor.
+- **Verificação:** `HrBookTest` (7), `VacationCalendarTest` (3), `HrBookIntegrationTest` (Excel e .ics lidos de volta), `ReportingIntegrationTest` e `ModularityTest`.
+- **A rever:** `TimesheetService.projectApproved` grava o código normal como `activity_code` também nas horas extra, e isso alimenta o mapa ERP semanal. O livro do RH calcula os códigos à parte.
+- **Falta:** OneDrive/Graph e importação do Lyrical.
+
 ### F8.6 — agenda e mapa de férias (2026-10-21)
 
 - **Agenda (V31):**
