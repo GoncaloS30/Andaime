@@ -477,6 +477,20 @@ Primeira fase das lacunas face à V3.1 (análise em `lacunas-v31.md`, não versi
 - **"Como correu a semana"** nos mapas semanais: horas por dia (realizadas cheias, planeadas tracejadas), por obra e por pessoa, com tabela.
 - **Verificação:** `TimekeepingIntegrationTest` (grelha: ajustar, criar, anular, motivo obrigatório; totais por dia; dimensões inválidas); `tsc` e `eslint` limpos.
 
+### F8.9 — importação do Lyrical para os módulos novos (2026-10-21)
+
+- **Ausências:** as férias e ausências entram como ausências aprovadas. Licença passa a `LEAVE` e Outra a `OTHER`; as faltas justificadas passam a `PERSONAL` e as injustificadas a `OTHER`, com a etiqueta original na nota. As sobreposições resolvem-se como no Lyrical.
+- **Hotéis:** por obra; nomes repetidos sem acentos nem maiúsculas juntam-se num só, como em `app.fold_name`.
+- **Dormidas:** passam a estadias pessoa × obra × semana (segunda-feira ISO). Uma estadia que viole as regras de `stays` é recusada, nunca se mexe nas datas. Sem hotel válido fica "por definir".
+- **Diário:** entra só o texto, com o dono como autor e o papel `MANAGER`; o autor original vai no fim do texto. As fotografias ficam de fora e são contadas.
+- **Nada se perde em silêncio:** `notImported` mostra, por tabela e motivo, quantas linhas não entraram e os ids do Lyrical. Antes do `COMMIT`, o SQL confirma as contagens de cada tabela.
+- **Compatibilidade:** bases antigas sem estes módulos continuam a importar. `calendar_events` fica vazia, porque o Lyrical não tem eventos próprios.
+- **Verificação:** `npm run test:lyrical-import` (12 testes, com bases SQLite fictícias em memória).
+
+### E2E da F8 (2026-10-21)
+
+- `e2e-saas/f8.spec.ts`, contra a API real: evento na agenda, estadia marcada a quem está longe de casa, registo no diário, correção na grelha da semana com motivo, totais e livro do RH. 4/4 a passar.
+
 ### F8.4 — dormidas e hotéis (2026-10-21)
 
 - **Modelo (V29):**
