@@ -3,8 +3,11 @@ import { randomUUID } from 'node:crypto';
 export const TEAM_COLORS = ['#2a78d6', '#d4652f', '#1a9e72', '#8a4fc7', '#c0457f', '#3f8a2a'];
 export const SITE_COLORS = ['#2a78d6', '#1a9e72', '#d4652f', '#8a4fc7', '#2196a8', '#c0457f'];
 
+// O PostgreSQL recusa o carácter nulo em texto; nunca tem significado nos dados do Lyrical.
+const clean = (value) => (value == null ? '' : String(value)).replaceAll('\u0000', '');
+
 const text = (value, max) => {
-  const normalized = value == null ? '' : String(value).trim();
+  const normalized = clean(value).trim();
   return normalized ? normalized.slice(0, max) : null;
 };
 
@@ -117,6 +120,312 @@ export function selectCurrentTeamMemberships(assignments) {
   return { memberships, ambiguous };
 }
 
+// --- datas -------------------------------------------------------------------------------------------
+
+/** Data ISO (AAAA-MM-DD) que existe no calendário: "2026-02-30" não passa. */
+export function isIsoDate(value) {
+  const candidate = String(value ?? '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(candidate)) return false;
+  const date = new Date(`${candidate}T00:00:00Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === candidate;
+}
+
+export function addDays(date, days) {
+  const result = new Date(`${date}T00:00:00Z`);
+  result.setUTCDate(result.getUTCDate() + days);
+  return result.toISOString().slice(0, 10);
+}
+
+export function daysBetween(from, to) {
+  return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
+}
+
+/** Segunda-feira da semana ISO que contém a data. */
+export function mondayOf(date) {
+  const weekday = new Date(`${date}T00:00:00Z`).getUTCDay();
+  return addDays(date, weekday === 0 ? -6 : 1 - weekday);
+}
+
+const trimmed = (value) => clean(value).trim();
+
+function rejection(rejected, table, id, reason) {
+  rejected.push({ table, id: Number(id), reason });
+}
+
+// --- ausências ---------------------------------------------------------------------------------------
+
+/**
+ * Tipos do Lyrical → tipos do Andaime. As férias vêm da tabela `ferias`; o resto de `ausencias.tipo`.
+ * Quando o tipo do Andaime é mais largo do que o do Lyrical, a etiqueta original vai para o início da nota.
+ */
+export const ABSENCE_KIND_MAP = Object.freeze({
+  ferias: { kind: 'VACATION' },
+  falta_justificada: { kind: 'PERSONAL', label: 'Falta justificada' },
+  falta_injustificada: { kind: 'OTHER', label: 'Falta injustificada' },
+  baixa: { kind: 'SICK' },
+  licenca: { kind: 'LEAVE' },
+  formacao: { kind: 'TRAINING' },
+  outra: { kind: 'OTHER' }
+});
+
+/**
+ * Férias e ausências do Lyrical como ausências aprovadas. Datas inválidas, fim antes do início ou períodos acima de
+ * 366 dias (limite da tabela) são recusados com motivo. Sobreposições do mesmo trabalhador — que o Andaime proíbe em
+ * dias inteiros — resolvem-se como no Lyrical: o dia fica com a primeira ausência (início, origem, id); a seguinte
+ * começa no dia depois e, se ficar coberta por inteiro, é recusada.
+ */
+export function mapAbsences({ vacations = [], absences = [] }, employeeIds) {
+  const rejected = [];
+  const transformations = { kindLabelInNote: 0, unknownTypes: 0, trimmedOverlaps: 0, notesTruncated: 0 };
+  const candidates = [];
+  const sources = [
+    ...vacations.map((row) => ({ origin: 'ferias', row, type: 'ferias' })),
+    ...absences.map((row) => ({ origin: 'ausencias', row, type: trimmed(row.tipo) }))
+  ];
+  for (const { origin, row, type } of sources) {
+    const employeeId = employeeIds.get(Number(row.trabalhador_id));
+    const startsOn = trimmed(row.data_inicio);
+    const endsOn = trimmed(row.data_fim);
+    if (!employeeId) { rejection(rejected, origin, row.id, 'colaborador-inexistente'); continue; }
+    if (!isIsoDate(startsOn) || !isIsoDate(endsOn)) { rejection(rejected, origin, row.id, 'data-invalida'); continue; }
+    if (endsOn < startsOn) { rejection(rejected, origin, row.id, 'fim-antes-do-inicio'); continue; }
+    if (daysBetween(startsOn, endsOn) > 366) { rejection(rejected, origin, row.id, 'periodo-acima-de-366-dias'); continue; }
+
+    let mapping = ABSENCE_KIND_MAP[type];
+    let label = mapping?.label ?? null;
+    if (!mapping) {
+      mapping = { kind: 'OTHER' };
+      label = type ? `Tipo no Lyrical: ${type}` : null;
+      transformations.unknownTypes += 1;
+    } else if (label) {
+      transformations.kindLabelInNote += 1;
+    }
+    let note = [label, text(row.observacoes, 10_000)].filter(Boolean).join(' — ');
+    if (note.length > 500) {
+      note = `${note.slice(0, 499)}…`;
+      transformations.notesTruncated += 1;
+    }
+    candidates.push({
+      origin,
+      legacyId: Number(row.id),
+      employeeId,
+      kind: mapping.kind,
+      startsOn,
+      endsOn,
+      note: note || null
+    });
+  }
+
+  const byEmployee = new Map();
+  for (const candidate of candidates) {
+    const list = byEmployee.get(candidate.employeeId) || [];
+    list.push(candidate);
+    byEmployee.set(candidate.employeeId, list);
+  }
+  const rows = [];
+  for (const list of byEmployee.values()) {
+    list.sort((a, b) => a.startsOn.localeCompare(b.startsOn) || a.origin.localeCompare(b.origin) || a.legacyId - b.legacyId);
+    let lastEnd = null;
+    for (const candidate of list) {
+      if (lastEnd && candidate.startsOn <= lastEnd) {
+        if (candidate.endsOn <= lastEnd) {
+          rejection(rejected, candidate.origin, candidate.legacyId, 'coberta-por-outra-ausencia');
+          continue;
+        }
+        candidate.startsOn = addDays(lastEnd, 1);
+        transformations.trimmedOverlaps += 1;
+      }
+      rows.push({ ...candidate, id: randomUUID() });
+      lastEnd = candidate.endsOn;
+    }
+  }
+  rows.sort((a, b) => a.startsOn.localeCompare(b.startsOn) || a.origin.localeCompare(b.origin) || a.legacyId - b.legacyId);
+  return { rows, rejected, transformations };
+}
+
+// --- hotéis e dormidas -------------------------------------------------------------------------------
+
+// O `unaccent` do PostgreSQL também desfaz estas letras, que o NFD não decompõe.
+const FOLD_EXTRA = { ø: 'o', æ: 'ae', œ: 'oe', ß: 'ss', ł: 'l', đ: 'd', ð: 'd', þ: 'th', ı: 'i' };
+
+/** Espelho de `app.fold_name` (V28): sem espaços nas pontas, sem acentos, em minúsculas. */
+export function foldName(value) {
+  return clean(value).trim().toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .replace(/[øæœßłđðþı]/g, (letter) => FOLD_EXTRA[letter]);
+}
+
+/**
+ * Hotéis por obra. Nomes repetidos na mesma obra (sem olhar a acentos, maiúsculas nem espaços repetidos) juntam-se
+ * no primeiro, que herda a morada, o contacto e as notas que lhe faltem; as dormidas dos repetidos apontam para ele.
+ */
+export function mapHotels(rows, siteIds) {
+  const hotels = [];
+  const byLegacy = new Map();
+  const byKey = new Map();
+  const rejected = [];
+  let merged = 0;
+  for (const row of [...rows].sort((a, b) => Number(a.id) - Number(b.id))) {
+    const legacyId = Number(row.id);
+    const siteId = siteIds.get(Number(row.projeto_id));
+    if (!siteId) { rejection(rejected, 'hoteis', legacyId, 'obra-inexistente'); continue; }
+    const name = trimmed(row.nome).replace(/\s+/g, ' ').slice(0, 120).trim();
+    if (name.length < 2) { rejection(rejected, 'hoteis', legacyId, 'nome-invalido'); continue; }
+    const fields = { address: text(row.morada, 300), contact: text(row.contacto, 120), notes: text(row.notas, 1000) };
+    const key = `${siteId}:${foldName(name)}`;
+    const existing = byKey.get(key);
+    if (existing) {
+      merged += 1;
+      for (const [field, value] of Object.entries(fields)) existing[field] ??= value;
+      byLegacy.set(legacyId, existing);
+      continue;
+    }
+    const hotel = { legacyId, id: randomUUID(), siteId, name, ...fields };
+    hotels.push(hotel);
+    byKey.set(key, hotel);
+    byLegacy.set(legacyId, hotel);
+  }
+  return { hotels, byLegacy, rejected, merged };
+}
+
+/**
+ * Dormidas → estadias (pessoa × obra × semana). A semana passa a ser a segunda-feira ISO; as restantes regras da
+ * tabela `stays` (saída depois da entrada, até 14 noites, entrada entre a segunda anterior e o domingo da semana,
+ * uma estadia por pessoa, obra e semana) recusam a linha com motivo em vez de mexer nas datas.
+ * Um hotel que não chegou ao Andaime ou é de outra obra fica "por definir".
+ */
+export function mapStays(rows, employeeIds, siteIds, hotelsByLegacy = new Map()) {
+  const stays = [];
+  const rejected = [];
+  const transformations = { weekMovedToMonday: 0, weekFromCheckIn: 0, hotelUnset: 0 };
+  const seen = new Set();
+  for (const row of [...rows].sort((a, b) => Number(a.id) - Number(b.id))) {
+    const legacyId = Number(row.id);
+    const reject = (reason) => rejection(rejected, 'dormidas', legacyId, reason);
+    const employeeId = employeeIds.get(Number(row.trabalhador_id));
+    const siteId = siteIds.get(Number(row.projeto_id));
+    const checkIn = trimmed(row.entrada);
+    const checkOut = trimmed(row.saida);
+    if (!employeeId) { reject('colaborador-inexistente'); continue; }
+    if (!siteId) { reject('obra-inexistente'); continue; }
+    if (!isIsoDate(checkIn) || !isIsoDate(checkOut)) { reject('data-invalida'); continue; }
+
+    let week = trimmed(row.semana_inicio);
+    if (!isIsoDate(week)) {
+      week = mondayOf(checkIn);
+      transformations.weekFromCheckIn += 1;
+    } else if (mondayOf(week) !== week) {
+      week = mondayOf(week);
+      transformations.weekMovedToMonday += 1;
+    }
+    const nights = daysBetween(checkIn, checkOut);
+    if (nights <= 0) { reject('saida-nao-posterior-a-entrada'); continue; }
+    if (nights > 14) { reject('mais-de-14-noites'); continue; }
+    if (checkIn < addDays(week, -7) || checkIn > addDays(week, 6)) { reject('entrada-fora-da-semana'); continue; }
+    const key = `${employeeId}:${siteId}:${week}`;
+    if (seen.has(key)) { reject('estadia-repetida-na-semana'); continue; }
+    seen.add(key);
+
+    let hotelId = null;
+    if (row.hotel_id != null) {
+      const hotel = hotelsByLegacy.get(Number(row.hotel_id));
+      if (hotel && hotel.siteId === siteId) hotelId = hotel.id;
+      else transformations.hotelUnset += 1;
+    }
+    stays.push({
+      legacyId,
+      id: randomUUID(),
+      employeeId,
+      siteId,
+      week,
+      hotelId,
+      checkIn,
+      checkOut,
+      notes: text(row.observacoes, 500)
+    });
+  }
+  return { stays, rejected, transformations };
+}
+
+// --- diário de obra ----------------------------------------------------------------------------------
+
+export const DIARY_DEFAULT_TITLE = 'Registo do diário';
+
+/** Instante em ms. Sem fuso indicado é UTC, como o `datetime('now')` do SQLite; o que não se lê dá NaN. */
+export function parseUtcTimestamp(value) {
+  const candidate = trimmed(value);
+  if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(candidate)) {
+    return Date.parse(`${candidate.replace(' ', 'T')}Z`);
+  }
+  return /^\d{4}-\d{2}-\d{2}T/.test(candidate) ? Date.parse(candidate) : Number.NaN;
+}
+const DIARY_TITLE_MAX = 160;
+const DIARY_BODY_MAX = 10_000;
+
+/**
+ * Registos do diário (`relatorios`), só o texto. O autor do Lyrical é texto livre, sem conta associada: o registo
+ * fica do dono que importa, com o papel MANAGER ("Direção de obra"), e o nome original vai para o fim do texto.
+ * As fotografias não são importadas; contam-se para o relatório.
+ */
+export function mapDiaryEntries(rows, siteIds, photoCountByEntry = new Map()) {
+  const entries = [];
+  const rejected = [];
+  const transformations = { untitled: 0, titlesTruncated: 0, bodiesTruncated: 0, authorKeptInBody: 0 };
+  let photosSkipped = 0;
+  let entriesWithPhotos = 0;
+  for (const row of [...rows].sort((a, b) => Number(a.id) - Number(b.id))) {
+    const legacyId = Number(row.id);
+    const photos = Number(photoCountByEntry.get(legacyId) || 0);
+    photosSkipped += photos;
+    if (photos > 0) entriesWithPhotos += 1;
+    const siteId = siteIds.get(Number(row.projeto_id));
+    const entryDate = trimmed(row.data);
+    if (!siteId) { rejection(rejected, 'relatorios', legacyId, 'obra-inexistente'); continue; }
+    if (!isIsoDate(entryDate)) { rejection(rejected, 'relatorios', legacyId, 'data-invalida'); continue; }
+
+    let title = trimmed(row.titulo).replace(/\s+/g, ' ');
+    if (!title) {
+      title = DIARY_DEFAULT_TITLE;
+      transformations.untitled += 1;
+    } else if (title.length > DIARY_TITLE_MAX) {
+      title = `${title.slice(0, DIARY_TITLE_MAX - 1)}…`;
+      transformations.titlesTruncated += 1;
+    }
+    const author = text(row.autor, 80);
+    let body = trimmed(row.texto);
+    const suffix = author ? `${body ? '\n\n' : ''}— Autor no Lyrical: ${author}` : '';
+    if (body.length + suffix.length > DIARY_BODY_MAX) {
+      body = `${body.slice(0, DIARY_BODY_MAX - suffix.length - 1)}…`;
+      transformations.bodiesTruncated += 1;
+    }
+    if (author) transformations.authorKeptInBody += 1;
+    const createdMs = parseUtcTimestamp(row.criado_em);
+    entries.push({
+      legacyId,
+      id: randomUUID(),
+      siteId,
+      entryDate,
+      title,
+      body: body + suffix,
+      createdAt: Number.isFinite(createdMs) ? new Date(createdMs).toISOString() : null
+    });
+  }
+  return { entries, rejected, transformations, photosSkipped, entriesWithPhotos };
+}
+
+/** Recusas agrupadas por tabela e motivo, só com ids do Lyrical (nunca nomes). */
+export function groupRejections(rejected, maxIds = 50) {
+  const grouped = {};
+  for (const { table, id, reason } of rejected) {
+    const byReason = (grouped[table] ??= {});
+    const entry = (byReason[reason] ??= { count: 0, ids: [] });
+    entry.count += 1;
+    if (entry.ids.length < maxIds) entry.ids.push(id);
+  }
+  return grouped;
+}
+
 export function sql(value) {
   if (value === null || value === undefined) return 'NULL';
   if (typeof value === 'number') {
@@ -131,7 +440,13 @@ export function jsonSql(value) {
   return `${sql(JSON.stringify(value))}::jsonb`;
 }
 
-export function buildImportSql({ email, displayName, organizationName, employees, teams, memberships, sites, sourceCounts }) {
+const dateSql = (value) => (value ? `${sql(value)}::date` : 'NULL');
+const uuidSql = (value) => (value ? `${sql(value)}::uuid` : 'NULL');
+
+export function buildImportSql({
+  email, displayName, organizationName, employees, teams, memberships, sites, sourceCounts,
+  absences = [], hotels = [], stays = [], diaryEntries = [], notImported = {}
+}) {
   const userId = randomUUID();
   const organizationId = randomUUID();
   const employeeIds = new Map(employees.map((employee) => [employee.legacyId, employee.id]));
@@ -197,15 +512,67 @@ export function buildImportSql({ email, displayName, organizationName, employees
               ${site.startDate ? `${sql(site.startDate)}::date` : 'NULL'}, ${site.endDate ? `${sql(site.endDate)}::date` : 'NULL'},
               ${sql(site.hourLimitMin)}, 0, 0, ${sql(site.color)}, ${sql(site.erpOrder)});`);
   }
+  for (const absence of absences) {
+    statements.push(`INSERT INTO absences
+      (id, organization_id, employee_id, kind, starts_on, ends_on, status, note,
+       requested_by_user_id, decided_by_user_id, decided_at)
+      VALUES (${sql(absence.id)}::uuid, ${sql(organizationId)}::uuid, ${sql(absence.employeeId)}::uuid, ${sql(absence.kind)},
+              ${dateSql(absence.startsOn)}, ${dateSql(absence.endsOn)}, 'APPROVED', ${sql(absence.note)},
+              ${sql(userId)}::uuid, ${sql(userId)}::uuid, now());`);
+  }
+  for (const hotel of hotels) {
+    statements.push(`INSERT INTO hotels (id, organization_id, site_id, name, address, contact, notes)
+      VALUES (${sql(hotel.id)}::uuid, ${sql(organizationId)}::uuid, ${sql(hotel.siteId)}::uuid, ${sql(hotel.name)},
+              ${sql(hotel.address)}, ${sql(hotel.contact)}, ${sql(hotel.notes)});`);
+  }
+  for (const stay of stays) {
+    statements.push(`INSERT INTO stays
+      (id, organization_id, employee_id, site_id, week, hotel_id, check_in, check_out, notes, created_by_user_id)
+      VALUES (${sql(stay.id)}::uuid, ${sql(organizationId)}::uuid, ${sql(stay.employeeId)}::uuid, ${sql(stay.siteId)}::uuid,
+              ${dateSql(stay.week)}, ${uuidSql(stay.hotelId)}, ${dateSql(stay.checkIn)}, ${dateSql(stay.checkOut)},
+              ${sql(stay.notes)}, ${sql(userId)}::uuid);`);
+  }
+  for (const entry of diaryEntries) {
+    const createdAt = entry.createdAt ? `${sql(entry.createdAt)}::timestamptz` : 'now()';
+    statements.push(`INSERT INTO diary_entries
+      (id, organization_id, site_id, entry_date, title, body, author_user_id, author_role, created_at, updated_at)
+      VALUES (${sql(entry.id)}::uuid, ${sql(organizationId)}::uuid, ${sql(entry.siteId)}::uuid, ${dateSql(entry.entryDate)},
+              ${sql(entry.title)}, ${sql(entry.body)}, ${sql(userId)}::uuid, 'MANAGER', ${createdAt}, ${createdAt});`);
+  }
   const auditChanges = {
     source: 'Lyrical Design SQLite',
-    imported: { employees: employees.length, teams: teams.length, teamMembers: importedMemberships.length, sites: sites.length },
+    imported: {
+      employees: employees.length,
+      teams: teams.length,
+      teamMembers: importedMemberships.length,
+      sites: sites.length,
+      absences: absences.length,
+      hotels: hotels.length,
+      stays: stays.length,
+      diaryEntries: diaryEntries.length
+    },
+    notImported,
     preservedForLater: sourceCounts
   };
   statements.push(`INSERT INTO audit_event
       (organization_id, actor_user_id, actor_role, action, entity_type, entity_id, changes)
     VALUES (${sql(organizationId)}::uuid, ${sql(userId)}::uuid, 'SYSTEM', 'legacy.import.completed',
             'organization', ${sql(organizationId)}::uuid, ${jsonSql(auditChanges)});`);
+  const expected = {
+    employees: employees.length,
+    teams: teams.length,
+    team_members: importedMemberships.length,
+    sites: sites.length,
+    absences: absences.length,
+    hotels: hotels.length,
+    stays: stays.length,
+    diary_entries: diaryEntries.length
+  };
+  statements.push(`DO $$ BEGIN
+${Object.entries(expected).map(([table, count]) => `      IF (SELECT count(*) FROM ${table} WHERE organization_id = ${sql(organizationId)}::uuid) <> ${count} THEN
+        RAISE EXCEPTION 'Contagem inesperada em ${table}.';
+      END IF;`).join('\n')}
+    END $$;`);
   statements.push('COMMIT;');
   statements.push(`SELECT json_build_object(
     'organizationId', ${sql(organizationId)},
@@ -213,7 +580,133 @@ export function buildImportSql({ email, displayName, organizationName, employees
     'employees', (SELECT count(*) FROM employees WHERE organization_id = ${sql(organizationId)}::uuid),
     'teams', (SELECT count(*) FROM teams WHERE organization_id = ${sql(organizationId)}::uuid),
     'teamMembers', (SELECT count(*) FROM team_members WHERE organization_id = ${sql(organizationId)}::uuid),
-    'sites', (SELECT count(*) FROM sites WHERE organization_id = ${sql(organizationId)}::uuid)
+    'sites', (SELECT count(*) FROM sites WHERE organization_id = ${sql(organizationId)}::uuid),
+    'absences', (SELECT count(*) FROM absences WHERE organization_id = ${sql(organizationId)}::uuid),
+    'hotels', (SELECT count(*) FROM hotels WHERE organization_id = ${sql(organizationId)}::uuid),
+    'stays', (SELECT count(*) FROM stays WHERE organization_id = ${sql(organizationId)}::uuid),
+    'diaryEntries', (SELECT count(*) FROM diary_entries WHERE organization_id = ${sql(organizationId)}::uuid)
   );`);
   return { sql: `${statements.join('\n\n')}\n`, userId, organizationId, importedMemberships: importedMemberships.length };
+}
+
+export const REQUIRED_TABLES = ['trabalhadores', 'equipas', 'projetos', 'escalas_semanais', 'escala_trabalhadores'];
+
+const countBy = (rows, key) => rows.reduce((counts, row) => {
+  counts[row[key]] = (counts[row[key]] || 0) + 1;
+  return counts;
+}, {});
+
+/**
+ * Lê uma cópia da base do Lyrical (já verificada) e devolve o plano de importação e o resumo da simulação.
+ * Os módulos mais recentes (férias, ausências, hotéis, dormidas, diário) são opcionais: bases antigas não os têm.
+ * O resumo só leva contagens, motivos e ids do Lyrical — nunca nomes nem textos.
+ */
+export function readLyricalDatabase(db, { today = new Date().toISOString().slice(0, 10) } = {}) {
+  const tables = new Set(db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map((row) => row.name));
+  for (const required of REQUIRED_TABLES) {
+    if (!tables.has(required)) throw new Error(`Tabela obrigatória em falta: ${required}`);
+  }
+  const count = (table) => (tables.has(table) ? Number(db.prepare(`SELECT COUNT(*) n FROM ${table}`).get().n) : 0);
+  const rowsOf = (table) => (tables.has(table) ? db.prepare(`SELECT * FROM ${table} ORDER BY id`).all() : []);
+
+  const usedEmployeeNumbers = new Set();
+  const employees = rowsOf('trabalhadores').map((row) => mapEmployee(row, usedEmployeeNumbers));
+  const teams = rowsOf('equipas').map((row, index) => ({
+    legacyId: Number(row.id),
+    id: randomUUID(),
+    name: String(row.nome).trim().slice(0, 80),
+    color: TEAM_COLORS[index % TEAM_COLORS.length]
+  }));
+  const rawAssignments = db.prepare(`
+    SELECT et.trabalhador_id employeeId, e.equipa_id teamId, e.semana_inicio week, e.dias days
+      FROM escala_trabalhadores et
+      JOIN escalas_semanais e ON e.id = et.escala_id
+     ORDER BY e.semana_inicio, et.trabalhador_id, e.id
+  `).all();
+  const selected = selectCurrentTeamMemberships(rawAssignments);
+  const usedSiteCodes = new Set();
+  const sites = rowsOf('projetos').map((row, index) => mapSite(row, index, today, usedSiteCodes));
+
+  const employeeIds = new Map(employees.map((employee) => [employee.legacyId, employee.id]));
+  const siteIds = new Map(sites.map((site) => [site.legacyId, site.id]));
+
+  const absences = mapAbsences({ vacations: rowsOf('ferias'), absences: rowsOf('ausencias') }, employeeIds);
+  const hotels = mapHotels(rowsOf('hoteis'), siteIds);
+  const stays = mapStays(rowsOf('dormidas'), employeeIds, siteIds, hotels.byLegacy);
+  const photoCountByEntry = new Map(tables.has('relatorio_fotos')
+    ? db.prepare('SELECT relatorio_id id, COUNT(*) n FROM relatorio_fotos GROUP BY relatorio_id').all()
+      .map((row) => [Number(row.id), Number(row.n)])
+    : []);
+  const diary = mapDiaryEntries(rowsOf('relatorios'), siteIds, photoCountByEntry);
+
+  const rejected = [...absences.rejected, ...hotels.rejected, ...stays.rejected, ...diary.rejected];
+  const notImported = Object.fromEntries(Object.entries(groupRejections(rejected))
+    .map(([table, reasons]) => [table, Object.fromEntries(Object.entries(reasons).map(([reason, { count }]) => [reason, count]))]));
+
+  const sourceCounts = {
+    vehicles: count('viaturas'),
+    schedules: count('escalas_semanais'),
+    scheduleEmployees: count('escala_trabalhadores'),
+    hours: count('registos_horas'),
+    tools: count('ferramentas'),
+    employeeTools: count('trabalhador_ferramentas'),
+    projectTools: count('projeto_ferramentas'),
+    hrFiles: count('ficheiros_rh')
+  };
+
+  const summary = {
+    importNow: {
+      employees: employees.length,
+      teams: teams.length,
+      currentTeamMembers: selected.memberships.length,
+      ambiguousCurrentTeamChoices: selected.ambiguous,
+      sites: sites.length,
+      absences: absences.rows.length,
+      absencesByKind: countBy(absences.rows, 'kind'),
+      hotels: hotels.hotels.length,
+      stays: stays.stays.length,
+      staysWithoutHotel: stays.stays.filter((stay) => !stay.hotelId).length,
+      diaryEntries: diary.entries.length
+    },
+    source: {
+      vacations: count('ferias'),
+      absences: count('ausencias'),
+      hotels: count('hoteis'),
+      stays: count('dormidas'),
+      diaryEntries: count('relatorios'),
+      diaryPhotos: count('relatorio_fotos')
+    },
+    notImported: groupRejections(rejected),
+    preservedForLater: sourceCounts,
+    transformations: {
+      employeesWithoutCategory: employees.filter((employee) => employee.category === 'Sem categoria').length,
+      sitesWithoutPositiveHourLimit: sites.filter((site) => site.hourLimitMin == null).length,
+      absences: absences.transformations,
+      hotels: { mergedDuplicateNames: hotels.merged },
+      stays: stays.transformations,
+      diary: diary.transformations,
+      photos: {
+        diaryPhotosExcluded: diary.photosSkipped,
+        diaryEntriesWithPhotos: diary.entriesWithPhotos,
+        note: 'ignoradas por opção do utilizador'
+      },
+      integrations: 'tokens e configurações excluídos'
+    }
+  };
+
+  return {
+    plan: {
+      employees,
+      teams,
+      memberships: selected.memberships,
+      sites,
+      sourceCounts,
+      absences: absences.rows,
+      hotels: hotels.hotels,
+      stays: stays.stays,
+      diaryEntries: diary.entries,
+      notImported
+    },
+    summary
+  };
 }

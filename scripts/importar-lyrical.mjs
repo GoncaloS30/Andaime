@@ -1,17 +1,10 @@
 #!/usr/bin/env node
 import { copyFileSync, existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { basename, dirname, join, resolve } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import { randomUUID } from 'node:crypto';
 
-import {
-  TEAM_COLORS,
-  buildImportSql,
-  mapEmployee,
-  mapSite,
-  selectCurrentTeamMemberships
-} from './lib/lyrical-import.mjs';
+import { buildImportSql, readLyricalDatabase } from './lib/lyrical-import.mjs';
 
 function argumentsOf(argv) {
   const options = {};
@@ -64,66 +57,8 @@ try {
     throw new Error(`Base inconsistente: quick_check=${quickCheck}; FKs=${foreignKeyViolations}.`);
   }
 
-  const tables = new Set(db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map((row) => row.name));
-  for (const required of ['trabalhadores', 'equipas', 'projetos', 'escalas_semanais', 'escala_trabalhadores']) {
-    if (!tables.has(required)) throw new Error(`Tabela obrigatória em falta: ${required}`);
-  }
-  const count = (table) => tables.has(table) ? Number(db.prepare(`SELECT COUNT(*) n FROM ${table}`).get().n) : 0;
-
-  const usedEmployeeNumbers = new Set();
-  const employees = db.prepare('SELECT * FROM trabalhadores ORDER BY id').all()
-    .map((row) => mapEmployee(row, usedEmployeeNumbers));
-  const teams = db.prepare('SELECT * FROM equipas ORDER BY id').all().map((row, index) => ({
-    legacyId: Number(row.id),
-    id: randomUUID(),
-    name: String(row.nome).trim().slice(0, 80),
-    color: TEAM_COLORS[index % TEAM_COLORS.length]
-  }));
-  const rawAssignments = db.prepare(`
-    SELECT et.trabalhador_id employeeId, e.equipa_id teamId, e.semana_inicio week, e.dias days
-      FROM escala_trabalhadores et
-      JOIN escalas_semanais e ON e.id = et.escala_id
-     ORDER BY e.semana_inicio, et.trabalhador_id, e.id
-  `).all();
-  const selected = selectCurrentTeamMemberships(rawAssignments);
-  const usedSiteCodes = new Set();
-  const today = new Date().toISOString().slice(0, 10);
-  const sites = db.prepare('SELECT * FROM projetos ORDER BY id').all()
-    .map((row, index) => mapSite(row, index, today, usedSiteCodes));
-
-  const sourceCounts = {
-    vehicles: count('viaturas'),
-    schedules: count('escalas_semanais'),
-    scheduleEmployees: count('escala_trabalhadores'),
-    hours: count('registos_horas'),
-    vacations: count('ferias'),
-    absences: count('ausencias'),
-    tools: count('ferramentas'),
-    employeeTools: count('trabalhador_ferramentas'),
-    projectTools: count('projeto_ferramentas'),
-    hotels: count('hoteis'),
-    stays: count('dormidas'),
-    reports: count('relatorios'),
-    photoReferencesIgnored: count('relatorio_fotos'),
-    hrFiles: count('ficheiros_rh')
-  };
-  const summary = {
-    integrity: 'ok',
-    importNow: {
-      employees: employees.length,
-      teams: teams.length,
-      currentTeamMembers: selected.memberships.length,
-      ambiguousCurrentTeamChoices: selected.ambiguous,
-      sites: sites.length
-    },
-    preservedForLater: sourceCounts,
-    transformations: {
-      employeesWithoutCategory: employees.filter((employee) => employee.category === 'Sem categoria').length,
-      sitesWithoutPositiveHourLimit: sites.filter((site) => site.hourLimitMin == null).length,
-      photos: 'ignoradas por opção do utilizador',
-      integrations: 'tokens e configurações excluídos'
-    }
-  };
+  const { plan, summary: planSummary } = readLyricalDatabase(db);
+  const summary = { integrity: 'ok', ...planSummary };
 
   if (options.output) {
     const output = resolve(options.output);
@@ -131,11 +66,7 @@ try {
       email: options.email.trim().toLowerCase(),
       displayName: options['display-name'].trim(),
       organizationName: options.org.trim(),
-      employees,
-      teams,
-      memberships: selected.memberships,
-      sites,
-      sourceCounts
+      ...plan
     });
     writeFileSync(output, built.sql, { encoding: 'utf8', mode: 0o600 });
     summary.sqlOutput = basename(output);
