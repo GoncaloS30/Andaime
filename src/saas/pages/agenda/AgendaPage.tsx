@@ -1,4 +1,4 @@
-import { CalendarDays, ChevronLeft, ChevronRight, Clock, MapPin, Plus, Trash2 } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, Clock, MapPin, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState, type CSSProperties } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
@@ -257,11 +257,38 @@ function Chip({ item, day, onOpen, roomy }: { item: CalendarItem; day: string; o
   )
 }
 
-/** Detalhe de um item sem página própria (feriados e eventos); o gestor pode apagar eventos. */
+/** Detalhe de um item sem página própria (feriados e eventos); o gestor pode alterar e apagar eventos. */
 function ItemDialog({ item, canManage, onClose }: { item: CalendarItem; canManage: boolean; onClose: () => void }) {
   const org = useActiveOrg()
   const action = useCalendarEvent(org.id)
   const event = item.layer === 'EVENT' && item.link?.type === 'EVENT' ? item.link.id : null
+  const [editing, setEditing] = useState(false)
+  if (editing && event) {
+    return (
+      <EventFormDialog
+        title="Alterar evento"
+        submitLabel="Guardar"
+        initial={{ title: item.title, startsOn: item.start, endsOn: item.end, time: hhmm(item.time) ?? '', location: item.detail ?? '' }}
+        onSubmit={(input) =>
+          action.mutate(
+            { action: 'update', id: event, input },
+            {
+              onSuccess: () => {
+                toast.success('Evento alterado')
+                onClose()
+              },
+              onError: (e) => {
+                if (!isApiError(e, 'validation')) toast.error(errorMessage(e))
+              },
+            },
+          )
+        }
+        pending={action.isPending}
+        error={action.error}
+        onClose={onClose}
+      />
+    )
+  }
   return (
     <Dialog
       open
@@ -272,7 +299,10 @@ function ItemDialog({ item, canManage, onClose }: { item: CalendarItem; canManag
       description={`${period(item)}${item.time ? ` · ${hhmm(item.time)}` : ''}`}
       footer={
         event && canManage ? (
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" icon={<Pencil className="size-4" />} onClick={() => setEditing(true)}>
+              Alterar
+            </Button>
             <Button
               variant="ghost"
               icon={<Trash2 className="size-4" />}
@@ -313,38 +343,82 @@ function ItemDialog({ item, canManage, onClose }: { item: CalendarItem; canManag
 function NewEventDialog({ onClose, defaultDay }: { onClose: () => void; defaultDay: string }) {
   const org = useActiveOrg()
   const action = useCalendarEvent(org.id)
-  const [f, setF] = useState({ title: '', startsOn: defaultDay, endsOn: defaultDay, time: '', location: '' })
-  const errors = isApiError(action.error) ? action.error.fieldErrors : {}
+  return (
+    <EventFormDialog
+      title="Novo evento"
+      description="Reuniões, visitas e entregas da empresa. As férias, as datas das obras e as validades entram sozinhas na agenda."
+      submitLabel="Marcar"
+      initial={{ title: '', startsOn: defaultDay, endsOn: defaultDay, time: '', location: '' }}
+      onSubmit={(input) =>
+        action.mutate(
+          { action: 'create', input },
+          {
+            onSuccess: () => {
+              toast.success('Evento marcado na agenda', { description: `${input.title} · ${formatDate(input.startsOn)}` })
+              onClose()
+            },
+            onError: (e) => {
+              if (!isApiError(e, 'validation')) toast.error(errorMessage(e))
+            },
+          },
+        )
+      }
+      pending={action.isPending}
+      error={action.error}
+      onClose={onClose}
+    />
+  )
+}
+
+function EventFormDialog({
+  title,
+  description,
+  submitLabel,
+  initial,
+  onSubmit,
+  pending,
+  error,
+  onClose,
+}: {
+  title: string
+  description?: string
+  submitLabel: string
+  initial: { title: string; startsOn: string; endsOn: string; time: string; location: string }
+  onSubmit: (input: { title: string; startsOn: string; endsOn: string; time: string | null; location: string | null }) => void
+  pending: boolean
+  error: unknown
+  onClose: () => void
+}) {
+  const [f, setF] = useState(initial)
+  const errors = isApiError(error) ? error.fieldErrors : {}
   const valid = f.title.trim().length >= 2 && !!f.startsOn && (!f.endsOn || f.endsOn >= f.startsOn)
-  const save = () =>
-    action.mutate(
-      {
-        action: 'create',
-        input: { title: f.title.trim(), startsOn: f.startsOn, endsOn: f.endsOn || f.startsOn, time: f.time || null, location: f.location.trim() || null },
-      },
-      {
-        onSuccess: () => {
-          toast.success('Evento marcado na agenda', { description: `${f.title.trim()} · ${formatDate(f.startsOn)}` })
-          onClose()
-        },
-        onError: (e) => {
-          if (!isApiError(e, 'validation')) toast.error(errorMessage(e))
-        },
-      },
-    )
   return (
     <Dialog
       open
       onOpenChange={(o) => !o && onClose()}
-      title="Novo evento"
-      description="Reuniões, visitas e entregas da empresa. As férias, as datas das obras e as validades entram sozinhas na agenda."
+      title={title}
+      description={description}
       footer={
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={onClose}>
             Cancelar
           </Button>
-          <Button variant="primary" icon={<CalendarDays className="size-4" />} disabled={!valid} loading={action.isPending} onClick={save}>
-            Marcar
+          <Button
+            variant="primary"
+            icon={<CalendarDays className="size-4" />}
+            disabled={!valid}
+            loading={pending}
+            onClick={() =>
+              onSubmit({
+                title: f.title.trim(),
+                startsOn: f.startsOn,
+                endsOn: f.endsOn || f.startsOn,
+                time: f.time || null,
+                location: f.location.trim() || null,
+              })
+            }
+          >
+            {submitLabel}
           </Button>
         </div>
       }

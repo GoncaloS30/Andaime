@@ -7,9 +7,10 @@
 
 | Dados | Comportamento atual |
 |---|---|
-| Ex-trabalhadores | Ficam arquivados sem prazo. A **anonimização é manual** (administrador, "Anonimizar"): apaga nome, contactos, nacionalidade, morada, admissão, custo, competências, tamanhos, notas, contratos e fotografia; desativa a conta ligada; arquiva os documentos. Mantém número, categoria e o histórico de horas e planeamento sem identificação. |
+| Ex-trabalhadores | Ficam arquivados sem prazo. A **anonimização é manual** (administrador, "Anonimizar"): apaga nome, contactos, nacionalidade, morada, admissão, custo, competências, tamanhos, notas, contratos, estadias e fotografia; desativa a conta ligada; arquiva os documentos. Mantém número, categoria e o histórico de horas e planeamento sem identificação. |
 | Documentos | Versões antigas e documentos arquivados ficam no armazenamento **sem prazo**. A anonimização arquiva-os mas **não apaga os ficheiros** — lacuna. |
 | Registos de horas, folhas, ausências, planeamento | Sem prazo. |
+| Estadias (hotéis e datas) | Apagadas na anonimização da ficha. Sem prazo próprio enquanto a ficha está activa. |
 | Auditoria (`audit_event`) | Só de acrescento, sem prazo (a tabela pode ser particionada por mês para apagar por partições). |
 | Notificações | Sem prazo. |
 | Exportações XLSX | O ficheiro expira às 24 h; o registo do pedido fica. |

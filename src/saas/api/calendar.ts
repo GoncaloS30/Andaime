@@ -54,10 +54,14 @@ export interface EventInput {
 export function useCalendarEvent(orgId: string) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (v: { action: 'create'; input: EventInput } | { action: 'delete'; id: string }): Promise<CalendarItem | void> =>
+    mutationFn: (
+      v: { action: 'create'; input: EventInput } | { action: 'update'; id: string; input: EventInput } | { action: 'delete'; id: string },
+    ): Promise<CalendarItem | void> =>
       v.action === 'create'
         ? api<CalendarItem>(`${base(orgId)}/calendar/events`, { method: 'POST', body: v.input })
-        : api<void>(`${base(orgId)}/calendar/events/${v.id}`, { method: 'DELETE' }),
+        : v.action === 'update'
+          ? api<CalendarItem>(`${base(orgId)}/calendar/events/${v.id}`, { method: 'PATCH', body: v.input })
+          : api<void>(`${base(orgId)}/calendar/events/${v.id}`, { method: 'DELETE' }),
     onSettled: () => Promise.all(['calendar', 'audit'].map((s) => qc.invalidateQueries({ queryKey: ['org', orgId, s] }))),
   })
 }

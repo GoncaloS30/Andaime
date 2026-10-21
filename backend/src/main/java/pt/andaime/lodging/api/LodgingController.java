@@ -4,7 +4,12 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.http.CacheControl;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -16,8 +21,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import pt.andaime.lodging.application.LodgingService;
+import pt.andaime.lodging.application.LodgingWorkbook;
 import pt.andaime.lodging.application.LodgingViews.HotelInput;
 import pt.andaime.lodging.application.LodgingViews.HotelView;
 import pt.andaime.lodging.application.LodgingViews.StayInput;
@@ -29,10 +36,15 @@ import pt.andaime.lodging.application.LodgingViews.WeekBoard;
 @RequestMapping("/api/orgs/{orgId}")
 public class LodgingController {
 
-    private final LodgingService lodging;
+    private static final MediaType XLSX = MediaType.parseMediaType(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 
-    public LodgingController(LodgingService lodging) {
+    private final LodgingService lodging;
+    private final LodgingWorkbook workbooks;
+
+    public LodgingController(LodgingService lodging, LodgingWorkbook workbooks) {
         this.lodging = lodging;
+        this.workbooks = workbooks;
     }
 
     @GetMapping("/lodging/hotels")
@@ -61,6 +73,18 @@ public class LodgingController {
     @GetMapping("/lodging/week")
     WeekBoard week(@PathVariable UUID orgId, @RequestParam(required = false) LocalDate week) {
         return lodging.week(week);
+    }
+
+    @GetMapping("/lodging/week.xlsx")
+    ResponseEntity<StreamingResponseBody> weekExcel(@PathVariable UUID orgId, @RequestParam(required = false) LocalDate week) {
+        var board = lodging.week(week);
+        StreamingResponseBody body = output -> workbooks.write(output, board);
+        return ResponseEntity.ok()
+                .contentType(XLSX)
+                .cacheControl(CacheControl.noStore())
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment().filename(LodgingWorkbook.filename(board.week())).build().toString())
+                .body(body);
     }
 
     @PutMapping("/lodging/stays")

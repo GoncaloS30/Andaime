@@ -27,6 +27,7 @@ import pt.andaime.privacy.application.PrivacyViews.Ausencia;
 import pt.andaime.privacy.application.PrivacyViews.Contrato;
 import pt.andaime.privacy.application.PrivacyViews.Documento;
 import pt.andaime.privacy.application.PrivacyViews.Empresa;
+import pt.andaime.privacy.application.PrivacyViews.Estadia;
 import pt.andaime.privacy.application.PrivacyViews.Equipa;
 import pt.andaime.privacy.application.PrivacyViews.Equipamento;
 import pt.andaime.privacy.application.PrivacyViews.EquipamentoEmPosse;
@@ -98,6 +99,7 @@ class PrivacyDataReader {
                 timeEntries(employeeId),
                 timesheets(employeeId),
                 absences(employeeId),
+                stays(employeeId),
                 documents(employeeId, files, usedPaths),
                 new Equipamento(movements(employeeId), holdings(employeeId)),
                 notifications(employeeId),
@@ -291,6 +293,30 @@ class PrivacyDataReader {
                 instant(resultSet, "decided_at"),
                 resultSet.getString("decided_by"),
                 resultSet.getString("decision_note")), employeeId);
+    }
+
+    private List<Estadia> stays(UUID employeeId) {
+        return jdbcTemplate.query("""
+                SELECT stay.week, site.code, site.name AS site_name, hotel.name AS hotel_name, hotel.address AS hotel_address,
+                       stay.check_in, stay.check_out, stay.notes
+                FROM stays stay
+                JOIN sites site ON site.organization_id = stay.organization_id AND site.id = stay.site_id
+                LEFT JOIN hotels hotel ON hotel.organization_id = stay.organization_id AND hotel.id = stay.hotel_id
+                WHERE stay.employee_id = ? ORDER BY stay.check_in, stay.id
+                """, (resultSet, rowNumber) -> {
+            var checkIn = resultSet.getObject("check_in", java.time.LocalDate.class);
+            var checkOut = resultSet.getObject("check_out", java.time.LocalDate.class);
+            return new Estadia(
+                    resultSet.getObject("week", java.time.LocalDate.class),
+                    resultSet.getString("code"),
+                    resultSet.getString("site_name"),
+                    resultSet.getString("hotel_name"),
+                    resultSet.getString("hotel_address"),
+                    checkIn,
+                    checkOut,
+                    (int) java.time.temporal.ChronoUnit.DAYS.between(checkIn, checkOut),
+                    resultSet.getString("notes"));
+        }, employeeId);
     }
 
     /**

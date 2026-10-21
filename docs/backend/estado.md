@@ -580,6 +580,12 @@ Primeira fase das lacunas face à V3.1 (análise em `lacunas-v31.md`, não versi
   - feriados pelo país de cada obra (hoje usa o país da empresa);
   - ex-trabalhadores no mapa do ano.
 
+### Fechos F8 — agenda, Excel de dormidas e RGPD (2026-10-21)
+
+- **Agenda:** `PATCH /calendar/events/{id}` (gestor), com as mesmas regras de criação; V33 dá `UPDATE` em `calendar_events`. O frontend altera o evento no diálogo.
+- **Dormidas:** `GET /lodging/week.xlsx` (gestor) com o quadro da semana e as estadias sem escala.
+- **RGPD:** a exportação inclui `estadias` (hotel, morada, datas, noites, notas) e o `LEIA-ME.txt` descreve a secção. Anonimizar um trabalhador apaga as estadias.
+
 ### Ainda não feito (decisões ou serviços externos)
 
 - Deploy real: escolher e contratar fornecedores, DNS, segredos e TLS — passos em

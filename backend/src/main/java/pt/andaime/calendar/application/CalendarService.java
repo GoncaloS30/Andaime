@@ -73,6 +73,44 @@ public class CalendarService {
     @Transactional
     public CalendarItem createEvent(EventInput input) {
         OrgRole.require(OrgRole.MANAGER);
+        var parsed = parse(input);
+        var id = jdbcTemplate.queryForObject("""
+                INSERT INTO calendar_events (organization_id, title, starts_on, ends_on, start_time, location, created_by_user_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id
+                """, UUID.class, TenantContext.organizationId().orElseThrow(), parsed.title(), parsed.startsOn(), parsed.endsOn(),
+                parsed.time(), parsed.location(), TenantContext.userId().orElseThrow());
+        auditLog.record("calendar-event.created", "calendar_event", id, parsed.audit());
+        return sources.event(id);
+    }
+
+    @Transactional
+    public CalendarItem updateEvent(UUID id, EventInput input) {
+        OrgRole.require(OrgRole.MANAGER);
+        var parsed = parse(input);
+        var updated = jdbcTemplate.update("""
+                UPDATE calendar_events SET title = ?, starts_on = ?, ends_on = ?, start_time = ?, location = ?
+                WHERE id = ?
+                """, parsed.title(), parsed.startsOn(), parsed.endsOn(), parsed.time(), parsed.location(), id);
+        if (updated == 0) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "not-found", "O evento não foi encontrado.");
+        }
+        auditLog.record("calendar-event.updated", "calendar_event", id, parsed.audit());
+        return sources.event(id);
+    }
+
+    @Transactional
+    public void deleteEvent(UUID id) {
+        OrgRole.require(OrgRole.MANAGER);
+        var removed = jdbcTemplate.query("DELETE FROM calendar_events WHERE id = ? RETURNING title, starts_on",
+                (resultSet, rowNumber) -> Map.of("title", resultSet.getString(1),
+                        "startsOn", resultSet.getObject(2, LocalDate.class).toString()), id);
+        if (removed.isEmpty()) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "not-found", "O evento não foi encontrado.");
+        }
+        auditLog.record("calendar-event.deleted", "calendar_event", id, removed.getFirst());
+    }
+
+    private static ParsedEvent parse(EventInput input) {
         var title = input.title() == null ? "" : input.title().strip();
         if (title.length() < 2 || title.length() > 120) {
             throw invalid("title", "O título tem entre 2 e 120 caracteres.");
@@ -91,29 +129,17 @@ public class CalendarService {
         if (location != null && location.length() > 160) {
             throw invalid("location", "O local tem no máximo 160 caracteres.");
         }
-        var id = jdbcTemplate.queryForObject("""
-                INSERT INTO calendar_events (organization_id, title, starts_on, ends_on, start_time, location, created_by_user_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id
-                """, UUID.class, TenantContext.organizationId().orElseThrow(), title, input.startsOn(), endsOn, input.time(), location,
-                TenantContext.userId().orElseThrow());
-        var changes = new LinkedHashMap<String, Object>();
-        changes.put("title", title);
-        changes.put("startsOn", input.startsOn().toString());
-        changes.put("endsOn", endsOn.toString());
-        auditLog.record("calendar-event.created", "calendar_event", id, changes);
-        return sources.event(id);
+        return new ParsedEvent(title, input.startsOn(), endsOn, input.time(), location);
     }
 
-    @Transactional
-    public void deleteEvent(UUID id) {
-        OrgRole.require(OrgRole.MANAGER);
-        var removed = jdbcTemplate.query("DELETE FROM calendar_events WHERE id = ? RETURNING title, starts_on",
-                (resultSet, rowNumber) -> Map.of("title", resultSet.getString(1),
-                        "startsOn", resultSet.getObject(2, LocalDate.class).toString()), id);
-        if (removed.isEmpty()) {
-            throw new ApiException(HttpStatus.NOT_FOUND, "not-found", "O evento não foi encontrado.");
+    private record ParsedEvent(String title, LocalDate startsOn, LocalDate endsOn, java.time.LocalTime time, String location) {
+        Map<String, Object> audit() {
+            var changes = new LinkedHashMap<String, Object>();
+            changes.put("title", title);
+            changes.put("startsOn", startsOn.toString());
+            changes.put("endsOn", endsOn.toString());
+            return changes;
         }
-        auditLog.record("calendar-event.deleted", "calendar_event", id, removed.getFirst());
     }
 
     private static ApiException invalid(String field, String message) {

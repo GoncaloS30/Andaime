@@ -1,4 +1,4 @@
-import { BedDouble, ChevronLeft, ChevronRight, MapPin, Trash2 } from 'lucide-react'
+import { BedDouble, ChevronLeft, ChevronRight, Download, MapPin, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
@@ -9,7 +9,7 @@ import { Checkbox, Input, Select } from '@/ui/Field'
 import { PageHeader, Panel } from '@/ui/Layout'
 import { EmptyState, ErrorState, SkeletonRows } from '@/ui/States'
 import { errorMessage } from '../../api/http'
-import { nightsBetween, nightsLabel, useLodgingWeek, useRemoveStay, useSaveStay, type BoardLine, type Stay } from '../../api/lodging'
+import { downloadLodgingWeek, nightsBetween, nightsLabel, useLodgingWeek, useRemoveStay, useSaveStay, type BoardLine, type Stay } from '../../api/lodging'
 import { mondayOf } from '../../api/planning'
 import { addDaysIso, formatDate, todayIso } from '../../api/workforce'
 import { useActiveOrg } from '../../session'
@@ -26,6 +26,7 @@ export function LodgingPage() {
   const week = mondayOf(search.get('semana') || thisWeek)
   const board = useLodgingWeek(org.id, week)
   const [onlyAway, setOnlyAway] = useState(true)
+  const [exporting, setExporting] = useState(false)
 
   const setWeek = (value: string | null) =>
     setSearch(
@@ -48,17 +49,33 @@ export function LodgingPage() {
         title="Dormidas"
         description={`Semana de ${formatDate(week)} a ${formatDate(addDaysIso(week, 6))}`}
         actions={
-          <div className="flex items-center rounded-md border border-line bg-surface">
-            <IconButton label="Semana anterior" onClick={() => setWeek(addDaysIso(week, -7))}>
-              <ChevronLeft className="size-4" />
-            </IconButton>
-            <button type="button" onClick={() => setWeek(null)} className="h-9 border-x border-line px-3 text-sm font-medium hover:bg-cal" aria-current={week === thisWeek ? 'date' : undefined}>
-              Esta semana
-            </button>
-            <IconButton label="Semana seguinte" onClick={() => setWeek(addDaysIso(week, 7))}>
-              <ChevronRight className="size-4" />
-            </IconButton>
-          </div>
+          <>
+            <Button
+              variant="ghost"
+              icon={<Download className="size-4" />}
+              loading={exporting}
+              disabled={board.isPending || board.isError}
+              onClick={() => {
+                setExporting(true)
+                void downloadLodgingWeek(org.id, week)
+                  .catch((e) => toast.error(errorMessage(e)))
+                  .finally(() => setExporting(false))
+              }}
+            >
+              Excel
+            </Button>
+            <div className="flex items-center rounded-md border border-line bg-surface">
+              <IconButton label="Semana anterior" onClick={() => setWeek(addDaysIso(week, -7))}>
+                <ChevronLeft className="size-4" />
+              </IconButton>
+              <button type="button" onClick={() => setWeek(null)} className="h-9 border-x border-line px-3 text-sm font-medium hover:bg-cal" aria-current={week === thisWeek ? 'date' : undefined}>
+                Esta semana
+              </button>
+              <IconButton label="Semana seguinte" onClick={() => setWeek(addDaysIso(week, 7))}>
+                <ChevronRight className="size-4" />
+              </IconButton>
+            </div>
+          </>
         }
       />
 

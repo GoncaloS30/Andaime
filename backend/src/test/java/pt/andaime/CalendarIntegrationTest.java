@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -217,5 +218,38 @@ class CalendarIntegrationTest extends ApiTestSupport {
         assertThat(JsonPath.<List<String>>read(workerMap, anaRow + ".periods[*].kind")).containsExactly("SICK", "VACATION", "VACATION");
 
         perform(owner, get("/api/orgs/{orgId}/absences/year", orgId).param("year", "1990")).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void gestorAlteraEventoExistente() throws Exception {
+        var owner = newUser("dono-edita-evento");
+        var orgId = createOrganization(owner, "Agenda edição");
+        var worker = joinAs(owner, orgId, "WORKER", "trabalhador-edita-evento");
+        var created = body(perform(owner, post("/api/orgs/{orgId}/calendar/events", orgId).content("""
+                {"title":"Reunião de obra","startsOn":"%s","time":"09:30","location":"Estaleiro"}""".formatted(day(8))))
+                .andExpect(status().isCreated()));
+        var id = JsonPath.<String>read(created, "$.link.id");
+
+        perform(worker, patch("/api/orgs/{orgId}/calendar/events/{id}", orgId, id).content("""
+                {"title":"Do trabalhador","startsOn":"%s"}""".formatted(day(8)))).andExpect(status().isForbidden());
+        perform(owner, patch("/api/orgs/{orgId}/calendar/events/{id}", orgId, UUID.randomUUID()).content("""
+                {"title":"Inexistente","startsOn":"%s"}""".formatted(day(8)))).andExpect(status().isNotFound());
+        perform(owner, patch("/api/orgs/{orgId}/calendar/events/{id}", orgId, id).content("""
+                {"title":"Mau","startsOn":"%s","endsOn":"%s"}""".formatted(day(8), day(7))))
+                .andExpect(status().isBadRequest());
+
+        perform(owner, patch("/api/orgs/{orgId}/calendar/events/{id}", orgId, id).content("""
+                {"title":"Entrega adiada","startsOn":"%s","endsOn":"%s","time":"14:00","location":"Armazém"}"""
+                .formatted(day(9), day(10))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Entrega adiada"))
+                .andExpect(jsonPath("$.start").value(day(9).toString()))
+                .andExpect(jsonPath("$.end").value(day(10).toString()))
+                .andExpect(jsonPath("$.time").value("14:00:00"))
+                .andExpect(jsonPath("$.detail").value("Armazém"));
+
+        var month = body(perform(owner, get("/api/orgs/{orgId}/calendar", orgId).param("month", MONTH.toString())));
+        assertThat(JsonPath.<List<String>>read(month, "$.items[?(@.layer=='EVENT')].title")).containsExactly("Entrega adiada");
+        assertThat(JsonPath.<List<String>>read(month, "$.items[?(@.layer=='EVENT')].start")).containsExactly(day(9).toString());
     }
 }

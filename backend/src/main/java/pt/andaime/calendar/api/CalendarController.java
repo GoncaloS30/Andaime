@@ -5,6 +5,7 @@ import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -38,6 +39,11 @@ public class CalendarController {
     @ResponseStatus(HttpStatus.CREATED)
     CalendarItem create(@PathVariable UUID orgId, @RequestBody EventInput input) {
         return calendar.createEvent(input);
+    }
+
+    @PatchMapping("/events/{eventId}")
+    CalendarItem update(@PathVariable UUID orgId, @PathVariable UUID eventId, @RequestBody EventInput input) {
+        return calendar.updateEvent(eventId, input);
     }
 
     @DeleteMapping("/events/{eventId}")

@@ -1,14 +1,17 @@
 package pt.andaime;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.io.ByteArrayInputStream;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -16,6 +19,7 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.UUID;
 
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.Test;
 
 import com.jayway.jsonpath.JsonPath;
@@ -160,5 +164,42 @@ class LodgingIntegrationTest extends ApiTestSupport {
         // Remover a estadia sem escala.
         perform(owner, delete("/api/orgs/{orgId}/lodging/stays/{id}", orgId, orphan)).andExpect(status().isNoContent());
         assertThat((Integer) JsonPath.read(week(owner, orgId), "$.summary.withoutSchedule")).isZero();
+    }
+
+    @Test
+    void excelDaSemanaEAnonimizarApagaEstadias() throws Exception {
+        var owner = newUser("dono-excel-dormidas");
+        var orgId = createOrganization(owner, "Excel dormidas");
+        var ana = employee(owner, orgId, "Ana Excel", ",\"homeCity\":\"Braga\",\"homeLatitude\":41.5454,\"homeLongitude\":-8.4265");
+        var munich = site(owner, orgId, "Obra Munique Excel", "DE", 48.11, 11.56);
+        schedule(owner, orgId, ana, munich, MONDAY, MONDAY.plusDays(4));
+        var hotel = JsonPath.<String>read(hotel(owner, orgId, munich, "Hotel Excel"), "$.id");
+        perform(owner, put("/api/orgs/{orgId}/lodging/stays", orgId)
+                .content(stay(ana, munich, hotel, MONDAY, MONDAY.plusDays(4)))).andExpect(status().isOk());
+
+        var worker = joinAs(owner, orgId, "WORKER", "trabalhador-excel-dormidas");
+        perform(worker, get("/api/orgs/{orgId}/lodging/week.xlsx", orgId).param("week", MONDAY.toString()))
+                .andExpect(status().isForbidden());
+        var started = perform(owner, get("/api/orgs/{orgId}/lodging/week.xlsx", orgId).param("week", MONDAY.toString()))
+                .andExpect(request().asyncStarted()).andReturn();
+        var download = mockMvc.perform(asyncDispatch(started)).andExpect(status().isOk()).andReturn().getResponse();
+        assertThat(download.getHeader("Content-Disposition")).contains("dormidas-semana-" + MONDAY + ".xlsx");
+        assertThat(download.getContentType()).contains("spreadsheetml");
+        try (var workbook = new XSSFWorkbook(new ByteArrayInputStream(download.getContentAsByteArray()))) {
+            var sheet = workbook.getSheet("Dormidas");
+            assertThat(sheet.getRow(0).getCell(0).getStringCellValue()).contains("Dormidas");
+            var header = sheet.getRow(3);
+            assertThat(header.getCell(0).getStringCellValue()).isEqualTo("Pessoa");
+            assertThat(header.getCell(1).getStringCellValue()).isEqualTo("Obra");
+            assertThat(header.getCell(2).getStringCellValue()).isEqualTo("Longe de casa");
+            assertThat(sheet.getRow(4).getCell(0).getStringCellValue()).isEqualTo("Ana Excel");
+            assertThat(sheet.getRow(4).getCell(5).getStringCellValue()).isEqualTo("Hotel Excel");
+        }
+
+        perform(owner, post("/api/orgs/{orgId}/employees/{id}/archive", orgId, ana)).andExpect(status().isOk());
+        perform(owner, post("/api/orgs/{orgId}/employees/{id}/anonymize", orgId, ana)).andExpect(status().isOk());
+        perform(owner, get("/api/orgs/{orgId}/employees/{id}/stays", orgId, ana))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+        assertThat((Integer) JsonPath.read(week(owner, orgId), "$.summary.nights")).isZero();
     }
 }

@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { api } from './http'
+import { api, downloadFile } from './http'
 
 /** Contratos F8.4: dormidas e hotéis. Datas em ISO (AAAA-MM-DD); a semana é sempre a segunda-feira. */
 
@@ -96,6 +96,9 @@ export function nightsBetween(checkIn: string, checkOut: string): number {
 }
 
 export const nightsLabel = (n: number) => (n === 1 ? '1 noite' : `${n} noites`)
+
+export const downloadLodgingWeek = (orgId: string, week: string) =>
+  downloadFile(`${base(orgId)}/lodging/week.xlsx?week=${week}`, `dormidas-semana-${week}.xlsx`)
 
 function useInvalidate(orgId: string) {
   const qc = useQueryClient()

@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
@@ -74,6 +75,12 @@ class PrivacyExportIntegrationTest extends ApiTestSupport {
         var photo = multipart(HttpMethod.PUT, "/api/orgs/{orgId}/employees/{id}/photo", orgId, ana);
         photo.cookie(owner.session(), owner.csrfCookie()).header("X-XSRF-TOKEN", owner.csrfToken());
         mockMvc.perform(photo.file(new MockMultipartFile("file", "ana.png", "image/png", PNG))).andExpect(status().isOk());
+        var hotel = id(body(perform(owner, post("/api/orgs/{orgId}/lodging/hotels", orgId).content("""
+                {"siteId":"%s","name":"Hotel RGPD","address":"Rua Privada 1"}""".formatted(site))).andExpect(status().isCreated())));
+        var monday = TODAY.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        perform(owner, put("/api/orgs/{orgId}/lodging/stays", orgId).content("""
+                {"employeeId":"%s","siteId":"%s","week":"%s","hotelId":"%s","checkIn":"%s","checkOut":"%s","notes":"Quarto 12"}"""
+                .formatted(ana, site, monday, hotel, monday, monday.plusDays(4)))).andExpect(status().isOk());
 
         // Dono/administrador: ZIP completo.
         var files = export(owner, "/api/orgs/{orgId}/employees/{id}/export", orgId, ana);
@@ -98,6 +105,12 @@ class PrivacyExportIntegrationTest extends ApiTestSupport {
         assertThat(JsonPath.<String>read(data, "$.documentos[0].versoes[0].ficheiroNoZip"))
                 .isEqualTo("documentos/ficha-de-aptidao-medica-v1-aptidao.pdf");
         assertThat(JsonPath.<List<String>>read(data, "$.auditoria[*].acao")).contains("employee.created");
+        assertThat(JsonPath.<String>read(data, "$.estadias[0].hotel")).isEqualTo("Hotel RGPD");
+        assertThat(JsonPath.<String>read(data, "$.estadias[0].hotelMorada")).isEqualTo("Rua Privada 1");
+        assertThat(JsonPath.<String>read(data, "$.estadias[0].obraCodigo")).isNotBlank();
+        assertThat(JsonPath.<Integer>read(data, "$.estadias[0].noites")).isEqualTo(4);
+        assertThat(JsonPath.<String>read(data, "$.estadias[0].notas")).isEqualTo("Quarto 12");
+        assertThat(new String(files.get("LEIA-ME.txt"), StandardCharsets.UTF_8)).contains("estadias");
         assertThat(data).doesNotContain("Bruno Colega").doesNotContain("Registo do colega");
 
         // Gestor não exporta; outra empresa não vê; trabalhador não exporta fichas pela via da empresa.

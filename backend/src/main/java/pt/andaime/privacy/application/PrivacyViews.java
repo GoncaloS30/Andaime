@@ -30,6 +30,7 @@ public final class PrivacyViews {
             List<RegistoHoras> registosDeHoras,
             List<FolhaHoras> folhasDeHoras,
             List<Ausencia> ausencias,
+            List<Estadia> estadias,
             List<Documento> documentos,
             Equipamento equipamento,
             List<Notificacao> notificacoes,
@@ -113,6 +114,18 @@ public final class PrivacyViews {
             Instant decididaEm,
             String decididaPor,
             String notaDecisao) {
+    }
+
+    public record Estadia(
+            LocalDate semana,
+            String obraCodigo,
+            String obraNome,
+            String hotel,
+            String hotelMorada,
+            LocalDate entrada,
+            LocalDate saida,
+            int noites,
+            String notas) {
     }
 
     public record Ausencia(

@@ -129,6 +129,7 @@ public class PrivacyExportService {
                     (revisoes: quem, quando, porquê, valores antes e depois);
                   - folhasDeHoras: as folhas semanais, com submissão e decisão;
                   - ausencias: pedidos de férias e outras ausências, com a decisão;
+                  - estadias: hotéis e datas em que dormiu fora (localização temporária);
                   - documentos: os seus documentos e todas as versões (datas, tamanho, impressão digital SHA-256);
                   - equipamento: fardamento e EPI entregues, devolvidos e em seu poder;
                   - notificacoes: as notificações enviadas à sua conta nesta empresa;

@@ -237,7 +237,7 @@ public class EmployeeService {
 
     /**
      * RGPD: apaga os dados pessoais de um ex-trabalhador arquivado (nome, contactos, nacionalidade, morada, tamanhos,
-     * competências, notas, custo, contratos, fotografia e ficheiros dos documentos). Ficam o número, a categoria e o
+     * competências, notas, custo, contratos, estadias, fotografia e ficheiros dos documentos). Ficam o número, a categoria e o
      * histórico de horas e planeamento, sem identificação. A conta ligada perde o acesso à empresa. Irreversível.
      */
     @Transactional
@@ -301,6 +301,7 @@ public class EmployeeService {
         jdbcTemplate.update("UPDATE employees SET photo_key = NULL, photo_content_type = NULL, photo_updated_at = NULL WHERE id = ?",
                 employeeId);
         jdbcTemplate.update("DELETE FROM employee_contracts WHERE employee_id = ?", employeeId);
+        jdbcTemplate.update("DELETE FROM stays WHERE employee_id = ?", employeeId);
         jdbcTemplate.update("UPDATE memberships SET status = 'DISABLED' WHERE employee_id = ? AND status = 'ACTIVE'", employeeId);
         documents.purgeEmployee(employeeId);
     }
