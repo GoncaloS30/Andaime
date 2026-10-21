@@ -91,7 +91,7 @@ export function ManagerHome() {
 
   return (
     <>
-      <PageHeader eyebrow={org.name} title={`Olá, ${me.user.displayName.split(' ')[0]}`} description="Configure a empresa e a equipa. Os módulos operacionais vão sendo ligados ao servidor por fases." />
+      <PageHeader eyebrow={org.name} title={`Olá, ${me.user.displayName.split(' ')[0]}`} description="O que precisa de atenção hoje e os primeiros passos da empresa." />
       {late.length > 0 && (
         <Panel className="mb-5" title="Obras atrasadas" description="A previsão de fim já passa o fim contratual.">
           <ul className="divide-y divide-line-2 px-4">
@@ -155,7 +155,7 @@ export function ManagerHome() {
         </Panel>
         <Panel title="Módulos" description="O que já guarda dados da sua empresa.">
           <ul className="divide-y divide-line-2 px-4">
-            {['Contas, empresa, equipa e acessos', 'Trabalhadores e equipas', 'Obras, clientes e mapa', 'Ocorrências de obra'].map((label) => (
+            {['Contas, empresa, equipa e acessos', 'Trabalhadores e equipas', 'Obras, clientes, mapa e ocorrências', 'Planeamento e viaturas', 'Horas, aprovações e livro do RH', 'Ausências, agenda e mapa de férias', 'Documentos, fardamento e EPI', 'Dormidas e hotéis', 'Diário de obra', 'Mapas semanais e relatórios'].map((label) => (
               <li key={label} className="flex items-center justify-between gap-3 py-2.5 text-sm">
                 <span>{label}</span>
                 <Badge tone="ok" dot>
