@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import pt.andaime.reporting.application.HrBookService;
 import pt.andaime.reporting.application.ReportingService;
 import pt.andaime.reporting.application.ReportExportService;
 import pt.andaime.reporting.application.ReportingViews;
@@ -35,11 +36,14 @@ public class ReportingController {
     private final ReportingService reporting;
     private final WeeklyMapWorkbook workbooks;
     private final ReportExportService exports;
+    private final HrBookService hrBooks;
 
-    public ReportingController(ReportingService reporting, WeeklyMapWorkbook workbooks, ReportExportService exports) {
+    public ReportingController(ReportingService reporting, WeeklyMapWorkbook workbooks, ReportExportService exports,
+            HrBookService hrBooks) {
         this.reporting = reporting;
         this.workbooks = workbooks;
         this.exports = exports;
+        this.hrBooks = hrBooks;
     }
 
     @GetMapping("/weekly-map")
@@ -95,6 +99,12 @@ public class ReportingController {
             @RequestParam LocalDate from,
             @RequestParam LocalDate to) {
         return reporting.hours(groupBy, from, to);
+    }
+
+    /** Pré-visualização do livro de horas do RH; o Excel sai pela fila ({@code POST /exports} com {@code kind=HR_BOOK}). */
+    @GetMapping("/hr-book")
+    HrBookService.HrBookPreview hrBook(@PathVariable UUID orgId, @RequestParam String month) {
+        return hrBooks.preview(month);
     }
 
     @GetMapping("/documents")

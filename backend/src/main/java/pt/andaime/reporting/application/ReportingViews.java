@@ -257,13 +257,16 @@ public final class ReportingViews {
     public record DocumentStatusCount(String status, int documents) {
     }
 
+    /** {@code kind}: {@code WEEKLY_MAP} (por omissão, com semana e modelo) ou {@code HR_BOOK} (com {@code month} AAAA-MM). */
     public record ExportRequest(
             LocalDate week,
             String template,
             UUID teamId,
             UUID siteId,
             UUID employeeId,
-            UUID clientId) {
+            UUID clientId,
+            String kind,
+            String month) {
     }
 
     public record ExportParameters(
@@ -271,7 +274,8 @@ public final class ReportingViews {
             UUID teamId,
             UUID siteId,
             UUID employeeId,
-            UUID clientId) {
+            UUID clientId,
+            String month) {
 
         WeeklyMapFilter filter() {
             return new WeeklyMapFilter(teamId, siteId, employeeId, clientId);
@@ -298,7 +302,8 @@ public final class ReportingViews {
     record ClaimedExport(UUID id, UUID organizationId, UUID userId) {
     }
 
-    record ExportPayload(WeeklyMapTemplate template, ExportParameters parameters) {
+    /** {@code template} é nulo no livro do RH. */
+    record ExportPayload(String kind, WeeklyMapTemplate template, ExportParameters parameters) {
     }
 
     record PlannedAssignment(

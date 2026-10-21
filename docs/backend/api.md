@@ -152,6 +152,7 @@ Todas sob `/api/orgs/{orgId}`.
 | GET | `/absences/{id}/impact` | âmbito | Atribuições afetadas |
 | POST | `/absences/{id}/approve` | gestor | `{resolution: REMOVE, KEEP, version}`; 409 `resolution-required` com `assignments` |
 | POST | `/absences/{id}/reject` · `/cancel` | gestor · o próprio/encarregado (pedidas), gestor (aprovadas) | reject exige `note` |
+| GET | `/absences/export.ics?from&to` | gestor | Férias aprovadas em iCalendar (RFC 5545): um evento de dia inteiro por ausência, fim exclusivo, UID = id da ausência (reimportar não duplica); máx. 400 dias |
 | GET · POST · PATCH | `/equipment/items[/{id}]` | ver: encarregado+; alterar: gestor | `{name, category: PPE, UNIFORM, TOOL, tracking: STOCK, SERIAL, size, minStock}` |
 | POST | `/equipment/receive` · `/items/{id}/adjust` · `/deliver` · `/return` | gestor | 409 `insufficient-stock`, `serial-taken`, `unit-unavailable`, `not-held` |
 | GET | `/equipment/holdings/{employeeId}` · `/movements` · `/items/{id}/units` | âmbito · gestor · encarregado+ | |
@@ -238,7 +239,8 @@ Todas sob `/api/orgs/{orgId}/reporting`; requerem gestor (OWNER, ADMIN ou MANAGE
 | GET | `/documents` | Contagem da projeção documental por estado |
 | GET | `/team-distribution?from&to` | Distribuição de minutos, pessoas, obras e dias por equipa |
 | GET | `/exports/weekly-map.xlsx?week&template=…` | XLSX síncrono com Apache POI SXSSF; limite de 20 000 linhas |
-| POST | `/exports` | Cria exportação persistente: `{week,template,teamId?,siteId?,employeeId?,clientId?}` → 202 e job `PENDING` |
+| POST | `/exports` | Cria exportação persistente: `{week,template,teamId?,siteId?,employeeId?,clientId?}` (mapa semanal) ou `{kind:"HR_BOOK",month:"AAAA-MM"}` (livro de horas do RH) → 202 e job `PENDING` |
+| GET | `/hr-book?month=AAAA-MM` | Pré-visualização do livro do RH: folhas, linhas, dias de ausência, horas aprovadas, dias por aprovar e códigos de atividade |
 | GET | `/exports/{id}` | Estado `PENDING`, `RUNNING`, `READY`, `FAILED` ou `EXPIRED` |
 | GET | `/exports/{id}/download` | Ficheiro quando `READY`; 409 enquanto não estiver pronto e 410 depois de expirar |
 

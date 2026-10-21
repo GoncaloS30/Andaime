@@ -20,6 +20,9 @@ import pt.andaime.shared.tenant.OrgRole;
 @Service
 public class ReportExportService {
 
+    public static final String WEEKLY_MAP = "WEEKLY_MAP";
+    public static final String HR_BOOK = "HR_BOOK";
+
     private final ReportExportRepository repository;
 
     public ReportExportService(ReportExportRepository repository) {
@@ -29,13 +32,21 @@ public class ReportExportService {
     @Transactional
     public ExportJob create(ExportRequest request) {
         OrgRole.require(OrgRole.MANAGER);
+        if (request != null && HR_BOOK.equalsIgnoreCase(request.kind() == null ? "" : request.kind().strip())) {
+            var month = HrBookService.parseMonth(request.month());
+            return repository.create(HR_BOOK, null, new ExportParameters(null, null, null, null, null, month.toString()));
+        }
+        if (request != null && request.kind() != null && !request.kind().isBlank()
+                && !WEEKLY_MAP.equalsIgnoreCase(request.kind().strip())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "validation", "O tipo de exportação deve ser WEEKLY_MAP ou HR_BOOK.");
+        }
         if (request == null || request.week() == null || request.template() == null) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "validation", "A semana e o modelo são obrigatórios.");
         }
         var template = parseTemplate(request.template());
         var monday = request.week().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-        return repository.create(template, new ExportParameters(monday, request.teamId(), request.siteId(),
-                request.employeeId(), request.clientId()));
+        return repository.create(WEEKLY_MAP, template, new ExportParameters(monday, request.teamId(), request.siteId(),
+                request.employeeId(), request.clientId(), null));
     }
 
     @Transactional(readOnly = true)

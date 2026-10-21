@@ -28,14 +28,15 @@ class ReportExportRepository {
         this.jsonMapper = jsonMapper;
     }
 
-    ExportJob create(WeeklyMapTemplate template, ExportParameters parameters) {
+    ExportJob create(String kind, WeeklyMapTemplate template, ExportParameters parameters) {
         var id = jdbcTemplate.queryForObject("""
                 INSERT INTO report_exports
                     (organization_id, requested_by_user_id, kind, template, parameters)
-                VALUES (?, ?, 'WEEKLY_MAP', ?, ?::jsonb)
+                VALUES (?, ?, ?, ?, ?::jsonb)
                 RETURNING id
                 """, UUID.class, TenantContext.organizationId().orElseThrow(),
-                TenantContext.userId().orElseThrow(), template.name(), jsonMapper.writeValueAsString(parameters));
+                TenantContext.userId().orElseThrow(), kind, template == null ? null : template.name(),
+                jsonMapper.writeValueAsString(parameters));
         return find(id).orElseThrow();
     }
 

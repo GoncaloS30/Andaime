@@ -28,6 +28,7 @@ import { atLeast } from '../../api/types'
 import { addDaysIso, formatDate, minutesToHours, todayIso, useSites } from '../../api/workforce'
 import { useActiveOrg } from '../../session'
 import { HoursTotals } from './HoursTotals'
+import { HrBookPanel } from './HrBookPanel'
 import { WeekGrid } from './WeekGrid'
 
 const DAY = new Intl.DateTimeFormat('pt-PT', { weekday: 'long', day: '2-digit', month: '2-digit', timeZone: 'UTC' })
@@ -43,7 +44,7 @@ export function TimesheetsPage() {
   const sheets = useTimesheets(org.id, week, status)
   const action = useTimesheetAction(org.id)
   const [open, setOpen] = useState<string | null>(null)
-  const [view, setView] = useState<'folhas' | 'grelha' | 'totais'>('folhas')
+  const [view, setView] = useState<'folhas' | 'grelha' | 'totais' | 'livro'>('folhas')
   const submitted = (sheets.data ?? []).filter((s) => s.status === 'SUBMITTED' && s.openEntries === 0)
 
   const approveAll = async () => {
@@ -90,10 +91,12 @@ export function TimesheetsPage() {
           label="Vista"
           value={view}
           onChange={setView}
-          options={[{ value: 'folhas', label: 'Folhas da semana' }, { value: 'grelha', label: 'Grelha da semana' }, { value: 'totais', label: 'Totais' }]}
+          options={[{ value: 'folhas', label: 'Folhas da semana' }, { value: 'grelha', label: 'Grelha da semana' }, { value: 'totais', label: 'Totais' }, { value: 'livro', label: 'Livro do RH' }]}
         />
       )}
-      {view === 'totais' ? (
+      {view === 'livro' ? (
+        <HrBookPanel />
+      ) : view === 'totais' ? (
         <HoursTotals />
       ) : view === 'grelha' ? (
         <WeekGrid week={week} />

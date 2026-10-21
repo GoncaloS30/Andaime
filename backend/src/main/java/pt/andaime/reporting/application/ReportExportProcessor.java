@@ -21,12 +21,16 @@ public class ReportExportProcessor {
     private final ReportExportTransactions transactions;
     private final ReportingService reporting;
     private final WeeklyMapWorkbook workbooks;
+    private final HrBookService hrBooks;
+    private final HrBookWorkbook hrBookWorkbooks;
 
     public ReportExportProcessor(ReportExportTransactions transactions, ReportingService reporting,
-            WeeklyMapWorkbook workbooks) {
+            WeeklyMapWorkbook workbooks, HrBookService hrBooks, HrBookWorkbook hrBookWorkbooks) {
         this.transactions = transactions;
         this.reporting = reporting;
         this.workbooks = workbooks;
+        this.hrBooks = hrBooks;
+        this.hrBookWorkbooks = hrBookWorkbooks;
     }
 
     @Scheduled(fixedDelayString = "${andaime.reporting.exports.poll-interval:PT2S}",
@@ -49,17 +53,26 @@ public class ReportExportProcessor {
             Path temporary = null;
             try {
                 var payload = transactions.payload(job.id());
-                var map = reporting.weeklyMapForExport(payload.parameters().week(), payload.parameters().filter());
-                var actual = payload.template() == ReportingViews.WeeklyMapTemplate.HORAS
-                        || payload.template() == ReportingViews.WeeklyMapTemplate.ERP
-                        ? reporting.weeklyActualForExport(payload.parameters().week(), payload.parameters().filter()).rows()
-                        : java.util.List.<ReportingViews.ActualTimeRow>of();
-                var organizationName = reporting.organizationName();
                 temporary = Files.createTempFile("andaime-report-", ".xlsx");
-                try (var output = Files.newOutputStream(temporary)) {
-                    workbooks.write(output, organizationName, payload.template(), map, actual);
+                String filename;
+                if (ReportExportService.HR_BOOK.equals(payload.kind())) {
+                    var book = hrBooks.book(payload.parameters().month());
+                    try (var output = Files.newOutputStream(temporary)) {
+                        hrBookWorkbooks.write(output, book);
+                    }
+                    filename = HrBookService.filename(book.month());
+                } else {
+                    var map = reporting.weeklyMapForExport(payload.parameters().week(), payload.parameters().filter());
+                    var actual = payload.template() == ReportingViews.WeeklyMapTemplate.HORAS
+                            || payload.template() == ReportingViews.WeeklyMapTemplate.ERP
+                            ? reporting.weeklyActualForExport(payload.parameters().week(), payload.parameters().filter()).rows()
+                            : java.util.List.<ReportingViews.ActualTimeRow>of();
+                    var organizationName = reporting.organizationName();
+                    try (var output = Files.newOutputStream(temporary)) {
+                        workbooks.write(output, organizationName, payload.template(), map, actual);
+                    }
+                    filename = "mapa-" + payload.template().value() + "-semana-" + map.weekStart() + ".xlsx";
                 }
-                var filename = "mapa-" + payload.template().value() + "-semana-" + map.weekStart() + ".xlsx";
                 try (var input = Files.newInputStream(temporary)) {
                     transactions.complete(job.id(), filename, XLSX, Files.size(temporary), input);
                 }

@@ -30,7 +30,8 @@ class ReportExportTransactions {
     @Transactional(readOnly = true)
     ExportPayload payload(UUID id) {
         ExportJob job = repository.find(id).orElseThrow();
-        return new ExportPayload(ReportingViews.WeeklyMapTemplate.valueOf(job.template()), job.parameters());
+        return new ExportPayload(job.kind(),
+                job.template() == null ? null : ReportingViews.WeeklyMapTemplate.valueOf(job.template()), job.parameters());
     }
 
     @Transactional
