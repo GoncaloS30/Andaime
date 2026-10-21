@@ -12,6 +12,7 @@ import { useEmployees, useSites, useTeams } from '../api/workforce'
 import { useActiveOrg, useSession } from '../session'
 import { MyStaysCard } from './lodging/StayCards'
 import { WorkerSections } from './operations/WorkerSections'
+import { LodgingHomePanel } from './lodging/LodgingHomePanel'
 import { RecentDiaryPanel } from './sites/DiaryPages'
 import { DelayBadge } from './sites/SitesPages'
 import { MySchedule } from './timekeeping/MySchedule'
@@ -105,6 +106,7 @@ export function ManagerHome() {
           </ul>
         </Panel>
       )}
+      {canSeeTeam && <LodgingHomePanel orgId={org.id} />}
       <RecentDiaryPanel />
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <Panel title="Primeiros passos">

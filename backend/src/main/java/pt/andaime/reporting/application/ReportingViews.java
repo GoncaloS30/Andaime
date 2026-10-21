@@ -220,6 +220,11 @@ public final class ReportingViews {
             int overtimeMin,
             String activityCode,
             String status) {
+
+        public ActualTimeRow withActivityCode(String code) {
+            return new ActualTimeRow(employeeId, employeeNumber, employeeName, teamId, teamName, siteId, siteCode, siteName,
+                    erpOrder, date, clockIn, clockOut, workedMin, normalMin, overtimeMin, code, status);
+        }
     }
 
     public record WeeklyActual(

@@ -45,9 +45,11 @@ public class ReportingService {
     static final int MAX_ASYNCHRONOUS_ASSIGNMENTS = 200_000;
 
     private final ReportingRepository repository;
+    private final HrBookRepository policies;
 
-    public ReportingService(ReportingRepository repository) {
+    public ReportingService(ReportingRepository repository, HrBookRepository policies) {
         this.repository = repository;
+        this.policies = policies;
     }
 
     @Transactional(readOnly = true)
@@ -74,6 +76,22 @@ public class ReportingService {
                 "O mapa excede o limite de 200 000 registos aprovados. Restrinja os filtros.");
     }
 
+    /**
+     * Código de atividade ERP de cada linha pelos escalões de horas extra da política laboral (a mesma regra do livro do
+     * RH): normal sem horas extra na linha; senão o escalão em que cai o total de extra da pessoa nesse dia. A projeção
+     * guardava o código normal em todas as linhas, mesmo nas de horas extra.
+     */
+    private List<ReportingViews.ActualTimeRow> withActivityCodes(List<ReportingViews.ActualTimeRow> rows, LocalDate effectiveOn) {
+        var table = policies.policy(effectiveOn).activities();
+        var codes = table.codes();
+        var dayOvertime = new java.util.HashMap<String, Integer>();
+        rows.forEach(row -> dayOvertime.merge(row.employeeId() + "|" + row.date(), row.overtimeMin(), Integer::sum));
+        return rows.stream()
+                .map(row -> row.withActivityCode(codes.get(table.indexFor(row.overtimeMin(),
+                        dayOvertime.getOrDefault(row.employeeId() + "|" + row.date(), 0))).code()))
+                .toList();
+    }
+
     private WeeklyActual weeklyActual(LocalDate requestedWeek, WeeklyMapFilter filter, int maximum, String detail) {
         OrgRole.require(OrgRole.MANAGER);
         var monday = requestedWeek.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
@@ -82,6 +100,7 @@ public class ReportingService {
             throw new ApiException(HttpStatus.PAYLOAD_TOO_LARGE, "report-too-large",
                     detail);
         }
+        rows = withActivityCodes(rows, monday.plusDays(6));
         var employeeIds = rows.stream().map(ReportingViews.ActualTimeRow::employeeId).collect(java.util.stream.Collectors.toSet());
         var siteIds = rows.stream().map(ReportingViews.ActualTimeRow::siteId).collect(java.util.stream.Collectors.toSet());
         return new WeeklyActual(monday, monday.get(WeekFields.ISO.weekOfWeekBasedYear()), rows,
