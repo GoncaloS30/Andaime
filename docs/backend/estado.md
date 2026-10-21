@@ -520,6 +520,33 @@ Primeira fase das lacunas face à V3.1 (análise em `lacunas-v31.md`, não versi
 - **A rever:** `TimesheetService.projectApproved` grava o código normal como `activity_code` também nas horas extra, e isso alimenta o mapa ERP semanal. O livro do RH calcula os códigos à parte.
 - **Falta:** OneDrive/Graph e importação do Lyrical.
 
+### F8.5 — diário de obra (2026-10-21)
+
+- **Modelo (V30):**
+  - `diary_entries`: vários registos por dia, autor e papel, versão e chave do cliente, para repetir envios sem duplicar;
+  - `diary_photos`: até 20 por registo, posição única diferível, chave S3, tipo, dimensões e resultado do antivírus;
+  - pesquisa sem acentos nem maiúsculas com `app.fold_name` e índice `gin` de trigramas (`pg_trgm`).
+- **Módulo `sitediary`:**
+  - linha do tempo por obra, com filtro por mês, pesquisa e contagens por mês;
+  - criar, alterar e apagar (o autor ou um gestor);
+  - fotos multipart no S3 privado, com o mesmo antivírus da V22 (`DiaryPhotoStore`), servidas pela API com o âmbito da obra;
+  - últimos registos de todas as obras;
+  - o encarregado escreve nas obras do seu âmbito, o trabalhador não acede, e as obras arquivadas só se consultam.
+- **Exportações** síncronas, com os filtros do ecrã e do mais antigo para o mais recente:
+  - Word em A4: margens de 2 cm, fotos de 7 cm lado a lado sem deformar, linha entre dias; acima de 400 registos ou 300 fotos é recusado (422);
+  - Excel com uma linha por registo.
+- **Frontend:**
+  - separador "Diário" na ficha da obra (`?separador=diario`);
+  - `encarregado/diario` no telemóvel, com câmara e fotos reduzidas no navegador;
+  - galeria navegável por teclado;
+  - painel "Diário de obra — últimos registos" no início do gestor.
+- **Verificação:** `SiteDiaryIntegrationTest` (Word e Excel lidos de volta), `DiaryRulesTest` (5), `ModularityTest`; `tsc` e `eslint` limpos.
+- **Por fazer:**
+  - fila sem rede do encarregado (a chave do cliente já existe) e importação do Lyrical;
+  - miniaturas no upload e rotação EXIF dos JPEG enviados diretamente à API;
+  - prazo de conservação e texto RGPD das fotos de obra, que podem mostrar pessoas;
+  - unificar com o serviço de fotos.
+
 ### F8.6 — agenda e mapa de férias (2026-10-21)
 
 - **Agenda (V31):**
