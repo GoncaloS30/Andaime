@@ -21,6 +21,7 @@ import { AbsencesPage } from './pages/operations/AbsencesPage'
 import { AgendaPage } from './pages/agenda/AgendaPage'
 import { DocumentsPage } from './pages/operations/DocumentsPage'
 import { EquipmentPage } from './pages/operations/EquipmentPage'
+import { LodgingPage } from './pages/lodging/LodgingPage'
 import { ExperienceGate, RedirectIfAuthenticated, RequireAuth, RequireOrg } from './session'
 import { SaasShell } from './shell/SaasShell'
 
@@ -110,6 +111,7 @@ export const router = createBrowserRouter([
               { path: 'encarregado/horas', element: encarregado(<TimesheetsPage />) },
               { path: 'viaturas', element: both(<VehiclesPage />) },
               { path: 'viaturas/:id', element: both(<VehicleDetailPage />) },
+              { path: 'dormidas', element: gestor(<LodgingPage />) },
               ...MODULES.map((m) => ({
                 path: m.path.slice(1),
                 element: (m.path.startsWith('/encarregado') ? encarregado : gestor)(<ModuleUnavailable label={m.label} phase={m.phase} />),

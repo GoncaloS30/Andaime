@@ -10,6 +10,7 @@ import { useLogout, useMembers } from '../api/hooks'
 import { atLeast, ORG_ROLE_LABEL } from '../api/types'
 import { useEmployees, useSites, useTeams } from '../api/workforce'
 import { useActiveOrg, useSession } from '../session'
+import { MyStaysCard } from './lodging/StayCards'
 import { WorkerSections } from './operations/WorkerSections'
 import { DelayBadge } from './sites/SitesPages'
 import { MySchedule } from './timekeeping/MySchedule'
@@ -20,7 +21,6 @@ import { WorkerClock } from './timekeeping/WorkerClock'
  * o ecrã diz isso mesmo, em vez de mostrar dados fictícios.
  */
 export const MODULES: { path: string; label: string; phase: string }[] = [
-  { path: '/dormidas', label: 'Dormidas', phase: 'depois de F6' },
   { path: '/encarregado/diario', label: 'Diário de obra', phase: 'depois de F6' },
 ]
 
@@ -194,6 +194,7 @@ export function WorkerHome() {
         </div>
         <WorkerClock />
         <MySchedule />
+        <MyStaysCard />
         <WorkerSections />
         <Link to="/definicoes/conta" className={buttonStyles('secondary')}>
           A minha conta

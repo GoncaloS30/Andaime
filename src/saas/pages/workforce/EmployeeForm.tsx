@@ -6,6 +6,7 @@ import { Button } from '@/ui/Button'
 import { Field, Input, Select, Textarea } from '@/ui/Field'
 import { Drawer } from '@/ui/Overlay'
 import { errorMessage, isApiError } from '../../api/http'
+import { CITY_COORDS, cityCoords } from '../../api/lodging'
 import { useSaveEmployee, type EmployeeDetail, type EmployeeInput } from '../../api/workforce'
 import { useActiveOrg } from '../../session'
 import { EMAIL_PATTERN, FormError } from '../auth/AuthLayout'
@@ -27,6 +28,8 @@ interface FormState {
   email: string
   nationality: string
   homeCity: string
+  homeLat: string
+  homeLng: string
   hireDate: string
   status: 'ACTIVE' | 'INACTIVE'
   dailyHours: string
@@ -45,6 +48,8 @@ function initial(existing?: EmployeeDetail): FormState {
     email: existing?.email ?? '',
     nationality: existing?.nationality ?? '',
     homeCity: existing?.homeCity ?? '',
+    homeLat: existing?.homeLatitude != null ? String(existing.homeLatitude) : '',
+    homeLng: existing?.homeLongitude != null ? String(existing.homeLongitude) : '',
     hireDate: existing?.hireDate ?? '',
     status: existing?.status ?? 'ACTIVE',
     dailyHours: String((existing?.dailyCapacityMin ?? 480) / 60),
@@ -67,7 +72,13 @@ export function EmployeeForm({ open, onOpenChange, existing }: { open: boolean; 
 
   const hours = Number(f.dailyHours.replace(',', '.'))
   const cost = f.hourlyCost.trim() === '' ? null : Number(f.hourlyCost.replace(',', '.'))
+  const lat = f.homeLat.trim() === '' ? null : Number(f.homeLat.replace(',', '.'))
+  const lng = f.homeLng.trim() === '' ? null : Number(f.homeLng.replace(',', '.'))
   const errors = {
+    homeLatitude:
+      lat !== null && !(lat >= -90 && lat <= 90) ? 'Entre -90 e 90.' : lat === null && lng !== null ? 'Indique a latitude e a longitude, ou nenhuma.' : null,
+    homeLongitude:
+      lng !== null && !(lng >= -180 && lng <= 180) ? 'Entre -180 e 180.' : lng === null && lat !== null ? 'Indique a latitude e a longitude, ou nenhuma.' : null,
     fullName: f.fullName.trim().length < 2 ? 'Indique o nome completo.' : null,
     email: f.email.trim() && !EMAIL_PATTERN.test(f.email.trim()) ? 'Email inválido.' : null,
     dailyHours: !(hours >= 1 && hours <= 16) ? 'Entre 1 e 16 horas.' : null,
@@ -87,6 +98,8 @@ export function EmployeeForm({ open, onOpenChange, existing }: { open: boolean; 
       email: f.email.trim(),
       nationality: f.nationality.trim(),
       homeCity: f.homeCity.trim(),
+      homeLatitude: lat,
+      homeLongitude: lng,
       hireDate: f.hireDate || null,
       status: f.status,
       dailyCapacityMin: Math.round(hours * 60),
@@ -162,9 +175,42 @@ export function EmployeeForm({ open, onOpenChange, existing }: { open: boolean; 
         <Field label="Nacionalidade" optional>
           {(p) => <Input {...p} value={f.nationality} onChange={(e) => set('nationality', e.target.value)} />}
         </Field>
-        <Field label="Residência" optional>
-          {(p) => <Input {...p} value={f.homeCity} onChange={(e) => set('homeCity', e.target.value)} />}
+        <Field label="Residência" optional hint="Escolha uma cidade da lista para preencher as coordenadas.">
+          {(p) => (
+            <>
+              <Input
+                {...p}
+                value={f.homeCity}
+                list="cidades-residencia"
+                autoComplete="off"
+                onChange={(e) => {
+                  const city = e.target.value
+                  const coords = cityCoords(city)
+                  setF((x) => ({ ...x, homeCity: city, ...(coords ? { homeLat: String(coords.lat), homeLng: String(coords.lng) } : {}) }))
+                }}
+              />
+              <datalist id="cidades-residencia">
+                {CITY_COORDS.map((c) => (
+                  <option key={c.name} value={c.name}>
+                    {c.country}
+                  </option>
+                ))}
+              </datalist>
+            </>
+          )}
         </Field>
+        <fieldset className="grid grid-cols-2 gap-3 sm:col-span-2">
+          <legend className="mb-1 text-sm font-medium text-ink">
+            Localização da residência <span className="font-normal text-ink-3">(opcional)</span>
+          </legend>
+          <p className="col-span-2 -mt-1 text-xs text-ink-3">Só a cidade, nunca a morada. Serve para sugerir quem fica longe de casa nas dormidas (mais de 100 km ou outro país).</p>
+          <Field label="Latitude" error={err('homeLatitude')}>
+            {(p) => <Input {...p} inputMode="decimal" value={f.homeLat} onChange={(e) => set('homeLat', e.target.value)} placeholder="41.5454" />}
+          </Field>
+          <Field label="Longitude" error={err('homeLongitude')}>
+            {(p) => <Input {...p} inputMode="decimal" value={f.homeLng} onChange={(e) => set('homeLng', e.target.value)} placeholder="-8.4265" />}
+          </Field>
+        </fieldset>
         <Field label="Data de admissão" optional>
           {(p) => <Input {...p} type="date" value={f.hireDate} onChange={(e) => set('hireDate', e.target.value)} />}
         </Field>

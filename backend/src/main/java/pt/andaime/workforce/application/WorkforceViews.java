@@ -44,6 +44,8 @@ public final class WorkforceViews {
             String email,
             String nationality,
             String homeCity,
+            BigDecimal homeLatitude,
+            BigDecimal homeLongitude,
             LocalDate hireDate,
             int dailyCapacityMin,
             BigDecimal hourlyCost,
@@ -73,7 +75,17 @@ public final class WorkforceViews {
             BigDecimal hourlyCost,
             List<String> skills,
             Map<String, String> sizes,
-            String notes) {
+            String notes,
+            BigDecimal homeLatitude,
+            BigDecimal homeLongitude) {
+
+        /** Sem coordenadas da residência (semente e chamadas anteriores à F8.4). */
+        public EmployeeInput(String number, String fullName, String category, String phone, String email, String nationality,
+                String homeCity, LocalDate hireDate, String status, Integer dailyCapacityMin, BigDecimal hourlyCost,
+                List<String> skills, Map<String, String> sizes, String notes) {
+            this(number, fullName, category, phone, email, nationality, homeCity, hireDate, status, dailyCapacityMin,
+                    hourlyCost, skills, sizes, notes, null, null);
+        }
     }
 
     public record ContractView(

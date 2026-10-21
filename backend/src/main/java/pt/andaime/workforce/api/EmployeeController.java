@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Max;
@@ -154,11 +155,13 @@ public class EmployeeController {
             @Size(max = 30) List<@Size(max = 60) String> skills,
             @Size(max = 6) Map<String, @Size(max = 10) String> sizes,
             @Size(max = 2000) String notes,
-            Integer version) {
+            Integer version,
+            @DecimalMin("-90") @DecimalMax("90") BigDecimal homeLatitude,
+            @DecimalMin("-180") @DecimalMax("180") BigDecimal homeLongitude) {
 
         EmployeeInput toInput() {
             return new EmployeeInput(number, fullName, category, phone, email, nationality, homeCity, hireDate,
-                    status, dailyCapacityMin, hourlyCost, skills, sizes, notes);
+                    status, dailyCapacityMin, hourlyCost, skills, sizes, notes, homeLatitude, homeLongitude);
         }
     }
 

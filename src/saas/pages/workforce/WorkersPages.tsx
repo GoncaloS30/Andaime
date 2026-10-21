@@ -35,6 +35,7 @@ import { FormError } from '../auth/AuthLayout'
 import { PhotoControls } from '../shared/PhotoControls'
 import { EmployeeForm } from './EmployeeForm'
 import { HistoryList } from './HistoryList'
+import { EmployeeStays } from '../lodging/StayCards'
 
 export function WorkersPage() {
   const org = useActiveOrg()
@@ -351,6 +352,7 @@ export function WorkerDetailPage() {
     { value: 'dados', label: 'Dados profissionais' },
     { value: 'equipas', label: 'Equipas' },
     ...(manager ? [{ value: 'contratos', label: 'Contratos' }, { value: 'historico', label: 'Histórico' }] : []),
+    ...(manager ? [{ value: 'estadias', label: 'Estadias' }] : []),
   ]
 
   return (
@@ -498,6 +500,11 @@ export function WorkerDetailPage() {
               <HistoryList entityType="employee" id={id} />
             </TabPanel>
           </>
+        )}
+        {manager && (
+          <TabPanel value="estadias">
+            <EmployeeStays employeeId={id} />
+          </TabPanel>
         )}
       </Tabs>
       {editing && <EmployeeForm open onOpenChange={setEditing} existing={w} />}

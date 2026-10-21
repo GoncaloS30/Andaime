@@ -29,6 +29,9 @@ export interface EmployeeDetail extends Omit<EmployeeSummary, 'archived'> {
   email: string | null
   nationality: string | null
   homeCity: string | null
+  /** Coordenadas da residência (cidade), base da sugestão "longe de casa" nas dormidas. */
+  homeLatitude: number | null
+  homeLongitude: number | null
   hireDate: string | null
   dailyCapacityMin: number
   hourlyCost: number | null
@@ -52,6 +55,8 @@ export interface EmployeeInput {
   email?: string
   nationality?: string
   homeCity?: string
+  homeLatitude?: number | null
+  homeLongitude?: number | null
   hireDate?: string | null
   status?: EmployeeStatus
   dailyCapacityMin?: number

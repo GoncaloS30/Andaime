@@ -45,7 +45,8 @@ import tools.jackson.databind.json.JsonMapper;
 public class EmployeeService {
 
     /** Dados pessoais e de custo: nunca entram em valores de auditoria nem na vista do encarregado. */
-    static final Set<String> SENSITIVE = Set.of("phone", "email", "nationality", "homeCity", "hourlyCost", "sizes", "notes");
+    static final Set<String> SENSITIVE = Set.of("phone", "email", "nationality", "homeCity", "homeLatitude", "homeLongitude",
+            "hourlyCost", "sizes", "notes");
     private static final Set<String> SIZE_KEYS = Set.of("tshirt", "sweat", "parka", "calcas", "botas", "luvas");
     private static final TypeReference<Map<String, String>> STRING_MAP = new TypeReference<>() {
     };
@@ -166,13 +167,15 @@ public class EmployeeService {
         var values = normalize(input, number);
         var id = jdbcTemplate.queryForObject("""
                 INSERT INTO employees (organization_id, number, full_name, category, phone, email, nationality,
-                    home_city, hire_date, status, daily_capacity_min, hourly_cost, skills, sizes, notes)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?)
+                    home_city, hire_date, status, daily_capacity_min, hourly_cost, skills, sizes, notes,
+                    home_latitude, home_longitude)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?, ?, ?)
                 RETURNING id
                 """, UUID.class, organizationId, values.get("number"), values.get("fullName"), values.get("category"),
                 values.get("phone"), values.get("email"), values.get("nationality"), values.get("homeCity"),
                 values.get("hireDate"), values.get("status"), values.get("dailyCapacityMin"), values.get("hourlyCost"),
-                textArray(values), sizesJson(values), values.get("notes"));
+                textArray(values), sizesJson(values), values.get("notes"), values.get("homeLatitude"),
+                values.get("homeLongitude"));
         auditLog.record("employee.created", "employee", id, Changes.created(values, SENSITIVE));
         return get(id);
     }
@@ -188,12 +191,13 @@ public class EmployeeService {
                 UPDATE employees
                 SET number = ?, full_name = ?, category = ?, phone = ?, email = ?, nationality = ?, home_city = ?,
                     hire_date = ?, status = ?, daily_capacity_min = ?, hourly_cost = ?, skills = ?, sizes = ?::jsonb,
-                    notes = ?, version = version + 1
+                    notes = ?, home_latitude = ?, home_longitude = ?, version = version + 1
                 WHERE id = ? AND version = ? AND archived_at IS NULL
                 """, after.get("number"), after.get("fullName"), after.get("category"), after.get("phone"),
                 after.get("email"), after.get("nationality"), after.get("homeCity"), after.get("hireDate"),
                 after.get("status"), after.get("dailyCapacityMin"), after.get("hourlyCost"), textArray(after),
-                sizesJson(after), after.get("notes"), employeeId, expectedVersion);
+                sizesJson(after), after.get("notes"), after.get("homeLatitude"), after.get("homeLongitude"), employeeId,
+                expectedVersion);
         if (updated == 0) {
             throw stale();
         }
@@ -290,7 +294,7 @@ public class EmployeeService {
 
     private void erasePersonalData(UUID employeeId) {
         jdbcTemplate.update("UPDATE employees SET full_name = 'Ex-trabalhador ' || number, phone = NULL, email = NULL,"
-                + " nationality = NULL, home_city = NULL, hire_date = NULL, hourly_cost = NULL, skills = '{}', sizes = '{}'::jsonb,"
+                + " nationality = NULL, home_city = NULL, home_latitude = NULL, home_longitude = NULL, hire_date = NULL, hourly_cost = NULL, skills = '{}', sizes = '{}'::jsonb,"
                 + " notes = NULL, anonymized_at = now(), version = version + 1 WHERE id = ?", employeeId);
         jdbcTemplate.queryForList("SELECT photo_key FROM employees WHERE id = ? AND photo_key IS NOT NULL", String.class, employeeId)
                 .forEach(photos::deleteAfterCommit);
@@ -437,6 +441,8 @@ public class EmployeeService {
                 restricted ? null : resultSet.getString("email"),
                 restricted ? null : resultSet.getString("nationality"),
                 restricted ? null : resultSet.getString("home_city"),
+                restricted ? null : resultSet.getBigDecimal("home_latitude"),
+                restricted ? null : resultSet.getBigDecimal("home_longitude"),
                 restricted ? null : resultSet.getObject("hire_date", LocalDate.class),
                 resultSet.getInt("daily_capacity_min"),
                 restricted ? null : resultSet.getBigDecimal("hourly_cost"),
@@ -472,6 +478,8 @@ public class EmployeeService {
         values.put("email", detail.email());
         values.put("nationality", detail.nationality());
         values.put("homeCity", detail.homeCity());
+        values.put("homeLatitude", detail.homeLatitude());
+        values.put("homeLongitude", detail.homeLongitude());
         values.put("hireDate", detail.hireDate());
         values.put("status", detail.status());
         values.put("dailyCapacityMin", detail.dailyCapacityMin());
@@ -491,6 +499,16 @@ public class EmployeeService {
         values.put("email", blankToNull(input.email()) == null ? null : input.email().strip().toLowerCase(Locale.ROOT));
         values.put("nationality", blankToNull(input.nationality()));
         values.put("homeCity", blankToNull(input.homeCity()));
+        // Coordenadas da residência (cidade): as duas ou nenhuma. Base da sugestão "longe de casa" nas dormidas.
+        if ((input.homeLatitude() == null) != (input.homeLongitude() == null)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "validation", "Indique a latitude e a longitude da residência, ou nenhuma.")
+                    .with("errors", List.of(Map.of("field", input.homeLatitude() == null ? "homeLatitude" : "homeLongitude",
+                            "code", "invalid", "message", "Indique a latitude e a longitude, ou nenhuma.")));
+        }
+        values.put("homeLatitude", input.homeLatitude() == null ? null
+                : input.homeLatitude().setScale(6, java.math.RoundingMode.HALF_UP));
+        values.put("homeLongitude", input.homeLongitude() == null ? null
+                : input.homeLongitude().setScale(6, java.math.RoundingMode.HALF_UP));
         values.put("hireDate", input.hireDate());
         values.put("status", input.status() == null ? "ACTIVE" : input.status().toUpperCase(Locale.ROOT));
         values.put("dailyCapacityMin", input.dailyCapacityMin() == null ? 480 : input.dailyCapacityMin());

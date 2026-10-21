@@ -37,6 +37,7 @@ import {
 import { useActiveOrg } from '../../session'
 import { COUNTRIES } from '../auth/OnboardingPages'
 import { HistoryList } from '../workforce/HistoryList'
+import { SiteLodging } from '../lodging/SiteLodging'
 import { PhotoControls } from '../shared/PhotoControls'
 import { SiteForm } from './SiteForm'
 
@@ -559,6 +560,7 @@ export function SiteDetailPage() {
           { value: 'resumo', label: 'Resumo' },
           { value: 'localizacao', label: 'Localização' },
           { value: 'ocorrencias', label: 'Ocorrências', count: openCount, tone: 'warn' },
+          ...(manager ? [{ value: 'alojamento', label: 'Alojamento' }] : []),
           ...(manager ? [{ value: 'historico', label: 'Histórico' }] : []),
         ]}
       >
@@ -598,6 +600,11 @@ export function SiteDetailPage() {
         <TabPanel value="ocorrencias">
           <Panel flush>{issues.isPending ? <SkeletonRows rows={3} /> : issues.isError ? <ErrorState onRetry={() => void issues.refetch()} /> : <IssueList issues={issues.data} canResolve />}</Panel>
         </TabPanel>
+        {manager && (
+          <TabPanel value="alojamento">
+            <SiteLodging siteId={id} archived={!!s.archivedAt} />
+          </TabPanel>
+        )}
         {manager && (
           <TabPanel value="historico">
             <HistoryList entityType="site" id={id} />
